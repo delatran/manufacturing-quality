@@ -1,0 +1,4339 @@
+{
+  "observed_at_utc": "2026-10-16T17:40:55.374868+00:00",
+  "evidence_mode": "offline_replay_of_sealed_live_receipts_plus_independent_human_review",
+  "generation_requests_created": 0,
+  "network_requests": 0,
+  "reason": "The original checker ignored result.context.filters and assumed canonical scope for nested KPI sets. The correction uses explicit nearest metadata and rejects ambiguous/conflicting scopes. Expected values and rubric are unchanged.",
+  "original_results_path": "evals\\rebuild_results_post-v3.json",
+  "original_results_sha256": "22cc2db190d293dc9465b59eab0680e8ef7f375374e54927ef9b68804788e096",
+  "executed_harness_sha256": "b051ef520feb3597a0f16912f62b768ca662f66d9b98d25f5af70128b97a40d1",
+  "corrected_harness_sha256": "5f6506d837b08956df8ff78ab07f3fc1c810cd5a734810167b380889b3f7f63a",
+  "corrected_scope_function_sha256": "1f4ab47a79c6e4577fc1f87ddf86bad1a312ddb432a295be9b610e67fc11b5b2",
+  "scope_fields": [
+    "category",
+    "defect_location",
+    "defect_type",
+    "end_month",
+    "inspection_method",
+    "product_id",
+    "production_line",
+    "scenario",
+    "severity",
+    "start_month"
+  ],
+  "unchanged_function_source_hashes": {
+    "cases": "a3c845a8e29203502dc56748ae01db26368582561e9caa86baf6b80bf48379e9",
+    "independent_rows": "94e432761f1489de7439185bb73559f8aed7f625fb1eaf4c280c55a229783c79",
+    "independent_metrics": "19abbc6c9c8ed968b54bc75b77d25564b51f323f3f8a097856ffd77d36ce0062",
+    "same_number": "6a61cebcc9f7174809acb4c6dadb554805bb392579ed9cf86b60c44e5441e187",
+    "reference_checks": "6a37f83bb0cbcc18a2a7916cdb213e5a0bb60ec50cce6583b95f91cb97dbf4cc"
+  },
+  "protocol_sha256": "a45c5b720da94f7f2cf4c9c6a0e4d5a46a97e71aa1a731dcfe8f57aa9ed4a4d5",
+  "oracle_sha256": "c6cce85ed7be987f1d797ef8e08438810fc8d855b82e896ac9940b50f0f1006c",
+  "manual_review_path": ".runtime\\rebuild-20261016\\independent-review\\post-v3-manual-review-v1.json",
+  "manual_review_sha256": "ca5975b9d3e8279cdbb7ffde9f6bacce66b3fa2d0968516d9a0aaf6e4b4ca5c1",
+  "counterexample_checks": [
+    {
+      "name": "explicit_parent_line3_context_is_inherited",
+      "status": "Passed",
+      "observed_checks": [
+        {
+          "name": "oracle.event_count",
+          "status": "Passed",
+          "evidence": "explicit_parent_line3_context_is_inherited:analysis",
+          "observed": 282,
+          "expected": 282,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "Line-3",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.linked_event_count",
+          "status": "Passed",
+          "evidence": "explicit_parent_line3_context_is_inherited:analysis",
+          "observed": 282,
+          "expected": 282,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "Line-3",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.critical_count",
+          "status": "Passed",
+          "evidence": "explicit_parent_line3_context_is_inherited:analysis",
+          "observed": 95,
+          "expected": 95,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "Line-3",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.cost_known_count",
+          "status": "Passed",
+          "evidence": "explicit_parent_line3_context_is_inherited:analysis",
+          "observed": 277,
+          "expected": 277,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "Line-3",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.cost_unknown_count",
+          "status": "Passed",
+          "evidence": "explicit_parent_line3_context_is_inherited:analysis",
+          "observed": 5,
+          "expected": 5,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "Line-3",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.known_repair_cost",
+          "status": "Passed",
+          "evidence": "explicit_parent_line3_context_is_inherited:analysis",
+          "observed": "189934.78",
+          "expected": "189934.78",
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "Line-3",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.cost_coverage_pct",
+          "status": "Passed",
+          "evidence": "explicit_parent_line3_context_is_inherited:analysis",
+          "observed": 98.22695035460993,
+          "expected": 98.22695035460993,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "Line-3",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.cohort_product_count",
+          "status": "Passed",
+          "evidence": "explicit_parent_line3_context_is_inherited:analysis",
+          "observed": 29,
+          "expected": 29,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "Line-3",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.month_count",
+          "status": "Passed",
+          "evidence": "explicit_parent_line3_context_is_inherited:analysis",
+          "observed": 6,
+          "expected": 6,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "Line-3",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.reference_output",
+          "status": "Passed",
+          "evidence": "explicit_parent_line3_context_is_inherited:analysis",
+          "observed": 123108,
+          "expected": 123108,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "Line-3",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.reference_intensity_per_1000",
+          "status": "Passed",
+          "evidence": "explicit_parent_line3_context_is_inherited:analysis",
+          "observed": 2.2906716054196314,
+          "expected": 2.2906716054196314,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "Line-3",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        }
+      ]
+    },
+    {
+      "name": "canonical_label_cannot_accept_line3_values",
+      "status": "Passed",
+      "observed_checks": [
+        {
+          "name": "oracle.event_count",
+          "status": "Failed",
+          "evidence": "canonical_label_cannot_accept_line3_values:analysis",
+          "observed": 282,
+          "expected": 1071,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.linked_event_count",
+          "status": "Failed",
+          "evidence": "canonical_label_cannot_accept_line3_values:analysis",
+          "observed": 282,
+          "expected": 1067,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.critical_count",
+          "status": "Failed",
+          "evidence": "canonical_label_cannot_accept_line3_values:analysis",
+          "observed": 95,
+          "expected": 349,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.cost_known_count",
+          "status": "Failed",
+          "evidence": "canonical_label_cannot_accept_line3_values:analysis",
+          "observed": 277,
+          "expected": 1049,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.cost_unknown_count",
+          "status": "Failed",
+          "evidence": "canonical_label_cannot_accept_line3_values:analysis",
+          "observed": 5,
+          "expected": 22,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.known_repair_cost",
+          "status": "Failed",
+          "evidence": "canonical_label_cannot_accept_line3_values:analysis",
+          "observed": "189934.78",
+          "expected": "508864.39",
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.cost_coverage_pct",
+          "status": "Failed",
+          "evidence": "canonical_label_cannot_accept_line3_values:analysis",
+          "observed": 98.22695035460993,
+          "expected": 97.94584500466853,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.cohort_product_count",
+          "status": "Failed",
+          "evidence": "canonical_label_cannot_accept_line3_values:analysis",
+          "observed": 29,
+          "expected": 100,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.month_count",
+          "status": "Passed",
+          "evidence": "canonical_label_cannot_accept_line3_values:analysis",
+          "observed": 6,
+          "expected": 6,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.reference_output",
+          "status": "Failed",
+          "evidence": "canonical_label_cannot_accept_line3_values:analysis",
+          "observed": 123108,
+          "expected": 594360,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.reference_intensity_per_1000",
+          "status": "Failed",
+          "evidence": "canonical_label_cannot_accept_line3_values:analysis",
+          "observed": 2.2906716054196314,
+          "expected": 1.7952082912712835,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        }
+      ]
+    },
+    {
+      "name": "wrong_line_label_rejects_line3_values",
+      "status": "Passed",
+      "observed_checks": [
+        {
+          "name": "oracle.event_count",
+          "status": "Failed",
+          "evidence": "wrong_line_label_rejects_line3_values:analysis",
+          "observed": 282,
+          "expected": 340,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "Line-4",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.linked_event_count",
+          "status": "Failed",
+          "evidence": "wrong_line_label_rejects_line3_values:analysis",
+          "observed": 282,
+          "expected": 340,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "Line-4",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.critical_count",
+          "status": "Failed",
+          "evidence": "wrong_line_label_rejects_line3_values:analysis",
+          "observed": 95,
+          "expected": 111,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "Line-4",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.cost_known_count",
+          "status": "Failed",
+          "evidence": "wrong_line_label_rejects_line3_values:analysis",
+          "observed": 277,
+          "expected": 332,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "Line-4",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.cost_unknown_count",
+          "status": "Failed",
+          "evidence": "wrong_line_label_rejects_line3_values:analysis",
+          "observed": 5,
+          "expected": 8,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "Line-4",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.known_repair_cost",
+          "status": "Failed",
+          "evidence": "wrong_line_label_rejects_line3_values:analysis",
+          "observed": "189934.78",
+          "expected": "132588.45",
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "Line-4",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.cost_coverage_pct",
+          "status": "Failed",
+          "evidence": "wrong_line_label_rejects_line3_values:analysis",
+          "observed": 98.22695035460993,
+          "expected": 97.6470588235294,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "Line-4",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.cohort_product_count",
+          "status": "Failed",
+          "evidence": "wrong_line_label_rejects_line3_values:analysis",
+          "observed": 29,
+          "expected": 32,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "Line-4",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.month_count",
+          "status": "Passed",
+          "evidence": "wrong_line_label_rejects_line3_values:analysis",
+          "observed": 6,
+          "expected": 6,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "Line-4",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.reference_output",
+          "status": "Failed",
+          "evidence": "wrong_line_label_rejects_line3_values:analysis",
+          "observed": 123108,
+          "expected": 161676,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "Line-4",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.reference_intensity_per_1000",
+          "status": "Failed",
+          "evidence": "wrong_line_label_rejects_line3_values:analysis",
+          "observed": 2.2906716054196314,
+          "expected": 2.102971374848462,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "Line-4",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        }
+      ]
+    },
+    {
+      "name": "nested_periods_keep_their_own_explicit_contexts",
+      "status": "Passed",
+      "observed_checks": [
+        {
+          "name": "oracle.event_count",
+          "status": "Passed",
+          "evidence": "nested_periods_keep_their_own_explicit_contexts:baseline:analysis",
+          "observed": 147,
+          "expected": 147,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-01",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.baseline.context.filters"
+        },
+        {
+          "name": "oracle.linked_event_count",
+          "status": "Passed",
+          "evidence": "nested_periods_keep_their_own_explicit_contexts:baseline:analysis",
+          "observed": 147,
+          "expected": 147,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-01",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.baseline.context.filters"
+        },
+        {
+          "name": "oracle.critical_count",
+          "status": "Passed",
+          "evidence": "nested_periods_keep_their_own_explicit_contexts:baseline:analysis",
+          "observed": 50,
+          "expected": 50,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-01",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.baseline.context.filters"
+        },
+        {
+          "name": "oracle.cost_known_count",
+          "status": "Passed",
+          "evidence": "nested_periods_keep_their_own_explicit_contexts:baseline:analysis",
+          "observed": 142,
+          "expected": 142,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-01",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.baseline.context.filters"
+        },
+        {
+          "name": "oracle.cost_unknown_count",
+          "status": "Passed",
+          "evidence": "nested_periods_keep_their_own_explicit_contexts:baseline:analysis",
+          "observed": 5,
+          "expected": 5,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-01",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.baseline.context.filters"
+        },
+        {
+          "name": "oracle.known_repair_cost",
+          "status": "Passed",
+          "evidence": "nested_periods_keep_their_own_explicit_contexts:baseline:analysis",
+          "observed": "65488.29",
+          "expected": "65488.29",
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-01",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.baseline.context.filters"
+        },
+        {
+          "name": "oracle.cost_coverage_pct",
+          "status": "Passed",
+          "evidence": "nested_periods_keep_their_own_explicit_contexts:baseline:analysis",
+          "observed": 96.59863945578232,
+          "expected": 96.59863945578232,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-01",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.baseline.context.filters"
+        },
+        {
+          "name": "oracle.cohort_product_count",
+          "status": "Passed",
+          "evidence": "nested_periods_keep_their_own_explicit_contexts:baseline:analysis",
+          "observed": 100,
+          "expected": 100,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-01",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.baseline.context.filters"
+        },
+        {
+          "name": "oracle.month_count",
+          "status": "Passed",
+          "evidence": "nested_periods_keep_their_own_explicit_contexts:baseline:analysis",
+          "observed": 1,
+          "expected": 1,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-01",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.baseline.context.filters"
+        },
+        {
+          "name": "oracle.reference_output",
+          "status": "Passed",
+          "evidence": "nested_periods_keep_their_own_explicit_contexts:baseline:analysis",
+          "observed": 99060,
+          "expected": 99060,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-01",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.baseline.context.filters"
+        },
+        {
+          "name": "oracle.reference_intensity_per_1000",
+          "status": "Passed",
+          "evidence": "nested_periods_keep_their_own_explicit_contexts:baseline:analysis",
+          "observed": 1.4839491217443974,
+          "expected": 1.4839491217443974,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-01",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.baseline.context.filters"
+        },
+        {
+          "name": "oracle.event_count",
+          "status": "Passed",
+          "evidence": "nested_periods_keep_their_own_explicit_contexts:comparison:analysis",
+          "observed": 252,
+          "expected": 252,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-06"
+          },
+          "scope_evidence_path": "$.comparison.context.filters"
+        },
+        {
+          "name": "oracle.linked_event_count",
+          "status": "Passed",
+          "evidence": "nested_periods_keep_their_own_explicit_contexts:comparison:analysis",
+          "observed": 251,
+          "expected": 251,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-06"
+          },
+          "scope_evidence_path": "$.comparison.context.filters"
+        },
+        {
+          "name": "oracle.critical_count",
+          "status": "Passed",
+          "evidence": "nested_periods_keep_their_own_explicit_contexts:comparison:analysis",
+          "observed": 74,
+          "expected": 74,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-06"
+          },
+          "scope_evidence_path": "$.comparison.context.filters"
+        },
+        {
+          "name": "oracle.cost_known_count",
+          "status": "Passed",
+          "evidence": "nested_periods_keep_their_own_explicit_contexts:comparison:analysis",
+          "observed": 245,
+          "expected": 245,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-06"
+          },
+          "scope_evidence_path": "$.comparison.context.filters"
+        },
+        {
+          "name": "oracle.cost_unknown_count",
+          "status": "Passed",
+          "evidence": "nested_periods_keep_their_own_explicit_contexts:comparison:analysis",
+          "observed": 7,
+          "expected": 7,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-06"
+          },
+          "scope_evidence_path": "$.comparison.context.filters"
+        },
+        {
+          "name": "oracle.known_repair_cost",
+          "status": "Passed",
+          "evidence": "nested_periods_keep_their_own_explicit_contexts:comparison:analysis",
+          "observed": "123930.10",
+          "expected": "123930.10",
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-06"
+          },
+          "scope_evidence_path": "$.comparison.context.filters"
+        },
+        {
+          "name": "oracle.cost_coverage_pct",
+          "status": "Passed",
+          "evidence": "nested_periods_keep_their_own_explicit_contexts:comparison:analysis",
+          "observed": 97.22222222222223,
+          "expected": 97.22222222222223,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-06"
+          },
+          "scope_evidence_path": "$.comparison.context.filters"
+        },
+        {
+          "name": "oracle.cohort_product_count",
+          "status": "Passed",
+          "evidence": "nested_periods_keep_their_own_explicit_contexts:comparison:analysis",
+          "observed": 100,
+          "expected": 100,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-06"
+          },
+          "scope_evidence_path": "$.comparison.context.filters"
+        },
+        {
+          "name": "oracle.month_count",
+          "status": "Passed",
+          "evidence": "nested_periods_keep_their_own_explicit_contexts:comparison:analysis",
+          "observed": 1,
+          "expected": 1,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-06"
+          },
+          "scope_evidence_path": "$.comparison.context.filters"
+        },
+        {
+          "name": "oracle.reference_output",
+          "status": "Passed",
+          "evidence": "nested_periods_keep_their_own_explicit_contexts:comparison:analysis",
+          "observed": 99060,
+          "expected": 99060,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-06"
+          },
+          "scope_evidence_path": "$.comparison.context.filters"
+        },
+        {
+          "name": "oracle.reference_intensity_per_1000",
+          "status": "Passed",
+          "evidence": "nested_periods_keep_their_own_explicit_contexts:comparison:analysis",
+          "observed": 2.533817888148597,
+          "expected": 2.533817888148597,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-06"
+          },
+          "scope_evidence_path": "$.comparison.context.filters"
+        }
+      ]
+    },
+    {
+      "name": "mixed_nested_comparison_cannot_infer_scope_from_matching_values",
+      "status": "Passed",
+      "observed_checks": [
+        {
+          "name": "oracle.event_count",
+          "status": "Passed",
+          "evidence": "mixed_nested_comparison_cannot_infer_scope_from_matching_values:baseline:analysis",
+          "observed": 147,
+          "expected": 147,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-01",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.baseline.context.filters"
+        },
+        {
+          "name": "oracle.linked_event_count",
+          "status": "Passed",
+          "evidence": "mixed_nested_comparison_cannot_infer_scope_from_matching_values:baseline:analysis",
+          "observed": 147,
+          "expected": 147,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-01",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.baseline.context.filters"
+        },
+        {
+          "name": "oracle.critical_count",
+          "status": "Passed",
+          "evidence": "mixed_nested_comparison_cannot_infer_scope_from_matching_values:baseline:analysis",
+          "observed": 50,
+          "expected": 50,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-01",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.baseline.context.filters"
+        },
+        {
+          "name": "oracle.cost_known_count",
+          "status": "Passed",
+          "evidence": "mixed_nested_comparison_cannot_infer_scope_from_matching_values:baseline:analysis",
+          "observed": 142,
+          "expected": 142,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-01",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.baseline.context.filters"
+        },
+        {
+          "name": "oracle.cost_unknown_count",
+          "status": "Passed",
+          "evidence": "mixed_nested_comparison_cannot_infer_scope_from_matching_values:baseline:analysis",
+          "observed": 5,
+          "expected": 5,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-01",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.baseline.context.filters"
+        },
+        {
+          "name": "oracle.known_repair_cost",
+          "status": "Passed",
+          "evidence": "mixed_nested_comparison_cannot_infer_scope_from_matching_values:baseline:analysis",
+          "observed": "65488.29",
+          "expected": "65488.29",
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-01",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.baseline.context.filters"
+        },
+        {
+          "name": "oracle.cost_coverage_pct",
+          "status": "Passed",
+          "evidence": "mixed_nested_comparison_cannot_infer_scope_from_matching_values:baseline:analysis",
+          "observed": 96.59863945578232,
+          "expected": 96.59863945578232,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-01",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.baseline.context.filters"
+        },
+        {
+          "name": "oracle.cohort_product_count",
+          "status": "Passed",
+          "evidence": "mixed_nested_comparison_cannot_infer_scope_from_matching_values:baseline:analysis",
+          "observed": 100,
+          "expected": 100,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-01",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.baseline.context.filters"
+        },
+        {
+          "name": "oracle.month_count",
+          "status": "Passed",
+          "evidence": "mixed_nested_comparison_cannot_infer_scope_from_matching_values:baseline:analysis",
+          "observed": 1,
+          "expected": 1,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-01",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.baseline.context.filters"
+        },
+        {
+          "name": "oracle.reference_output",
+          "status": "Passed",
+          "evidence": "mixed_nested_comparison_cannot_infer_scope_from_matching_values:baseline:analysis",
+          "observed": 99060,
+          "expected": 99060,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-01",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.baseline.context.filters"
+        },
+        {
+          "name": "oracle.reference_intensity_per_1000",
+          "status": "Passed",
+          "evidence": "mixed_nested_comparison_cannot_infer_scope_from_matching_values:baseline:analysis",
+          "observed": 1.4839491217443974,
+          "expected": 1.4839491217443974,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-01",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.baseline.context.filters"
+        },
+        {
+          "name": "oracle.event_count",
+          "status": "Failed",
+          "evidence": "mixed_nested_comparison_cannot_infer_scope_from_matching_values:comparison:analysis",
+          "observed": 147,
+          "expected": 252,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-06"
+          },
+          "scope_evidence_path": "$.comparison.context.filters"
+        },
+        {
+          "name": "oracle.linked_event_count",
+          "status": "Failed",
+          "evidence": "mixed_nested_comparison_cannot_infer_scope_from_matching_values:comparison:analysis",
+          "observed": 147,
+          "expected": 251,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-06"
+          },
+          "scope_evidence_path": "$.comparison.context.filters"
+        },
+        {
+          "name": "oracle.critical_count",
+          "status": "Failed",
+          "evidence": "mixed_nested_comparison_cannot_infer_scope_from_matching_values:comparison:analysis",
+          "observed": 50,
+          "expected": 74,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-06"
+          },
+          "scope_evidence_path": "$.comparison.context.filters"
+        },
+        {
+          "name": "oracle.cost_known_count",
+          "status": "Failed",
+          "evidence": "mixed_nested_comparison_cannot_infer_scope_from_matching_values:comparison:analysis",
+          "observed": 142,
+          "expected": 245,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-06"
+          },
+          "scope_evidence_path": "$.comparison.context.filters"
+        },
+        {
+          "name": "oracle.cost_unknown_count",
+          "status": "Failed",
+          "evidence": "mixed_nested_comparison_cannot_infer_scope_from_matching_values:comparison:analysis",
+          "observed": 5,
+          "expected": 7,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-06"
+          },
+          "scope_evidence_path": "$.comparison.context.filters"
+        },
+        {
+          "name": "oracle.known_repair_cost",
+          "status": "Failed",
+          "evidence": "mixed_nested_comparison_cannot_infer_scope_from_matching_values:comparison:analysis",
+          "observed": "65488.29",
+          "expected": "123930.10",
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-06"
+          },
+          "scope_evidence_path": "$.comparison.context.filters"
+        },
+        {
+          "name": "oracle.cost_coverage_pct",
+          "status": "Failed",
+          "evidence": "mixed_nested_comparison_cannot_infer_scope_from_matching_values:comparison:analysis",
+          "observed": 96.59863945578232,
+          "expected": 97.22222222222223,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-06"
+          },
+          "scope_evidence_path": "$.comparison.context.filters"
+        },
+        {
+          "name": "oracle.cohort_product_count",
+          "status": "Passed",
+          "evidence": "mixed_nested_comparison_cannot_infer_scope_from_matching_values:comparison:analysis",
+          "observed": 100,
+          "expected": 100,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-06"
+          },
+          "scope_evidence_path": "$.comparison.context.filters"
+        },
+        {
+          "name": "oracle.month_count",
+          "status": "Passed",
+          "evidence": "mixed_nested_comparison_cannot_infer_scope_from_matching_values:comparison:analysis",
+          "observed": 1,
+          "expected": 1,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-06"
+          },
+          "scope_evidence_path": "$.comparison.context.filters"
+        },
+        {
+          "name": "oracle.reference_output",
+          "status": "Passed",
+          "evidence": "mixed_nested_comparison_cannot_infer_scope_from_matching_values:comparison:analysis",
+          "observed": 99060,
+          "expected": 99060,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-06"
+          },
+          "scope_evidence_path": "$.comparison.context.filters"
+        },
+        {
+          "name": "oracle.reference_intensity_per_1000",
+          "status": "Failed",
+          "evidence": "mixed_nested_comparison_cannot_infer_scope_from_matching_values:comparison:analysis",
+          "observed": 1.4839491217443974,
+          "expected": 2.533817888148597,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-06"
+          },
+          "scope_evidence_path": "$.comparison.context.filters"
+        }
+      ]
+    },
+    {
+      "name": "explicit_null_scope_blocks_parent_fallback",
+      "status": "Passed",
+      "observed_checks": [
+        {
+          "name": "oracle.scope_binding",
+          "status": "Blocked",
+          "evidence": "explicit_null_scope_blocks_parent_fallback:analysis",
+          "reason": "Explicit scope metadata is null, incomplete or invalid",
+          "payload_path": "$.analysis"
+        }
+      ]
+    },
+    {
+      "name": "missing_scope_is_not_assumed_canonical",
+      "status": "Passed",
+      "observed_checks": [
+        {
+          "name": "oracle.scope_binding",
+          "status": "Blocked",
+          "evidence": "missing_scope_is_not_assumed_canonical",
+          "reason": "No explicit scope metadata establishes this KPI set",
+          "payload_path": "$"
+        }
+      ]
+    },
+    {
+      "name": "partial_output_scope_is_ambiguous",
+      "status": "Passed",
+      "observed_checks": [
+        {
+          "name": "oracle.scope_binding",
+          "status": "Blocked",
+          "evidence": "partial_output_scope_is_ambiguous:analysis",
+          "reason": "Explicit scope metadata is null, incomplete or invalid",
+          "payload_path": "$.analysis"
+        }
+      ]
+    },
+    {
+      "name": "analysis_scope_cannot_conflict_with_its_wrapper_context",
+      "status": "Passed",
+      "observed_checks": [
+        {
+          "name": "oracle.scope_binding",
+          "status": "Blocked",
+          "evidence": "analysis_scope_cannot_conflict_with_its_wrapper_context:analysis",
+          "reason": "Conflicting explicit scopes inside the same analysis context",
+          "payload_path": "$.analysis"
+        }
+      ]
+    },
+    {
+      "name": "same_level_scope_context_conflict_is_blocked",
+      "status": "Passed",
+      "observed_checks": [
+        {
+          "name": "oracle.scope_binding",
+          "status": "Blocked",
+          "evidence": "same_level_scope_context_conflict_is_blocked:analysis",
+          "reason": "Conflicting explicit scope and context filters",
+          "payload_path": "$.analysis"
+        }
+      ]
+    },
+    {
+      "name": "comparison_branch_cannot_borrow_parent_context_without_metadata",
+      "status": "Passed",
+      "observed_checks": [
+        {
+          "name": "oracle.event_count",
+          "status": "Passed",
+          "evidence": "comparison_branch_cannot_borrow_parent_context_without_metadata:analysis",
+          "observed": 1071,
+          "expected": 1071,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.linked_event_count",
+          "status": "Passed",
+          "evidence": "comparison_branch_cannot_borrow_parent_context_without_metadata:analysis",
+          "observed": 1067,
+          "expected": 1067,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.critical_count",
+          "status": "Passed",
+          "evidence": "comparison_branch_cannot_borrow_parent_context_without_metadata:analysis",
+          "observed": 349,
+          "expected": 349,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.cost_known_count",
+          "status": "Passed",
+          "evidence": "comparison_branch_cannot_borrow_parent_context_without_metadata:analysis",
+          "observed": 1049,
+          "expected": 1049,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.cost_unknown_count",
+          "status": "Passed",
+          "evidence": "comparison_branch_cannot_borrow_parent_context_without_metadata:analysis",
+          "observed": 22,
+          "expected": 22,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.known_repair_cost",
+          "status": "Passed",
+          "evidence": "comparison_branch_cannot_borrow_parent_context_without_metadata:analysis",
+          "observed": "508864.39",
+          "expected": "508864.39",
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.cost_coverage_pct",
+          "status": "Passed",
+          "evidence": "comparison_branch_cannot_borrow_parent_context_without_metadata:analysis",
+          "observed": 97.94584500466853,
+          "expected": 97.94584500466853,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.cohort_product_count",
+          "status": "Passed",
+          "evidence": "comparison_branch_cannot_borrow_parent_context_without_metadata:analysis",
+          "observed": 100,
+          "expected": 100,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.month_count",
+          "status": "Passed",
+          "evidence": "comparison_branch_cannot_borrow_parent_context_without_metadata:analysis",
+          "observed": 6,
+          "expected": 6,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.reference_output",
+          "status": "Passed",
+          "evidence": "comparison_branch_cannot_borrow_parent_context_without_metadata:analysis",
+          "observed": 594360,
+          "expected": 594360,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.reference_intensity_per_1000",
+          "status": "Passed",
+          "evidence": "comparison_branch_cannot_borrow_parent_context_without_metadata:analysis",
+          "observed": 1.7952082912712835,
+          "expected": 1.7952082912712835,
+          "scope": {
+            "category": "",
+            "defect_location": "",
+            "defect_type": "",
+            "end_month": "2024-06",
+            "inspection_method": "",
+            "product_id": "",
+            "production_line": "",
+            "scenario": "",
+            "severity": "",
+            "start_month": "2024-01"
+          },
+          "scope_evidence_path": "$.context.filters"
+        },
+        {
+          "name": "oracle.scope_binding",
+          "status": "Blocked",
+          "evidence": "comparison_branch_cannot_borrow_parent_context_without_metadata:baseline:analysis",
+          "reason": "No explicit scope metadata establishes this KPI set",
+          "payload_path": "$.baseline.analysis"
+        }
+      ]
+    }
+  ],
+  "kpi_checks_replayed": 605,
+  "changed_check_count": 78,
+  "original_failed_check_counts": {
+    "oracle.event_count": 9,
+    "oracle.linked_event_count": 9,
+    "oracle.critical_count": 9,
+    "oracle.cost_known_count": 9,
+    "oracle.cost_unknown_count": 9,
+    "oracle.known_repair_cost": 9,
+    "oracle.cost_coverage_pct": 9,
+    "oracle.cohort_product_count": 3,
+    "oracle.reference_output": 3,
+    "oracle.reference_intensity_per_1000": 9,
+    "application_completed": 3,
+    "artifact_readback": 3
+  },
+  "adjudicated_failed_check_counts": {
+    "application_completed": 3,
+    "artifact_readback": 3
+  },
+  "changes": [
+    {
+      "case_id": "R02",
+      "turn": 1,
+      "original": {
+        "name": "oracle.event_count",
+        "status": "Failed",
+        "evidence": "55ec39f4e4144e31a62022b30e152183:analysis",
+        "observed": 282,
+        "expected": 1071
+      },
+      "adjudicated": {
+        "name": "oracle.event_count",
+        "status": "Passed",
+        "evidence": "55ec39f4e4144e31a62022b30e152183:analysis",
+        "observed": 282,
+        "expected": 282,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "",
+          "product_id": "",
+          "production_line": "Line-3",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R02",
+      "turn": 1,
+      "original": {
+        "name": "oracle.linked_event_count",
+        "status": "Failed",
+        "evidence": "55ec39f4e4144e31a62022b30e152183:analysis",
+        "observed": 282,
+        "expected": 1067
+      },
+      "adjudicated": {
+        "name": "oracle.linked_event_count",
+        "status": "Passed",
+        "evidence": "55ec39f4e4144e31a62022b30e152183:analysis",
+        "observed": 282,
+        "expected": 282,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "",
+          "product_id": "",
+          "production_line": "Line-3",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R02",
+      "turn": 1,
+      "original": {
+        "name": "oracle.critical_count",
+        "status": "Failed",
+        "evidence": "55ec39f4e4144e31a62022b30e152183:analysis",
+        "observed": 95,
+        "expected": 349
+      },
+      "adjudicated": {
+        "name": "oracle.critical_count",
+        "status": "Passed",
+        "evidence": "55ec39f4e4144e31a62022b30e152183:analysis",
+        "observed": 95,
+        "expected": 95,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "",
+          "product_id": "",
+          "production_line": "Line-3",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R02",
+      "turn": 1,
+      "original": {
+        "name": "oracle.cost_known_count",
+        "status": "Failed",
+        "evidence": "55ec39f4e4144e31a62022b30e152183:analysis",
+        "observed": 277,
+        "expected": 1049
+      },
+      "adjudicated": {
+        "name": "oracle.cost_known_count",
+        "status": "Passed",
+        "evidence": "55ec39f4e4144e31a62022b30e152183:analysis",
+        "observed": 277,
+        "expected": 277,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "",
+          "product_id": "",
+          "production_line": "Line-3",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R02",
+      "turn": 1,
+      "original": {
+        "name": "oracle.cost_unknown_count",
+        "status": "Failed",
+        "evidence": "55ec39f4e4144e31a62022b30e152183:analysis",
+        "observed": 5,
+        "expected": 22
+      },
+      "adjudicated": {
+        "name": "oracle.cost_unknown_count",
+        "status": "Passed",
+        "evidence": "55ec39f4e4144e31a62022b30e152183:analysis",
+        "observed": 5,
+        "expected": 5,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "",
+          "product_id": "",
+          "production_line": "Line-3",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R02",
+      "turn": 1,
+      "original": {
+        "name": "oracle.known_repair_cost",
+        "status": "Failed",
+        "evidence": "55ec39f4e4144e31a62022b30e152183:analysis",
+        "observed": 189934.78,
+        "expected": "508864.39"
+      },
+      "adjudicated": {
+        "name": "oracle.known_repair_cost",
+        "status": "Passed",
+        "evidence": "55ec39f4e4144e31a62022b30e152183:analysis",
+        "observed": 189934.78,
+        "expected": "189934.78",
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "",
+          "product_id": "",
+          "production_line": "Line-3",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R02",
+      "turn": 1,
+      "original": {
+        "name": "oracle.cost_coverage_pct",
+        "status": "Failed",
+        "evidence": "55ec39f4e4144e31a62022b30e152183:analysis",
+        "observed": 98.22695035460993,
+        "expected": 97.94584500466853
+      },
+      "adjudicated": {
+        "name": "oracle.cost_coverage_pct",
+        "status": "Passed",
+        "evidence": "55ec39f4e4144e31a62022b30e152183:analysis",
+        "observed": 98.22695035460993,
+        "expected": 98.22695035460993,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "",
+          "product_id": "",
+          "production_line": "Line-3",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R02",
+      "turn": 1,
+      "original": {
+        "name": "oracle.cohort_product_count",
+        "status": "Failed",
+        "evidence": "55ec39f4e4144e31a62022b30e152183:analysis",
+        "observed": 29,
+        "expected": 100
+      },
+      "adjudicated": {
+        "name": "oracle.cohort_product_count",
+        "status": "Passed",
+        "evidence": "55ec39f4e4144e31a62022b30e152183:analysis",
+        "observed": 29,
+        "expected": 29,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "",
+          "product_id": "",
+          "production_line": "Line-3",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R02",
+      "turn": 1,
+      "original": {
+        "name": "oracle.reference_output",
+        "status": "Failed",
+        "evidence": "55ec39f4e4144e31a62022b30e152183:analysis",
+        "observed": 123108,
+        "expected": 594360
+      },
+      "adjudicated": {
+        "name": "oracle.reference_output",
+        "status": "Passed",
+        "evidence": "55ec39f4e4144e31a62022b30e152183:analysis",
+        "observed": 123108,
+        "expected": 123108,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "",
+          "product_id": "",
+          "production_line": "Line-3",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R02",
+      "turn": 1,
+      "original": {
+        "name": "oracle.reference_intensity_per_1000",
+        "status": "Failed",
+        "evidence": "55ec39f4e4144e31a62022b30e152183:analysis",
+        "observed": 2.290671605419632,
+        "expected": 1.7952082912712835
+      },
+      "adjudicated": {
+        "name": "oracle.reference_intensity_per_1000",
+        "status": "Passed",
+        "evidence": "55ec39f4e4144e31a62022b30e152183:analysis",
+        "observed": 2.290671605419632,
+        "expected": 2.2906716054196314,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "",
+          "product_id": "",
+          "production_line": "Line-3",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R02",
+      "turn": 2,
+      "original": {
+        "name": "oracle.event_count",
+        "status": "Failed",
+        "evidence": "783fa76451fd44d383a9911d5948b4f2:analysis",
+        "observed": 95,
+        "expected": 1071
+      },
+      "adjudicated": {
+        "name": "oracle.event_count",
+        "status": "Passed",
+        "evidence": "783fa76451fd44d383a9911d5948b4f2:analysis",
+        "observed": 95,
+        "expected": 95,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "",
+          "product_id": "",
+          "production_line": "Line-3",
+          "scenario": "",
+          "severity": "Critical",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R02",
+      "turn": 2,
+      "original": {
+        "name": "oracle.linked_event_count",
+        "status": "Failed",
+        "evidence": "783fa76451fd44d383a9911d5948b4f2:analysis",
+        "observed": 95,
+        "expected": 1067
+      },
+      "adjudicated": {
+        "name": "oracle.linked_event_count",
+        "status": "Passed",
+        "evidence": "783fa76451fd44d383a9911d5948b4f2:analysis",
+        "observed": 95,
+        "expected": 95,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "",
+          "product_id": "",
+          "production_line": "Line-3",
+          "scenario": "",
+          "severity": "Critical",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R02",
+      "turn": 2,
+      "original": {
+        "name": "oracle.critical_count",
+        "status": "Failed",
+        "evidence": "783fa76451fd44d383a9911d5948b4f2:analysis",
+        "observed": 95,
+        "expected": 349
+      },
+      "adjudicated": {
+        "name": "oracle.critical_count",
+        "status": "Passed",
+        "evidence": "783fa76451fd44d383a9911d5948b4f2:analysis",
+        "observed": 95,
+        "expected": 95,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "",
+          "product_id": "",
+          "production_line": "Line-3",
+          "scenario": "",
+          "severity": "Critical",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R02",
+      "turn": 2,
+      "original": {
+        "name": "oracle.cost_known_count",
+        "status": "Failed",
+        "evidence": "783fa76451fd44d383a9911d5948b4f2:analysis",
+        "observed": 93,
+        "expected": 1049
+      },
+      "adjudicated": {
+        "name": "oracle.cost_known_count",
+        "status": "Passed",
+        "evidence": "783fa76451fd44d383a9911d5948b4f2:analysis",
+        "observed": 93,
+        "expected": 93,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "",
+          "product_id": "",
+          "production_line": "Line-3",
+          "scenario": "",
+          "severity": "Critical",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R02",
+      "turn": 2,
+      "original": {
+        "name": "oracle.cost_unknown_count",
+        "status": "Failed",
+        "evidence": "783fa76451fd44d383a9911d5948b4f2:analysis",
+        "observed": 2,
+        "expected": 22
+      },
+      "adjudicated": {
+        "name": "oracle.cost_unknown_count",
+        "status": "Passed",
+        "evidence": "783fa76451fd44d383a9911d5948b4f2:analysis",
+        "observed": 2,
+        "expected": 2,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "",
+          "product_id": "",
+          "production_line": "Line-3",
+          "scenario": "",
+          "severity": "Critical",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R02",
+      "turn": 2,
+      "original": {
+        "name": "oracle.known_repair_cost",
+        "status": "Failed",
+        "evidence": "783fa76451fd44d383a9911d5948b4f2:analysis",
+        "observed": 65297.27,
+        "expected": "508864.39"
+      },
+      "adjudicated": {
+        "name": "oracle.known_repair_cost",
+        "status": "Passed",
+        "evidence": "783fa76451fd44d383a9911d5948b4f2:analysis",
+        "observed": 65297.27,
+        "expected": "65297.27",
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "",
+          "product_id": "",
+          "production_line": "Line-3",
+          "scenario": "",
+          "severity": "Critical",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R02",
+      "turn": 2,
+      "original": {
+        "name": "oracle.cost_coverage_pct",
+        "status": "Failed",
+        "evidence": "783fa76451fd44d383a9911d5948b4f2:analysis",
+        "observed": 97.89473684210527,
+        "expected": 97.94584500466853
+      },
+      "adjudicated": {
+        "name": "oracle.cost_coverage_pct",
+        "status": "Passed",
+        "evidence": "783fa76451fd44d383a9911d5948b4f2:analysis",
+        "observed": 97.89473684210527,
+        "expected": 97.89473684210526,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "",
+          "product_id": "",
+          "production_line": "Line-3",
+          "scenario": "",
+          "severity": "Critical",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R02",
+      "turn": 2,
+      "original": {
+        "name": "oracle.cohort_product_count",
+        "status": "Failed",
+        "evidence": "783fa76451fd44d383a9911d5948b4f2:analysis",
+        "observed": 29,
+        "expected": 100
+      },
+      "adjudicated": {
+        "name": "oracle.cohort_product_count",
+        "status": "Passed",
+        "evidence": "783fa76451fd44d383a9911d5948b4f2:analysis",
+        "observed": 29,
+        "expected": 29,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "",
+          "product_id": "",
+          "production_line": "Line-3",
+          "scenario": "",
+          "severity": "Critical",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R02",
+      "turn": 2,
+      "original": {
+        "name": "oracle.reference_output",
+        "status": "Failed",
+        "evidence": "783fa76451fd44d383a9911d5948b4f2:analysis",
+        "observed": 123108,
+        "expected": 594360
+      },
+      "adjudicated": {
+        "name": "oracle.reference_output",
+        "status": "Passed",
+        "evidence": "783fa76451fd44d383a9911d5948b4f2:analysis",
+        "observed": 123108,
+        "expected": 123108,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "",
+          "product_id": "",
+          "production_line": "Line-3",
+          "scenario": "",
+          "severity": "Critical",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R02",
+      "turn": 2,
+      "original": {
+        "name": "oracle.reference_intensity_per_1000",
+        "status": "Failed",
+        "evidence": "783fa76451fd44d383a9911d5948b4f2:analysis",
+        "observed": 0.7716801507619326,
+        "expected": 1.7952082912712835
+      },
+      "adjudicated": {
+        "name": "oracle.reference_intensity_per_1000",
+        "status": "Passed",
+        "evidence": "783fa76451fd44d383a9911d5948b4f2:analysis",
+        "observed": 0.7716801507619326,
+        "expected": 0.7716801507619326,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "",
+          "product_id": "",
+          "production_line": "Line-3",
+          "scenario": "",
+          "severity": "Critical",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.event_count",
+        "status": "Failed",
+        "evidence": "0812dccf6a5b4211acdedaa2581dcdad:analysis",
+        "observed": 325,
+        "expected": 1071
+      },
+      "adjudicated": {
+        "name": "oracle.event_count",
+        "status": "Passed",
+        "evidence": "0812dccf6a5b4211acdedaa2581dcdad:analysis",
+        "observed": 325,
+        "expected": 325,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Automated Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.linked_event_count",
+        "status": "Failed",
+        "evidence": "0812dccf6a5b4211acdedaa2581dcdad:analysis",
+        "observed": 325,
+        "expected": 1067
+      },
+      "adjudicated": {
+        "name": "oracle.linked_event_count",
+        "status": "Passed",
+        "evidence": "0812dccf6a5b4211acdedaa2581dcdad:analysis",
+        "observed": 325,
+        "expected": 325,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Automated Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.critical_count",
+        "status": "Failed",
+        "evidence": "0812dccf6a5b4211acdedaa2581dcdad:analysis",
+        "observed": 97,
+        "expected": 349
+      },
+      "adjudicated": {
+        "name": "oracle.critical_count",
+        "status": "Passed",
+        "evidence": "0812dccf6a5b4211acdedaa2581dcdad:analysis",
+        "observed": 97,
+        "expected": 97,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Automated Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.cost_known_count",
+        "status": "Failed",
+        "evidence": "0812dccf6a5b4211acdedaa2581dcdad:analysis",
+        "observed": 314,
+        "expected": 1049
+      },
+      "adjudicated": {
+        "name": "oracle.cost_known_count",
+        "status": "Passed",
+        "evidence": "0812dccf6a5b4211acdedaa2581dcdad:analysis",
+        "observed": 314,
+        "expected": 314,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Automated Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.cost_unknown_count",
+        "status": "Failed",
+        "evidence": "0812dccf6a5b4211acdedaa2581dcdad:analysis",
+        "observed": 11,
+        "expected": 22
+      },
+      "adjudicated": {
+        "name": "oracle.cost_unknown_count",
+        "status": "Passed",
+        "evidence": "0812dccf6a5b4211acdedaa2581dcdad:analysis",
+        "observed": 11,
+        "expected": 11,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Automated Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.known_repair_cost",
+        "status": "Failed",
+        "evidence": "0812dccf6a5b4211acdedaa2581dcdad:analysis",
+        "observed": 152006.92,
+        "expected": "508864.39"
+      },
+      "adjudicated": {
+        "name": "oracle.known_repair_cost",
+        "status": "Passed",
+        "evidence": "0812dccf6a5b4211acdedaa2581dcdad:analysis",
+        "observed": 152006.92,
+        "expected": "152006.92",
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Automated Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.cost_coverage_pct",
+        "status": "Failed",
+        "evidence": "0812dccf6a5b4211acdedaa2581dcdad:analysis",
+        "observed": 96.61538461538461,
+        "expected": 97.94584500466853
+      },
+      "adjudicated": {
+        "name": "oracle.cost_coverage_pct",
+        "status": "Passed",
+        "evidence": "0812dccf6a5b4211acdedaa2581dcdad:analysis",
+        "observed": 96.61538461538461,
+        "expected": 96.61538461538461,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Automated Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.reference_intensity_per_1000",
+        "status": "Failed",
+        "evidence": "0812dccf6a5b4211acdedaa2581dcdad:analysis",
+        "observed": 0.5468066491688539,
+        "expected": 1.7952082912712835
+      },
+      "adjudicated": {
+        "name": "oracle.reference_intensity_per_1000",
+        "status": "Passed",
+        "evidence": "0812dccf6a5b4211acdedaa2581dcdad:analysis",
+        "observed": 0.5468066491688539,
+        "expected": 0.5468066491688539,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Automated Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.event_count",
+        "status": "Failed",
+        "evidence": "4dd6a1aa53c54bcd86d2c1e1b0b1718c:analysis",
+        "observed": 374,
+        "expected": 1071
+      },
+      "adjudicated": {
+        "name": "oracle.event_count",
+        "status": "Passed",
+        "evidence": "4dd6a1aa53c54bcd86d2c1e1b0b1718c:analysis",
+        "observed": 374,
+        "expected": 374,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Manual Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.linked_event_count",
+        "status": "Failed",
+        "evidence": "4dd6a1aa53c54bcd86d2c1e1b0b1718c:analysis",
+        "observed": 371,
+        "expected": 1067
+      },
+      "adjudicated": {
+        "name": "oracle.linked_event_count",
+        "status": "Passed",
+        "evidence": "4dd6a1aa53c54bcd86d2c1e1b0b1718c:analysis",
+        "observed": 371,
+        "expected": 371,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Manual Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.critical_count",
+        "status": "Failed",
+        "evidence": "4dd6a1aa53c54bcd86d2c1e1b0b1718c:analysis",
+        "observed": 124,
+        "expected": 349
+      },
+      "adjudicated": {
+        "name": "oracle.critical_count",
+        "status": "Passed",
+        "evidence": "4dd6a1aa53c54bcd86d2c1e1b0b1718c:analysis",
+        "observed": 124,
+        "expected": 124,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Manual Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.cost_known_count",
+        "status": "Failed",
+        "evidence": "4dd6a1aa53c54bcd86d2c1e1b0b1718c:analysis",
+        "observed": 369,
+        "expected": 1049
+      },
+      "adjudicated": {
+        "name": "oracle.cost_known_count",
+        "status": "Passed",
+        "evidence": "4dd6a1aa53c54bcd86d2c1e1b0b1718c:analysis",
+        "observed": 369,
+        "expected": 369,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Manual Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.cost_unknown_count",
+        "status": "Failed",
+        "evidence": "4dd6a1aa53c54bcd86d2c1e1b0b1718c:analysis",
+        "observed": 5,
+        "expected": 22
+      },
+      "adjudicated": {
+        "name": "oracle.cost_unknown_count",
+        "status": "Passed",
+        "evidence": "4dd6a1aa53c54bcd86d2c1e1b0b1718c:analysis",
+        "observed": 5,
+        "expected": 5,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Manual Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.known_repair_cost",
+        "status": "Failed",
+        "evidence": "4dd6a1aa53c54bcd86d2c1e1b0b1718c:analysis",
+        "observed": 184257.56,
+        "expected": "508864.39"
+      },
+      "adjudicated": {
+        "name": "oracle.known_repair_cost",
+        "status": "Passed",
+        "evidence": "4dd6a1aa53c54bcd86d2c1e1b0b1718c:analysis",
+        "observed": 184257.56,
+        "expected": "184257.56",
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Manual Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.cost_coverage_pct",
+        "status": "Failed",
+        "evidence": "4dd6a1aa53c54bcd86d2c1e1b0b1718c:analysis",
+        "observed": 98.66310160427807,
+        "expected": 97.94584500466853
+      },
+      "adjudicated": {
+        "name": "oracle.cost_coverage_pct",
+        "status": "Passed",
+        "evidence": "4dd6a1aa53c54bcd86d2c1e1b0b1718c:analysis",
+        "observed": 98.66310160427807,
+        "expected": 98.66310160427807,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Manual Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.reference_intensity_per_1000",
+        "status": "Failed",
+        "evidence": "4dd6a1aa53c54bcd86d2c1e1b0b1718c:analysis",
+        "observed": 0.6242008210512148,
+        "expected": 1.7952082912712835
+      },
+      "adjudicated": {
+        "name": "oracle.reference_intensity_per_1000",
+        "status": "Passed",
+        "evidence": "4dd6a1aa53c54bcd86d2c1e1b0b1718c:analysis",
+        "observed": 0.6242008210512148,
+        "expected": 0.6242008210512148,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Manual Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.event_count",
+        "status": "Failed",
+        "evidence": "8d6b879bc20247358ce69d040b50b7ba:analysis",
+        "observed": 372,
+        "expected": 1071
+      },
+      "adjudicated": {
+        "name": "oracle.event_count",
+        "status": "Passed",
+        "evidence": "8d6b879bc20247358ce69d040b50b7ba:analysis",
+        "observed": 372,
+        "expected": 372,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Visual Inspection",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.linked_event_count",
+        "status": "Failed",
+        "evidence": "8d6b879bc20247358ce69d040b50b7ba:analysis",
+        "observed": 371,
+        "expected": 1067
+      },
+      "adjudicated": {
+        "name": "oracle.linked_event_count",
+        "status": "Passed",
+        "evidence": "8d6b879bc20247358ce69d040b50b7ba:analysis",
+        "observed": 371,
+        "expected": 371,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Visual Inspection",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.critical_count",
+        "status": "Failed",
+        "evidence": "8d6b879bc20247358ce69d040b50b7ba:analysis",
+        "observed": 128,
+        "expected": 349
+      },
+      "adjudicated": {
+        "name": "oracle.critical_count",
+        "status": "Passed",
+        "evidence": "8d6b879bc20247358ce69d040b50b7ba:analysis",
+        "observed": 128,
+        "expected": 128,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Visual Inspection",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.cost_known_count",
+        "status": "Failed",
+        "evidence": "8d6b879bc20247358ce69d040b50b7ba:analysis",
+        "observed": 366,
+        "expected": 1049
+      },
+      "adjudicated": {
+        "name": "oracle.cost_known_count",
+        "status": "Passed",
+        "evidence": "8d6b879bc20247358ce69d040b50b7ba:analysis",
+        "observed": 366,
+        "expected": 366,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Visual Inspection",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.cost_unknown_count",
+        "status": "Failed",
+        "evidence": "8d6b879bc20247358ce69d040b50b7ba:analysis",
+        "observed": 6,
+        "expected": 22
+      },
+      "adjudicated": {
+        "name": "oracle.cost_unknown_count",
+        "status": "Passed",
+        "evidence": "8d6b879bc20247358ce69d040b50b7ba:analysis",
+        "observed": 6,
+        "expected": 6,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Visual Inspection",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.known_repair_cost",
+        "status": "Failed",
+        "evidence": "8d6b879bc20247358ce69d040b50b7ba:analysis",
+        "observed": 172599.91,
+        "expected": "508864.39"
+      },
+      "adjudicated": {
+        "name": "oracle.known_repair_cost",
+        "status": "Passed",
+        "evidence": "8d6b879bc20247358ce69d040b50b7ba:analysis",
+        "observed": 172599.91,
+        "expected": "172599.91",
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Visual Inspection",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.cost_coverage_pct",
+        "status": "Failed",
+        "evidence": "8d6b879bc20247358ce69d040b50b7ba:analysis",
+        "observed": 98.38709677419355,
+        "expected": 97.94584500466853
+      },
+      "adjudicated": {
+        "name": "oracle.cost_coverage_pct",
+        "status": "Passed",
+        "evidence": "8d6b879bc20247358ce69d040b50b7ba:analysis",
+        "observed": 98.38709677419355,
+        "expected": 98.38709677419355,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Visual Inspection",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.reference_intensity_per_1000",
+        "status": "Failed",
+        "evidence": "8d6b879bc20247358ce69d040b50b7ba:analysis",
+        "observed": 0.6242008210512148,
+        "expected": 1.7952082912712835
+      },
+      "adjudicated": {
+        "name": "oracle.reference_intensity_per_1000",
+        "status": "Passed",
+        "evidence": "8d6b879bc20247358ce69d040b50b7ba:analysis",
+        "observed": 0.6242008210512148,
+        "expected": 0.6242008210512148,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Visual Inspection",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.event_count",
+        "status": "Failed",
+        "evidence": "580c551226534e39a76e96ebcc71427e:analysis",
+        "observed": 325,
+        "expected": 1071
+      },
+      "adjudicated": {
+        "name": "oracle.event_count",
+        "status": "Passed",
+        "evidence": "580c551226534e39a76e96ebcc71427e:analysis",
+        "observed": 325,
+        "expected": 325,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Automated Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.linked_event_count",
+        "status": "Failed",
+        "evidence": "580c551226534e39a76e96ebcc71427e:analysis",
+        "observed": 325,
+        "expected": 1067
+      },
+      "adjudicated": {
+        "name": "oracle.linked_event_count",
+        "status": "Passed",
+        "evidence": "580c551226534e39a76e96ebcc71427e:analysis",
+        "observed": 325,
+        "expected": 325,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Automated Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.critical_count",
+        "status": "Failed",
+        "evidence": "580c551226534e39a76e96ebcc71427e:analysis",
+        "observed": 97,
+        "expected": 349
+      },
+      "adjudicated": {
+        "name": "oracle.critical_count",
+        "status": "Passed",
+        "evidence": "580c551226534e39a76e96ebcc71427e:analysis",
+        "observed": 97,
+        "expected": 97,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Automated Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.cost_known_count",
+        "status": "Failed",
+        "evidence": "580c551226534e39a76e96ebcc71427e:analysis",
+        "observed": 314,
+        "expected": 1049
+      },
+      "adjudicated": {
+        "name": "oracle.cost_known_count",
+        "status": "Passed",
+        "evidence": "580c551226534e39a76e96ebcc71427e:analysis",
+        "observed": 314,
+        "expected": 314,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Automated Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.cost_unknown_count",
+        "status": "Failed",
+        "evidence": "580c551226534e39a76e96ebcc71427e:analysis",
+        "observed": 11,
+        "expected": 22
+      },
+      "adjudicated": {
+        "name": "oracle.cost_unknown_count",
+        "status": "Passed",
+        "evidence": "580c551226534e39a76e96ebcc71427e:analysis",
+        "observed": 11,
+        "expected": 11,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Automated Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.known_repair_cost",
+        "status": "Failed",
+        "evidence": "580c551226534e39a76e96ebcc71427e:analysis",
+        "observed": 152006.92,
+        "expected": "508864.39"
+      },
+      "adjudicated": {
+        "name": "oracle.known_repair_cost",
+        "status": "Passed",
+        "evidence": "580c551226534e39a76e96ebcc71427e:analysis",
+        "observed": 152006.92,
+        "expected": "152006.92",
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Automated Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.cost_coverage_pct",
+        "status": "Failed",
+        "evidence": "580c551226534e39a76e96ebcc71427e:analysis",
+        "observed": 96.61538461538461,
+        "expected": 97.94584500466853
+      },
+      "adjudicated": {
+        "name": "oracle.cost_coverage_pct",
+        "status": "Passed",
+        "evidence": "580c551226534e39a76e96ebcc71427e:analysis",
+        "observed": 96.61538461538461,
+        "expected": 96.61538461538461,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Automated Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.reference_intensity_per_1000",
+        "status": "Failed",
+        "evidence": "580c551226534e39a76e96ebcc71427e:analysis",
+        "observed": 0.5468066491688539,
+        "expected": 1.7952082912712835
+      },
+      "adjudicated": {
+        "name": "oracle.reference_intensity_per_1000",
+        "status": "Passed",
+        "evidence": "580c551226534e39a76e96ebcc71427e:analysis",
+        "observed": 0.5468066491688539,
+        "expected": 0.5468066491688539,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Automated Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.event_count",
+        "status": "Failed",
+        "evidence": "aa501319db304248a96131a2d4cdd98a:analysis",
+        "observed": 374,
+        "expected": 1071
+      },
+      "adjudicated": {
+        "name": "oracle.event_count",
+        "status": "Passed",
+        "evidence": "aa501319db304248a96131a2d4cdd98a:analysis",
+        "observed": 374,
+        "expected": 374,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Manual Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.linked_event_count",
+        "status": "Failed",
+        "evidence": "aa501319db304248a96131a2d4cdd98a:analysis",
+        "observed": 371,
+        "expected": 1067
+      },
+      "adjudicated": {
+        "name": "oracle.linked_event_count",
+        "status": "Passed",
+        "evidence": "aa501319db304248a96131a2d4cdd98a:analysis",
+        "observed": 371,
+        "expected": 371,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Manual Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.critical_count",
+        "status": "Failed",
+        "evidence": "aa501319db304248a96131a2d4cdd98a:analysis",
+        "observed": 124,
+        "expected": 349
+      },
+      "adjudicated": {
+        "name": "oracle.critical_count",
+        "status": "Passed",
+        "evidence": "aa501319db304248a96131a2d4cdd98a:analysis",
+        "observed": 124,
+        "expected": 124,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Manual Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.cost_known_count",
+        "status": "Failed",
+        "evidence": "aa501319db304248a96131a2d4cdd98a:analysis",
+        "observed": 369,
+        "expected": 1049
+      },
+      "adjudicated": {
+        "name": "oracle.cost_known_count",
+        "status": "Passed",
+        "evidence": "aa501319db304248a96131a2d4cdd98a:analysis",
+        "observed": 369,
+        "expected": 369,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Manual Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.cost_unknown_count",
+        "status": "Failed",
+        "evidence": "aa501319db304248a96131a2d4cdd98a:analysis",
+        "observed": 5,
+        "expected": 22
+      },
+      "adjudicated": {
+        "name": "oracle.cost_unknown_count",
+        "status": "Passed",
+        "evidence": "aa501319db304248a96131a2d4cdd98a:analysis",
+        "observed": 5,
+        "expected": 5,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Manual Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.known_repair_cost",
+        "status": "Failed",
+        "evidence": "aa501319db304248a96131a2d4cdd98a:analysis",
+        "observed": 184257.56,
+        "expected": "508864.39"
+      },
+      "adjudicated": {
+        "name": "oracle.known_repair_cost",
+        "status": "Passed",
+        "evidence": "aa501319db304248a96131a2d4cdd98a:analysis",
+        "observed": 184257.56,
+        "expected": "184257.56",
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Manual Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.cost_coverage_pct",
+        "status": "Failed",
+        "evidence": "aa501319db304248a96131a2d4cdd98a:analysis",
+        "observed": 98.66310160427807,
+        "expected": 97.94584500466853
+      },
+      "adjudicated": {
+        "name": "oracle.cost_coverage_pct",
+        "status": "Passed",
+        "evidence": "aa501319db304248a96131a2d4cdd98a:analysis",
+        "observed": 98.66310160427807,
+        "expected": 98.66310160427807,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Manual Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.reference_intensity_per_1000",
+        "status": "Failed",
+        "evidence": "aa501319db304248a96131a2d4cdd98a:analysis",
+        "observed": 0.6242008210512148,
+        "expected": 1.7952082912712835
+      },
+      "adjudicated": {
+        "name": "oracle.reference_intensity_per_1000",
+        "status": "Passed",
+        "evidence": "aa501319db304248a96131a2d4cdd98a:analysis",
+        "observed": 0.6242008210512148,
+        "expected": 0.6242008210512148,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Manual Testing",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.event_count",
+        "status": "Failed",
+        "evidence": "9b88d817b7484edebdbed298ec4105b7:analysis",
+        "observed": 372,
+        "expected": 1071
+      },
+      "adjudicated": {
+        "name": "oracle.event_count",
+        "status": "Passed",
+        "evidence": "9b88d817b7484edebdbed298ec4105b7:analysis",
+        "observed": 372,
+        "expected": 372,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Visual Inspection",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.linked_event_count",
+        "status": "Failed",
+        "evidence": "9b88d817b7484edebdbed298ec4105b7:analysis",
+        "observed": 371,
+        "expected": 1067
+      },
+      "adjudicated": {
+        "name": "oracle.linked_event_count",
+        "status": "Passed",
+        "evidence": "9b88d817b7484edebdbed298ec4105b7:analysis",
+        "observed": 371,
+        "expected": 371,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Visual Inspection",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.critical_count",
+        "status": "Failed",
+        "evidence": "9b88d817b7484edebdbed298ec4105b7:analysis",
+        "observed": 128,
+        "expected": 349
+      },
+      "adjudicated": {
+        "name": "oracle.critical_count",
+        "status": "Passed",
+        "evidence": "9b88d817b7484edebdbed298ec4105b7:analysis",
+        "observed": 128,
+        "expected": 128,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Visual Inspection",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.cost_known_count",
+        "status": "Failed",
+        "evidence": "9b88d817b7484edebdbed298ec4105b7:analysis",
+        "observed": 366,
+        "expected": 1049
+      },
+      "adjudicated": {
+        "name": "oracle.cost_known_count",
+        "status": "Passed",
+        "evidence": "9b88d817b7484edebdbed298ec4105b7:analysis",
+        "observed": 366,
+        "expected": 366,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Visual Inspection",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.cost_unknown_count",
+        "status": "Failed",
+        "evidence": "9b88d817b7484edebdbed298ec4105b7:analysis",
+        "observed": 6,
+        "expected": 22
+      },
+      "adjudicated": {
+        "name": "oracle.cost_unknown_count",
+        "status": "Passed",
+        "evidence": "9b88d817b7484edebdbed298ec4105b7:analysis",
+        "observed": 6,
+        "expected": 6,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Visual Inspection",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.known_repair_cost",
+        "status": "Failed",
+        "evidence": "9b88d817b7484edebdbed298ec4105b7:analysis",
+        "observed": 172599.91,
+        "expected": "508864.39"
+      },
+      "adjudicated": {
+        "name": "oracle.known_repair_cost",
+        "status": "Passed",
+        "evidence": "9b88d817b7484edebdbed298ec4105b7:analysis",
+        "observed": 172599.91,
+        "expected": "172599.91",
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Visual Inspection",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.cost_coverage_pct",
+        "status": "Failed",
+        "evidence": "9b88d817b7484edebdbed298ec4105b7:analysis",
+        "observed": 98.38709677419355,
+        "expected": 97.94584500466853
+      },
+      "adjudicated": {
+        "name": "oracle.cost_coverage_pct",
+        "status": "Passed",
+        "evidence": "9b88d817b7484edebdbed298ec4105b7:analysis",
+        "observed": 98.38709677419355,
+        "expected": 98.38709677419355,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Visual Inspection",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R04",
+      "turn": 1,
+      "original": {
+        "name": "oracle.reference_intensity_per_1000",
+        "status": "Failed",
+        "evidence": "9b88d817b7484edebdbed298ec4105b7:analysis",
+        "observed": 0.6242008210512148,
+        "expected": 1.7952082912712835
+      },
+      "adjudicated": {
+        "name": "oracle.reference_intensity_per_1000",
+        "status": "Passed",
+        "evidence": "9b88d817b7484edebdbed298ec4105b7:analysis",
+        "observed": 0.6242008210512148,
+        "expected": 0.6242008210512148,
+        "scope": {
+          "category": "",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "Visual Inspection",
+          "product_id": "",
+          "production_line": "",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R08",
+      "turn": 1,
+      "original": {
+        "name": "oracle.event_count",
+        "status": "Failed",
+        "evidence": "a100b7a322394c47aada765d19dba2d5:analysis",
+        "observed": 0,
+        "expected": 1071
+      },
+      "adjudicated": {
+        "name": "oracle.event_count",
+        "status": "Passed",
+        "evidence": "a100b7a322394c47aada765d19dba2d5:analysis",
+        "observed": 0,
+        "expected": 0,
+        "scope": {
+          "category": "Category 2",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "",
+          "product_id": "",
+          "production_line": "Line-1",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R08",
+      "turn": 1,
+      "original": {
+        "name": "oracle.linked_event_count",
+        "status": "Failed",
+        "evidence": "a100b7a322394c47aada765d19dba2d5:analysis",
+        "observed": 0,
+        "expected": 1067
+      },
+      "adjudicated": {
+        "name": "oracle.linked_event_count",
+        "status": "Passed",
+        "evidence": "a100b7a322394c47aada765d19dba2d5:analysis",
+        "observed": 0,
+        "expected": 0,
+        "scope": {
+          "category": "Category 2",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "",
+          "product_id": "",
+          "production_line": "Line-1",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R08",
+      "turn": 1,
+      "original": {
+        "name": "oracle.critical_count",
+        "status": "Failed",
+        "evidence": "a100b7a322394c47aada765d19dba2d5:analysis",
+        "observed": 0,
+        "expected": 349
+      },
+      "adjudicated": {
+        "name": "oracle.critical_count",
+        "status": "Passed",
+        "evidence": "a100b7a322394c47aada765d19dba2d5:analysis",
+        "observed": 0,
+        "expected": 0,
+        "scope": {
+          "category": "Category 2",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "",
+          "product_id": "",
+          "production_line": "Line-1",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R08",
+      "turn": 1,
+      "original": {
+        "name": "oracle.cost_known_count",
+        "status": "Failed",
+        "evidence": "a100b7a322394c47aada765d19dba2d5:analysis",
+        "observed": 0,
+        "expected": 1049
+      },
+      "adjudicated": {
+        "name": "oracle.cost_known_count",
+        "status": "Passed",
+        "evidence": "a100b7a322394c47aada765d19dba2d5:analysis",
+        "observed": 0,
+        "expected": 0,
+        "scope": {
+          "category": "Category 2",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "",
+          "product_id": "",
+          "production_line": "Line-1",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R08",
+      "turn": 1,
+      "original": {
+        "name": "oracle.cost_unknown_count",
+        "status": "Failed",
+        "evidence": "a100b7a322394c47aada765d19dba2d5:analysis",
+        "observed": 0,
+        "expected": 22
+      },
+      "adjudicated": {
+        "name": "oracle.cost_unknown_count",
+        "status": "Passed",
+        "evidence": "a100b7a322394c47aada765d19dba2d5:analysis",
+        "observed": 0,
+        "expected": 0,
+        "scope": {
+          "category": "Category 2",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "",
+          "product_id": "",
+          "production_line": "Line-1",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R08",
+      "turn": 1,
+      "original": {
+        "name": "oracle.known_repair_cost",
+        "status": "Failed",
+        "evidence": "a100b7a322394c47aada765d19dba2d5:analysis",
+        "observed": 0.0,
+        "expected": "508864.39"
+      },
+      "adjudicated": {
+        "name": "oracle.known_repair_cost",
+        "status": "Passed",
+        "evidence": "a100b7a322394c47aada765d19dba2d5:analysis",
+        "observed": 0.0,
+        "expected": "0",
+        "scope": {
+          "category": "Category 2",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "",
+          "product_id": "",
+          "production_line": "Line-1",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R08",
+      "turn": 1,
+      "original": {
+        "name": "oracle.cost_coverage_pct",
+        "status": "Failed",
+        "evidence": "a100b7a322394c47aada765d19dba2d5:analysis",
+        "observed": null,
+        "expected": 97.94584500466853
+      },
+      "adjudicated": {
+        "name": "oracle.cost_coverage_pct",
+        "status": "Passed",
+        "evidence": "a100b7a322394c47aada765d19dba2d5:analysis",
+        "scope": {
+          "category": "Category 2",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "",
+          "product_id": "",
+          "production_line": "Line-1",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R08",
+      "turn": 1,
+      "original": {
+        "name": "oracle.cohort_product_count",
+        "status": "Failed",
+        "evidence": "a100b7a322394c47aada765d19dba2d5:analysis",
+        "observed": 0,
+        "expected": 100
+      },
+      "adjudicated": {
+        "name": "oracle.cohort_product_count",
+        "status": "Passed",
+        "evidence": "a100b7a322394c47aada765d19dba2d5:analysis",
+        "observed": 0,
+        "expected": 0,
+        "scope": {
+          "category": "Category 2",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "",
+          "product_id": "",
+          "production_line": "Line-1",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R08",
+      "turn": 1,
+      "original": {
+        "name": "oracle.reference_output",
+        "status": "Failed",
+        "evidence": "a100b7a322394c47aada765d19dba2d5:analysis",
+        "observed": null,
+        "expected": 594360
+      },
+      "adjudicated": {
+        "name": "oracle.reference_output",
+        "status": "Passed",
+        "evidence": "a100b7a322394c47aada765d19dba2d5:analysis",
+        "scope": {
+          "category": "Category 2",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "",
+          "product_id": "",
+          "production_line": "Line-1",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    },
+    {
+      "case_id": "R08",
+      "turn": 1,
+      "original": {
+        "name": "oracle.reference_intensity_per_1000",
+        "status": "Failed",
+        "evidence": "a100b7a322394c47aada765d19dba2d5:analysis",
+        "observed": null,
+        "expected": 1.7952082912712835
+      },
+      "adjudicated": {
+        "name": "oracle.reference_intensity_per_1000",
+        "status": "Passed",
+        "evidence": "a100b7a322394c47aada765d19dba2d5:analysis",
+        "scope": {
+          "category": "Category 2",
+          "defect_location": "",
+          "defect_type": "",
+          "end_month": "2024-06",
+          "inspection_method": "",
+          "product_id": "",
+          "production_line": "Line-1",
+          "scenario": "",
+          "severity": "",
+          "start_month": "2024-01"
+        },
+        "scope_evidence_path": "$.context.filters"
+      }
+    }
+  ]
+}

@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "id": "rebuild-bilingual-handover-addendum-v1-20261017",
+  "frozen_at_utc": "2026-10-16T18:54:00.277416+00:00",
+  "scope": "Separate Vietnamese handover acceptance addendum; not part of the frozen R01-R08 eight-case twelve-turn suite and not a general model-quality benchmark",
+  "authorization": {
+    "preparation": "Coordinator requested a separate frozen protocol during main post-v5; no paid addendum dispatch yet",
+    "paid_dispatch_prerequisites": [
+      "Main post-v5 original results, source identity and accounting sealed",
+      "Separate explicit coordinator release after reviewing the main outcomes and this frozen addendum",
+      "Current source/static/numeric/focused gates and cumulative budget still valid"
+    ]
+  },
+  "relationship": {
+    "main_protocol": "evals/rebuild_protocol_v1.json",
+    "main_protocol_sha256": "a45c5b720da94f7f2cf4c9c6a0e4d5a46a97e71aa1a731dcfe8f57aa9ed4a4d5",
+    "main_suite": "post-v5",
+    "main_unchanged": true,
+    "main_english_brief_case": "R05",
+    "interpretation": "Main English R05 plus this fresh Vietnamese request can establish two observed handover languages only if each actually passes. Earlier Vietnamese investigation output is not substituted for a handover brief."
+  },
+  "runtime": {
+    "model": "gpt-6-luna",
+    "reasoning_effort": "medium",
+    "path": "FastAPI app HTTP -> Workspace -> official Agents SDK Runner -> Responses -> actual backend tools",
+    "history": "production local history only",
+    "hosted_tools": false,
+    "tracing": "local durable events only; hosted tracing disabled"
+  },
+  "source": {
+    "url": "https://raw.githubusercontent.com/phongtdt/RFID_Data-Analyst_Case-Study-Oct-2026/main/mock-api/defect_records.json",
+    "commit_context": "f6adf2451ac6297c1b749abc131cff8a46020dc9",
+    "etag": "\"0de7f6b5510df586668a8c950fa324544cc0ceef704225244e5151095cbdce1c\"",
+    "fetched_at_utc": "2026-10-16T15:20:41.376739+00:00",
+    "content_type": "text/plain; charset=utf-8",
+    "sha256": "863ca40ca37f639c064ce0bb66e679d7c3ab4ceca8cd79569d31310004728dc8",
+    "schema": "array of defect records"
+  },
+  "master_sha256": "8772e8f0d0fbe1bf66b259859055e1742b066f91a31777b9f5e4630f606b9a86",
+  "oracle_sha256": "c6cce85ed7be987f1d797ef8e08438810fc8d855b82e896ac9940b50f0f1006c",
+  "resource_limits": {
+    "full_suite_usd": 5,
+    "task_usd": 20,
+    "per_turn_usd": 0.3,
+    "max_output_tokens": 12000,
+    "qa_max_retries": 2,
+    "max_sdk_turns": 30,
+    "task_timeout_seconds": 480,
+    "cost_estimate_before_run_usd": {
+      "low": 0.005,
+      "high": 0.05
+    },
+    "application_run_timeout_seconds": 240,
+    "reservation_includes": "All actual analyst, repair and semantic-QA model calls within this one application run"
+  },
+  "pricing": {
+    "verified_at_utc": "2026-10-16T15:20:41.432738+00:00",
+    "source": "https://developers.openai.com/api/docs/models/gpt-6-luna",
+    "input_per_million": 0.1,
+    "cached_input_per_million": 0.01,
+    "cache_write_per_million": 0.125,
+    "output_per_million": 0.5,
+    "accounting": "cached is subset of input; reasoning is subset of output; missing details remain null"
+  },
+  "primary_metric": "Strict completion of the single frozen Vietnamese handover task, scored separately from main R01-R08",
+  "scoring": "Independent source arithmetic and sealed evidence/ref/scope checks plus human readback of the actual Vietnamese report, persisted editable investigation and downloaded bytes; no model judge. Application semantic QA alone cannot establish acceptance.",
+  "stopping_rule": "One fresh one-turn addendum after explicit release; stop dispatch for provider stop, unknown unresolved usage, source/code drift or budget; preserve Failed/Blocked/Not run. Repairs use same development tasks and are labeled non-blind reruns.",
+  "exclusions": [
+    "Historical eval results and historical spend",
+    "No hosted search, storage, sandbox, MCP or external sends",
+    "Deterministic failure probes are separate simulated evidence and do not count as live task passes",
+    "No automatic retry, cross-language priority identity requirement, or reuse of a previous conversation/draft",
+    "No addendum status changes the frozen main suite numerator or denominator",
+    "No instruction, oracle, rubric, effort, output limit or application deadline is changed for this task"
+  ],
+  "live_cases": [
+    {
+      "id": "VH01",
+      "name": "Vietnamese three-priority handover brief and working export",
+      "language": "vi",
+      "filters": {},
+      "turns": [
+        "Chuẩn bị ba ưu tiên và brief bàn giao bằng tiếng Việt, kèm Evidence, Action, vai trò Owner đề xuất, Metric và giới hạn. Lưu bản nháp có thể chỉnh sửa và xuất file; không gửi ra ngoài."
+      ],
+      "requirements": [
+        "three_priorities",
+        "evidence_action_proposed_role_metric_limits",
+        "source_bound_evidence_and_scopes",
+        "natural_vietnamese_brief",
+        "saved_editable_investigation",
+        "working_vi_export_readback",
+        "no_invented_causality_currency_savings_or_owner",
+        "no_external_send"
+      ],
+      "numeric_scopes": [
+        "canonical"
+      ]
+    }
+  ],
+  "manual_rubric": {
+    "three_priorities": "Exactly three usable priorities are present in the delivered handover and persisted work. Their order and selection must be supported by observed evidence; matching English R05 choices is not required.",
+    "evidence_action_proposed_role_metric_limits": "Each priority supplies evidence, a concrete action, an explicitly proposed role owner, and a measurable metric. Distinguish observed findings from proposals. Explain material measurement/data limits rather than asserting efficacy or causal attribution.",
+    "source_bound_evidence_and_scopes": "Resolve every numerical citation to its actual retained tool receipt/path and independently recompute relevant observed values from the frozen raw/master sources. The fresh initial scope is January-June 2024 canonical with no category, line, severity or event filter; any intentional nested comparison must declare its own exact scope.",
+    "natural_vietnamese_brief": "Read the actual delivered response, saved brief and exported human-facing text. They must communicate naturally in Vietnamese; the requested Evidence/Action/Owner/Metric headings and machine keys/identifiers may remain English. English-only substantive brief content fails.",
+    "saved_editable_investigation": "Retrieve the real saved investigation through the application HTTP API, verify nonempty brief plus the same three priorities, current scope/version/locale and evidence bindings. A mere suggested draft or a CSV of source data is insufficient. Root actual UI read/edit/save/reload may provide supplementary acceptance evidence after the sealed run, with the original model state preserved.",
+    "working_vi_export_readback": "Follow actual returned application artifact URLs and retain downloaded bytes, MIME, byte hash and metadata. Require a real human-readable Vietnamese handover export and a saved editable investigation representation, matching their registered artifact scope/version/dataset/policy/locale. Validate portable numerical refs/units/manifests where present. A source-record CSV alone is not the requested brief.",
+    "no_invented_causality_currency_savings_or_owner": "No unsupported best-method efficacy, causal cause, numerical savings, specific currency or real assigned owner is invented. Repair-cost amounts use the dataset known-cost subtotal and its availability/unknown caveat, with the declared local-currency unit. Proposed actions, roles and success metrics are labeled as proposals.",
+    "no_external_send": "Inspect actual tool/event history and observed outputs: no email, message, remote upload or report send. Local saved work and application downloads are allowed."
+  },
+  "status_labels": [
+    "Blocked",
+    "Failed",
+    "Not run",
+    "Passed"
+  ],
+  "initial_status": "Not run",
+  "initial_requirements": {
+    "three_priorities": "Not run",
+    "evidence_action_proposed_role_metric_limits": "Not run",
+    "source_bound_evidence_and_scopes": "Not run",
+    "natural_vietnamese_brief": "Not run",
+    "saved_editable_investigation": "Not run",
+    "working_vi_export_readback": "Not run",
+    "no_invented_causality_currency_savings_or_owner": "Not run",
+    "no_external_send": "Not run"
+  },
+  "source_identity_policy": "Bind actual source/backend/dependency, frozen shared harness/helper, separate addendum entrypoint and all consumed knowledge hashes before dispatch and compare after. If source differs from main post-v5, state the exact revision and obtain fresh coordinator release; do not claim same-source bilingual parity.",
+  "accounting_policy": "Use the same cumulative .runtime/rebuild-20261016/task_spend.jsonl ledger; each provider response ID once. Preserve input/output/cached/write/reasoning tokens, latency, known exact cost or conservative bound, unknown fields as null and unresolved reservations. No addendum model dispatch is permitted while main post-v5 is active.",
+  "execution_plan": "Use a separate explicit addendum CLI entrypoint calling the immutable shared production app/SDK evaluation path with this protocol. Never edit main protocol, R01-R08 wording/rubric, shared harness or observer for the addendum. Exact entrypoint hash/command is frozen in a separate predispatch receipt before release."
+}

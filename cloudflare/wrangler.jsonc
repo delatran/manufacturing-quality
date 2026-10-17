@@ -1,0 +1,31 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "manufacturing-quality",
+  "main": "src/worker.js",
+  "account_id": "ef52aa5528dc93520858ceb948127e67",
+  "compatibility_date": "2026-10-17",
+  "workers_dev": false,
+  "preview_urls": false,
+  "build": {"command": "npm --prefix ../frontend run build:production"},
+  "assets": {"directory": "../frontend/dist", "binding": "ASSETS", "not_found_handling": "404-page", "run_worker_first": true},
+  "vars": {
+    "PUBLIC_ORIGIN": "https://tranthiennhan.com",
+    "APP_PATH": "/manufacturing-quality"
+  },
+  "secrets": {"required": ["OPENAI_API_KEY", "OPENAI_MODEL"]},
+  "containers": [{
+    "class_name": "AnalystContainer",
+    "scheduling_policy": "durable_object",
+    "images": {"base": {"dockerfile": "../Dockerfile", "build_context": ".."}}
+  }],
+  "durable_objects": {"bindings": [
+    {"name": "ANALYST", "class_name": "AnalystContainer"},
+    {"name": "ADMISSION", "class_name": "Admission"}
+  ]},
+  "exports": {
+    "AnalystContainer": {"type": "durable-object", "storage": "sqlite"},
+    "Admission": {"type": "durable-object", "storage": "sqlite"}
+  },
+  "observability": {"enabled": true, "logs": {"enabled": true, "invocation_logs": false}},
+  "limits": {"cpu_ms": 30000}
+}

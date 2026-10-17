@@ -1,0 +1,49 @@
+{
+  "observed_at_utc": "2026-10-16T15:20:58.311850+00:00",
+  "http_status": 200,
+  "config": {
+    "model": "gpt-6-luna",
+    "allowed_models": [
+      "gpt-6-luna"
+    ],
+    "model_policy": "luna_only_no_fallback",
+    "mode": "live",
+    "sourced_at": "2026-10-15",
+    "sources": [
+      "https://developers.openai.com/api/docs/guides/agents",
+      "https://developers.openai.com/api/docs/guides/prompt-caching",
+      "https://developers.openai.com/api/docs/guides/fast-mode",
+      "https://developers.openai.com/api/docs/guides/ultrafast-mode",
+      "https://developers.openai.com/api/docs/guides/steering",
+      "https://developers.openai.com/api/docs/guides/compaction",
+      "https://developers.openai.com/api/docs/guides/background"
+    ],
+    "model_sources": [
+      "https://developers.openai.com/api/docs/models/gpt-6-luna",
+      "https://developers.openai.com/api/docs/guides/latest-model",
+      "https://developers.openai.com/api/docs/guides/reasoning",
+      "https://developers.openai.com/api/docs/pricing"
+    ],
+    "max_cost_usd_per_run": 5.0,
+    "dev_api_budget_usd": 10.0,
+    "qa_max_retries": 2,
+    "max_hosted_tool_calls": 4,
+    "reasoning_effort": "medium",
+    "hosted_tools": [],
+    "compaction_enabled": true,
+    "dev_budget_remaining_usd": 0.0,
+    "limits": {
+      "max_upload_mb": 50,
+      "max_cost_usd_per_run": 5.0,
+      "qa_max_retries": 2
+    },
+    "languages": [
+      "en",
+      "vi"
+    ],
+    "default_language": "en",
+    "report_number_format": "en-US"
+  },
+  "live_task_status": "Not run",
+  "live_task_reason": "Historical .runtime development allowance exhausted; no old run is counted for the rebuild"
+}

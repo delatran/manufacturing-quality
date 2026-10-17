@@ -1,0 +1,306 @@
+{
+  "schema_version": 1,
+  "id": "rebuild-v1-20261016",
+  "frozen_at_utc": "2026-10-16T15:20:41.407739+00:00",
+  "scope": "Pinned manufacturing case acceptance; no general model-quality claim",
+  "comparison": {
+    "baseline": "Existing application before rebuild; live Not run because historical runtime budget exhausted",
+    "intervention": "Rebuilt official Agents SDK runtime, composable backend tools and persistent investigation state",
+    "known_baseline": {
+      "python_tests": {
+        "status": "Passed",
+        "passed": 559,
+        "skipped": 1,
+        "elapsed_seconds": 103.82,
+        "evidence_origin": "coordinator-observed baseline"
+      },
+      "frontend_build": {
+        "status": "Passed",
+        "evidence_origin": "coordinator-observed baseline"
+      },
+      "live_tasks": {
+        "status": "Not run",
+        "reason": "old .runtime development budget exhausted; unrelated prior eval excluded"
+      }
+    },
+    "manifest_note": "The protocol-freeze working tree can include in-progress rebuild edits. It is not the original baseline implementation. No live before/after comparison is claimed."
+  },
+  "runtime": {
+    "model": "gpt-6-luna",
+    "reasoning_effort": "medium",
+    "path": "FastAPI app HTTP -> Workspace -> official Agents SDK Runner -> Responses -> actual backend tools",
+    "history": "production local history only",
+    "hosted_tools": false,
+    "tracing": "local durable events only; hosted tracing disabled"
+  },
+  "source": {
+    "url": "https://raw.githubusercontent.com/phongtdt/RFID_Data-Analyst_Case-Study-Oct-2026/main/mock-api/defect_records.json",
+    "commit_context": "f6adf2451ac6297c1b749abc131cff8a46020dc9",
+    "etag": "\"0de7f6b5510df586668a8c950fa324544cc0ceef704225244e5151095cbdce1c\"",
+    "fetched_at_utc": "2026-10-16T15:20:41.376739+00:00",
+    "content_type": "text/plain; charset=utf-8",
+    "sha256": "863ca40ca37f639c064ce0bb66e679d7c3ab4ceca8cd79569d31310004728dc8",
+    "schema": "array of defect records"
+  },
+  "master_sha256": "8772e8f0d0fbe1bf66b259859055e1742b066f91a31777b9f5e4630f606b9a86",
+  "oracle_sha256": "c6cce85ed7be987f1d797ef8e08438810fc8d855b82e896ac9940b50f0f1006c",
+  "resource_limits": {
+    "full_suite_usd": 5,
+    "task_usd": 20,
+    "per_turn_usd": 0.3,
+    "max_output_tokens": 12000,
+    "qa_max_retries": 2,
+    "max_sdk_turns": 30,
+    "task_timeout_seconds": 480,
+    "cost_estimate_before_run_usd": {
+      "low": 0.2,
+      "high": 1.0
+    }
+  },
+  "pricing": {
+    "verified_at_utc": "2026-10-16T15:20:41.432738+00:00",
+    "source": "https://developers.openai.com/api/docs/models/gpt-6-luna",
+    "input_per_million": 0.1,
+    "cached_input_per_million": 0.01,
+    "cache_write_per_million": 0.125,
+    "output_per_million": 0.5,
+    "accounting": "cached is subset of input; reasoning is subset of output; missing details remain null"
+  },
+  "primary_metric": "Strict completed task count / 8 frozen cases; every required behavior, metric and artifact must have observed evidence",
+  "secondary_metrics": [
+    "numeric_correctness",
+    "scope_correctness",
+    "evidence_coverage",
+    "unsupported_inference",
+    "tool_errors",
+    "latency",
+    "cost",
+    "cached_tokens/input_tokens"
+  ],
+  "scoring": "Deterministic oracle for arithmetic, scope, refs and actual artifact readback; manual observable rubric for prose and hypothesis quality; no model judge",
+  "stopping_rule": "Fixed 8-case suite once stable; stop dispatch for provider stop, unknown unresolved usage, source/code drift or budget; preserve Failed/Blocked/Not run. Repairs use same development tasks and are labeled non-blind reruns.",
+  "exclusions": [
+    "Historical eval results and historical spend",
+    "No hosted search, storage, sandbox, MCP or external sends",
+    "Deterministic failure probes are separate simulated evidence and do not count as live task passes"
+  ],
+  "live_cases": [
+    {
+      "id": "R01",
+      "name": "Investigation, decomposition and alternative explanation",
+      "language": "vi",
+      "filters": {},
+      "turns": [
+        "Điều tra vì sao tháng 6 có nhiều lỗi hơn tháng 1. Hãy tự kiểm tra nhận định đó, phân rã phần chênh lệch và xét cơ cấu sản phẩm. Lưu hồ sơ điều tra với bằng chứng và giả thuyết còn mở.",
+        "Bỏ giả thuyết đầu, kiểm tra khả năng khác. Tiếp tục hồ sơ vừa tạo và cập nhật điều đã biết, điều chưa biết cùng phép đo cần thêm."
+      ],
+      "requirements": [
+        "verify_premise",
+        "compare_periods",
+        "decompose_delta",
+        "consider_mix",
+        "alternative_hypothesis",
+        "persist_investigation",
+        "no_causal_claim"
+      ],
+      "numeric_scopes": [
+        "january",
+        "june"
+      ]
+    },
+    {
+      "id": "R02",
+      "name": "Line-3 cost then Critical follow-up",
+      "language": "en",
+      "filters": {
+        "production_line": "Line-3"
+      },
+      "turns": [
+        "What does repair cost look like for this line? Give the observed subtotal and cost coverage, and open the relevant evidence.",
+        "Còn Critical? Giữ dây chuyền đang chọn, mở view tương ứng và cho tôi bản xuất cùng phạm vi."
+      ],
+      "turn_languages": [
+        "en",
+        "vi"
+      ],
+      "requirements": [
+        "keep_line",
+        "narrow_critical",
+        "correct_cost_coverage",
+        "scope_in_view_and_export"
+      ],
+      "numeric_scopes": [
+        "line3",
+        "line3_critical"
+      ]
+    },
+    {
+      "id": "R03",
+      "name": "Cost-10 scenario and undo",
+      "language": "en",
+      "filters": {},
+      "turns": [
+        "If we exclude repair costs equal to 10 from the financial analysis, does the priority order change? Compare this scenario with canonical, distinguish event counts from cost coverage, and apply the scenario so I can inspect it.",
+        "Undo that scenario change and restore the canonical view. Keep the comparison evidence available."
+      ],
+      "requirements": [
+        "explicit_scenario",
+        "compare_canonical",
+        "events_unchanged",
+        "financial_availability_changed",
+        "undo"
+      ],
+      "numeric_scopes": [
+        "canonical",
+        "exclude_cost_10"
+      ]
+    },
+    {
+      "id": "R04",
+      "name": "Unsupported inspection efficacy premise",
+      "language": "vi",
+      "filters": {},
+      "turns": [
+        "Chứng minh Automated Testing hiệu quả nhất. Nếu dữ liệu chưa đủ để chứng minh, hãy phân tích phần mô tả có thể làm và nêu chính xác dữ liệu cần thu thập thêm."
+      ],
+      "requirements": [
+        "reject_unsupported_best",
+        "descriptive_method_analysis",
+        "missing_exposure_and_ground_truth",
+        "no_invented_efficacy"
+      ],
+      "numeric_scopes": [
+        "canonical"
+      ]
+    },
+    {
+      "id": "R05",
+      "name": "Three priorities and handover artifact",
+      "language": "en",
+      "filters": {},
+      "turns": [
+        "Prepare three priorities and a handover brief. Each priority needs Evidence, Action, a proposed role Owner, and a Metric. Save an editable investigation artifact and give me a working export. Do not send it to anyone."
+      ],
+      "requirements": [
+        "three_priorities",
+        "evidence_action_owner_metric",
+        "proposed_roles",
+        "real_artifact",
+        "editable_readback",
+        "no_external_send"
+      ],
+      "numeric_scopes": [
+        "canonical"
+      ]
+    },
+    {
+      "id": "R06",
+      "name": "English canonical summary",
+      "language": "en",
+      "filters": {},
+      "turns": [
+        "For the full January through June 2024 scope, report the total defect events, observed valid repair-cost subtotal, known-cost events over total events, unknown-cost events, and reference-output intensity with its numerator and denominator. Keep the answer concise."
+      ],
+      "requirements": [
+        "canonical_totals",
+        "correct_denominator",
+        "cost_availability",
+        "natural_english"
+      ],
+      "numeric_scopes": [
+        "canonical"
+      ]
+    },
+    {
+      "id": "R07",
+      "name": "Vietnamese paraphrase parity",
+      "language": "vi",
+      "filters": {},
+      "turns": [
+        "Cho toàn kỳ tháng 1 đến tháng 6/2024, báo cáo tổng sự kiện lỗi, tổng chi phí sửa chữa hợp lệ đã ghi nhận, số sự kiện có chi phí trên tổng sự kiện, số còn thiếu chi phí và cường độ lỗi theo sản lượng tham chiếu với tử số cùng mẫu số. Trả lời gọn.",
+        "Nói cách khác, tôi cần cùng số liệu cho cả sáu tháng, không đổi bộ lọc. Nhắc lại ngắn gọn tổng lỗi, chi phí đã biết và độ phủ."
+      ],
+      "requirements": [
+        "canonical_totals",
+        "paraphrase_consistency",
+        "same_scope_as_english",
+        "natural_vietnamese"
+      ],
+      "numeric_scopes": [
+        "canonical"
+      ]
+    },
+    {
+      "id": "R08",
+      "name": "Empty product cohort",
+      "language": "en",
+      "filters": {
+        "production_line": "Line-1",
+        "category": "Category 2"
+      },
+      "turns": [
+        "Describe this selected scope. Are zero logged events evidence of perfect quality? Show the product cohort and reference denominator, explain unavailable values, and preserve the selected filters."
+      ],
+      "requirements": [
+        "zero_events",
+        "zero_cohort",
+        "unavailable_intensity_and_coverage",
+        "no_perfect_quality_claim",
+        "scope_preserved"
+      ],
+      "numeric_scopes": [
+        "empty_cohort"
+      ]
+    }
+  ],
+  "deterministic_categories": [
+    "stale_scope_and_dataset",
+    "two_session_isolation",
+    "untrusted_data_and_authority",
+    "cancel_reconnect_idempotency",
+    "empty_scope_and_missing_denominator",
+    "http_tool_model_failure",
+    "schema_incomplete_refusal",
+    "budget_during_artifact"
+  ],
+  "status_labels": [
+    "Blocked",
+    "Failed",
+    "Not run",
+    "Passed"
+  ],
+  "protocol_freeze_working_tree_manifest": {
+    "analyst/__init__.py": "3aa79fdfa6fb799aa48b5923a1096b7a7b0a7f04528fd8695edf388afff1d9a7",
+    "analyst/__main__.py": "e52a5ba94eba2a04df5e3fa3d5822754c3b7db07eafb9373e813c07bc2573215",
+    "analyst/app.py": "b4a07ed2c1dbeb970fe96b7fa440439d3f69b8a659e683b0d2cf1d6719d653aa",
+    "analyst/case_study/__init__.py": "c97b23f6dc79751f8e84ca0d8ad1e51fd17dcab98dd49346bf8e388972496bd7",
+    "analyst/case_study/__main__.py": "513664f3d2f3e806fcd59aa07e5e6fab3c242b1b4df79b66a4f19ca5d3f6fe14",
+    "analyst/case_study/analytics.py": "5ab3c9cfe60c03a34ed19eb4f0c5b300f9851e8f76d6cfb71e1a71546120e50e",
+    "analyst/case_study/config.py": "406dbe61a36c7c312a7fba901a1bb3d8a3edfe0a79f3e57d8c3f4ad9711591e4",
+    "analyst/case_study/ingestion.py": "b761658d8a00ffce9efef55a03f632c6549035828625dc628e3fb2b11ede0b8e",
+    "analyst/case_study/models.py": "0716ded9234896ada6b250f18e66c2f89747ac7d9e7df732c67109ba70318e9a",
+    "analyst/case_study/oracle_builder.py": "1510c9068beb7ec10004796cb4c676022a1b827179623c3a11fa3ef95e1cbfd9",
+    "analyst/case_study/pipeline.py": "8f0bcec2854a6d48315681ff8918a832ca652fb773ebda855946e8fb3b95c031",
+    "analyst/case_study/preparation.py": "16be643eb803dd6490637fb180fbafeda35ad595102208d7554401b94794c151",
+    "analyst/case_study/scenarios.py": "9d56bd22e396e9c7690e525d87353f51e8baa6bf4e59c3cc17939962b48fe9ac",
+    "analyst/case_study/sensitivity.py": "30560dec2df519d195374529ac2b99933557c73cd4e355f0255ec7f79262dacd",
+    "analyst/case_study/workbook.py": "af85ed79d7ba59e3bbed4b8516e906a2ced8eab028a9183681ee19c43053d14b",
+    "analyst/config.py": "792786aeeb514577a7f2ab627a3aac504109f7b9e7b5e55397c9061f6769be0f",
+    "analyst/dashboard.py": "6ed5c9fae9e0a7ac894d48ac28d566dde6b3037c3401b7fe3374d20cf1358498",
+    "analyst/evidence.py": "dbbe332ca136b630a58e70348bd79472ee2efb3fe28ca2ab05a9a28a1d8763c0",
+    "analyst/execution.py": "b40c516416ce9ff2bff382bbc2ba60b8c73005584dba6a9e2bf9bee3fb302753",
+    "analyst/knowledge.py": "5df852b3c92811a692e58d26ca87a0922994ec4bbce352af1822793b3539d592",
+    "analyst/localization.py": "0a80f71eeba5c7e20a3a5ae3c5e0f09e3313da796eeca6bf04d1350d537d1512",
+    "analyst/memory.py": "63ef91cb978d050c5099f179e36bb3231d359835ee2bf403a402f3963dd45d4f",
+    "analyst/operations.py": "170e055913946b43c3469e0932f12be2e95ab4a5c0b6a557ee24985a906ac85c",
+    "analyst/product_tools.py": "95585e7ce913ad8daaf94162bca9d3b637c528590f12935d017fadf34a49ee1d",
+    "analyst/prompts.py": "540051c32c8c90d5aa1f282d639b7c1e0703eb3b7c7f8d97eb1746c33c2a3af9",
+    "analyst/responses_model.py": "e2573bc3df1e1a399d59b055cc88dfb87fedd88a8771793355b661f3ed34a7e2",
+    "analyst/runtime.py": "8d5023d32432232b1a072c875bbb7074408cd01a7325289ca64a0b8948bfeb9e",
+    "analyst/store.py": "364e45013bd00c3ac07a92e2d5582dcd571d338d1604f072f3c25fbc416acf5b",
+    "analyst/tools.py": "2eaa4cd228bdab02d84badb8cc8c7919fe79ce035e92f5a8cfcec03b3ab5aa2f",
+    "requirements.txt": "abf3764f5b7e9051510b00c11ea563bcf97c4c1cab2122e36550952252cbae14",
+    "config/model_capabilities.json": "a602be918244a110449301b5c0ad47136082183e93067ee8cb499af9d5b08923",
+    "knowledge/kpi_registry.yaml": "7dc9b1c7f790400cf2826997fb82e0b88b832ed1d84fdda2f501ed157d6027d6"
+  }
+}

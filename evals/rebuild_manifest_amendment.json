@@ -1,0 +1,8 @@
+{
+  "phase": "before_any_paid_dispatch",
+  "protocol_sha256_unchanged": "a45c5b720da94f7f2cf4c9c6a0e4d5a46a97e71aa1a731dcfe8f57aa9ed4a4d5",
+  "change": "Extend each live suite's actual source manifest to every knowledge JSON, Markdown and YAML file, plus requirements.lock when present and pyproject.toml.",
+  "reason": "The production instructions consume glossary.json, and knowledge preparation fingerprints case_brief.md. Hashing only knowledge YAML did not cover every consumed source.",
+  "effect": "Identity and drift detection only. Frozen tasks, expected values, success criteria, model, effort and budget are unchanged. Evaluator oracle contents are never passed to the model.",
+  "historical_manifest_note": "The protocol-freeze working-tree manifest retains its original observed contents. It is not the original baseline implementation or the later live-run manifest."
+}

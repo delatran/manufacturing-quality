@@ -1,0 +1,22 @@
+{
+  "recorded_at_utc": "2026-10-16T16:53:57.483108+00:00",
+  "change_kind": "evaluator_output_metadata_only_before_next_paid_dispatch",
+  "prior_harness_sha256": "336331c4637097d61727487f4cc78489810d48cfa6573fff690d68fa6fbb9ea8",
+  "current_harness_sha256": "396422afe3e4d8c0ed3ba04b8f820cc5ee3673ae199d1aff6866023c6639b02b",
+  "protocol_sha256": "a45c5b720da94f7f2cf4c9c6a0e4d5a46a97e71aa1a731dcfe8f57aa9ed4a4d5",
+  "fields_added": [
+    "attempt_interpretation",
+    "runtime.application_run_timeout_seconds",
+    "runtime.harness_wait_timeout_seconds"
+  ],
+  "reason": "Make the nonblind rerun label and effective application versus harness deadlines explicit in the result metadata. The observed v1/v2 raw state timeout is application timeout; timed_out=false means the separate harness wait of 480 seconds did not expire.",
+  "unchanged": [
+    "Frozen cases and wording",
+    "Independent expected values",
+    "Rubric",
+    "Settings and configured deadlines",
+    "Model and effort",
+    "Budget and stopping rule",
+    "Previously recorded attempts"
+  ]
+}

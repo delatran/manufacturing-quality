@@ -1,0 +1,393 @@
+{
+  "as_of_utc": "2026-10-17T01:37:30.935721+00:00",
+  "cost_interpretation": "Exact arithmetic from observed provider token usage at frozen prices, not provider invoice reconciliation",
+  "ledger_path": ".runtime/rebuild-20261016/task_spend.jsonl",
+  "ledger_sha256": "5f2469206301da14b2b96b92e80763211131c621b650812d0a55e527d76c2e2e",
+  "response_identity_deduplication": "one terminal usage receipt per unique response_id; run aggregate usage is excluded",
+  "nested_tokens": "cached and cache-write counts are included in input; reasoning is included in output",
+  "accounting": {
+    "known_cost_usd": 0.750842455,
+    "exact_total_cost_usd": 0.750842455,
+    "conservative_accounted_usd": 0.750842455,
+    "response_count": 433,
+    "unresolved_reserved_usd": 0,
+    "unknown_usage_responses": [],
+    "unavailable_cache_detail_responses": [],
+    "exact_decimal_cost_usd": "0.750842455"
+  },
+  "aggregate_tokens": {
+    "input_tokens": 12467990,
+    "output_tokens": 362892,
+    "cached_tokens": 8486583,
+    "cache_write_tokens": 3455597,
+    "reasoning_tokens": 200169
+  },
+  "suites": {
+    "post-v1": {
+      "terminal_response_count": 15,
+      "token_totals": {
+        "input_tokens": 1601843,
+        "output_tokens": 10061,
+        "cached_tokens": 782863,
+        "cache_write_tokens": 372523,
+        "reasoning_tokens": 7117
+      },
+      "token_price_estimate_usd": 0.104070205,
+      "elapsed_seconds_unavailable_response_ids": [
+        "resp_0b69d16938c16a5c006ad24a7bb62487d0adace4f1230edfd4"
+      ],
+      "attempted_case_count": 1,
+      "full_eight_case_attempt_cost_usd": null,
+      "completed_successful_full_suite_cost_usd": null,
+      "strict_completed_tasks": 0,
+      "planned_tasks": 8,
+      "observed_turns": 1,
+      "planned_turns": 12
+    },
+    "post-v2": {
+      "terminal_response_count": 8,
+      "token_totals": {
+        "input_tokens": 182901,
+        "output_tokens": 6194,
+        "cached_tokens": 147572,
+        "cache_write_tokens": 33403,
+        "reasoning_tokens": 2053
+      },
+      "token_price_estimate_usd": 0.008940695,
+      "elapsed_seconds_unavailable_response_ids": [
+        "resp_09f42054e649e07f006ad251ffe9c887d0a13c070db4d4409b"
+      ],
+      "attempted_case_count": 1,
+      "full_eight_case_attempt_cost_usd": null,
+      "completed_successful_full_suite_cost_usd": null,
+      "strict_completed_tasks": 0,
+      "planned_tasks": 8,
+      "observed_turns": 1,
+      "planned_turns": 12
+    },
+    "post-v3": {
+      "terminal_response_count": 71,
+      "token_totals": {
+        "input_tokens": 2034948,
+        "output_tokens": 60025,
+        "cached_tokens": 1465249,
+        "cache_write_tokens": 540711,
+        "reasoning_tokens": 33968
+      },
+      "token_price_estimate_usd": 0.115152665,
+      "elapsed_seconds_unavailable_response_ids": [
+        "resp_0b51a2f903eeb48d006ad25cfd36a887d089694fd84fea0ff4",
+        "resp_00bda55525cef587006ad25dfd5c8087d0a01822147316c378",
+        "resp_02ecf78257a8aa7e006ad25e37757487d0b2cb051b6ef205ac"
+      ],
+      "attempted_case_count": 8,
+      "full_eight_case_attempt_cost_usd": 0.115152665,
+      "completed_successful_full_suite_cost_usd": null,
+      "strict_completed_tasks": 5,
+      "planned_tasks": 8,
+      "observed_turns": 11,
+      "planned_turns": 12
+    },
+    "post-v4": {
+      "terminal_response_count": 7,
+      "token_totals": {
+        "input_tokens": 208510,
+        "output_tokens": 8631,
+        "cached_tokens": 125634,
+        "cache_write_tokens": 80603,
+        "reasoning_tokens": 5073
+      },
+      "token_price_estimate_usd": 0.015874515,
+      "elapsed_seconds_unavailable_response_ids": [
+        "resp_01daf43b43b27a5c006ad26766774887d0afbf9713138df19b"
+      ],
+      "attempted_case_count": 1,
+      "full_eight_case_attempt_cost_usd": null,
+      "completed_successful_full_suite_cost_usd": null,
+      "strict_completed_tasks": 0,
+      "planned_tasks": 8,
+      "observed_turns": 1,
+      "planned_turns": 12,
+      "initial_lifecycle_accounting": {
+        "known_cost_usd": 0.24322482,
+        "exact_total_cost_usd": null,
+        "conservative_accounted_usd": 0.24322482,
+        "response_count": 100,
+        "unresolved_reserved_usd": 0.3,
+        "unknown_usage_responses": [],
+        "unavailable_cache_detail_responses": []
+      },
+      "later_reconciliation_path": "evals/rebuild_post_v4_reconciliation.json",
+      "original_result_preserved": true,
+      "attempt_stopped_on_unknown_usage": true,
+      "future_generation_not_automatically_resumed_after_accounting": true,
+      "manual_review_path": ".runtime\\rebuild-20261016\\independent-review\\post-v4-manual-review-v1.json",
+      "manual_review_sha256": "f58e322dbdf2e937930fb610a67946950178a06cdf5a8c68050ee40344660fc9",
+      "reviewed_task_statuses": {
+        "R01": "Failed",
+        "R02": "Not run",
+        "R03": "Not run",
+        "R04": "Not run",
+        "R05": "Not run",
+        "R06": "Not run",
+        "R07": "Not run",
+        "R08": "Not run"
+      }
+    },
+    "post-v5": {
+      "terminal_response_count": 62,
+      "token_totals": {
+        "input_tokens": 1413026,
+        "output_tokens": 54486,
+        "cached_tokens": 959541,
+        "cache_write_tokens": 433279,
+        "reasoning_tokens": 28190
+      },
+      "token_price_estimate_usd": 0.093018885,
+      "elapsed_seconds_unavailable_response_ids": [
+        "resp_0396d3b63f2549f6006ad274a57c2087d08f26cf085f9cf971",
+        "resp_0e4c4aa8e03e1b19006ad275ac788c87d0b324ed4c9c70fd1e"
+      ],
+      "attempted_case_count": 8,
+      "full_eight_case_attempt_cost_usd": 0.093018885,
+      "completed_successful_full_suite_cost_usd": null,
+      "strict_completed_tasks": 5,
+      "planned_tasks": 8,
+      "observed_turns": 11,
+      "planned_turns": 12,
+      "source_revision": "frozen v6",
+      "manual_review_path": ".runtime/rebuild-20261016/independent-review/post-v5-manual-review-v1.json",
+      "manual_review_sha256": "ae8257291d098043bbd66f53fb7ba8fb2e3ab37d266f8234f0547459556d55c1",
+      "reviewed_task_statuses": {
+        "R01": "Passed",
+        "R02": "Passed",
+        "R03": "Failed",
+        "R04": "Failed",
+        "R05": "Passed",
+        "R06": "Failed",
+        "R07": "Passed",
+        "R08": "Passed"
+      },
+      "source_seal_sha256": "4dd2e728cc43481e2bb837e4ac651633dd3c3281096434fe9eef116e316b0325",
+      "original_result_sha256": "e91a8bacbfa939586663ca39eac0b732d45f1b6ca4f4ff3bc99b4af176e54322",
+      "outcomes_path": "evals/rebuild_post_v5_outcomes.json",
+      "outcomes_sha256": "6f21ed14f67fe2be856824a1ad58eb1e312b50ace16eb45b98aebb7a69b341ee",
+      "original_result_preserved": true,
+      "same_id_read_only_reconciliation_turns": [
+        "R03.1",
+        "R04.1"
+      ],
+      "unresolved_usage_at_end": false
+    },
+    "post-v6": {
+      "terminal_response_count": 60,
+      "token_totals": {
+        "input_tokens": 1146153,
+        "output_tokens": 46548,
+        "cached_tokens": 724909,
+        "cache_write_tokens": 419890,
+        "reasoning_tokens": 23884
+      },
+      "token_price_estimate_usd": 0.08314474,
+      "elapsed_seconds_unavailable_response_ids": [
+        "resp_02580be729481707006ad285ce2e2087d0b361274346be2f7a"
+      ],
+      "attempted_case_count": 8,
+      "full_eight_case_attempt_cost_usd": 0.08314474,
+      "completed_successful_full_suite_cost_usd": null,
+      "strict_completed_tasks": 5,
+      "planned_tasks": 8,
+      "observed_turns": 11,
+      "planned_turns": 12,
+      "source_revision": "frozen v7",
+      "manual_review_path": ".runtime/rebuild-20261016/independent-review/post-v6-manual-review-v1.json",
+      "manual_review_sha256": "d7ca65845f27805b1ac39f1bba60a066b1ddb6460b37da970fa55aaab78f29e8",
+      "reviewed_task_statuses": {
+        "R01": "Failed",
+        "R02": "Passed",
+        "R03": "Failed",
+        "R04": "Passed",
+        "R05": "Passed",
+        "R06": "Failed",
+        "R07": "Passed",
+        "R08": "Passed"
+      },
+      "source_seal_sha256": "543491734a1b9344f9c86eae105127014023b8520baad6f7ccbe17718a01c838",
+      "original_result_sha256": "e2649a64b4399bf3c2c2a88287dabec79882a4223b5a5271b2665cee602e39ff",
+      "outcomes_path": "evals/rebuild_post_v6_outcomes.json",
+      "outcomes_sha256": "9efe9fb47729d154977a444701b56958b9d32d0a2504754e00962c2d238499af",
+      "original_result_preserved": true,
+      "original_result_finished_at_utc": null,
+      "same_id_read_only_reconciliation_turns": [
+        "R01.1"
+      ],
+      "unresolved_usage_at_end": false,
+      "normal_cleanup_status": "Failed",
+      "postmortem_seal": true,
+      "owned_interrupt_exit_code": 1
+    },
+    "post-v7": {
+      "terminal_response_count": 63,
+      "token_totals": {
+        "input_tokens": 1706001,
+        "output_tokens": 48529,
+        "cached_tokens": 1186390,
+        "cache_write_tokens": 514274,
+        "reasoning_tokens": 25258
+      },
+      "token_price_estimate_usd": 0.10094635,
+      "exact_decimal_token_price_estimate_usd": "0.100946350",
+      "elapsed_seconds_unavailable_response_ids": [
+        "resp_0b64dc75aa9a7557006ad2a1c441d487d0b9e9af3dd05b3533"
+      ],
+      "attempted_case_count": 8,
+      "full_eight_case_attempt_cost_usd": 0.10094635,
+      "completed_successful_full_suite_cost_usd": null,
+      "strict_completed_tasks": 7,
+      "planned_tasks": 8,
+      "observed_turns": 11,
+      "planned_turns": 12,
+      "status": "Failed",
+      "independent_manual_review_sha256": "ce1a96bfc780b0e075ad56735d3821349343444d40c32a424f58de4bc0c56352",
+      "normal_cleanup": "Passed",
+      "original_result_sha256": "9b1c6354ecb1a1a07f6bd458d0214334c010c40aefd4dd21a9b58d239b17d30f",
+      "source_seal_sha256": "beccddb44333bc9772b82ed032914168c4d406a6459ea25567613f4939de2aee"
+    },
+    "post-v8": {
+      "terminal_response_count": 61,
+      "token_totals": {
+        "input_tokens": 1194098,
+        "output_tokens": 44361,
+        "cached_tokens": 798310,
+        "cache_write_tokens": 376777,
+        "reasoning_tokens": 24801
+      },
+      "token_price_estimate_usd": 0.079161825,
+      "exact_decimal_token_price_estimate_usd": "0.079161825",
+      "elapsed_seconds_unavailable_response_ids": [
+        "resp_089c55fa5e645357006ad2b13fd84487d08f7642e86432951d",
+        "resp_026051215d4202be006ad2b5c60ec087d0812991b1fb4d87d3"
+      ],
+      "attempted_case_count": 8,
+      "full_eight_case_attempt_cost_usd": 0.079161825,
+      "completed_successful_full_suite_cost_usd": null,
+      "strict_completed_tasks": 4,
+      "planned_tasks": 8,
+      "observed_turns": 10,
+      "planned_turns": 12,
+      "status": "Failed",
+      "independent_manual_review_sha256": "0eb71699aba4ee3197c3e0ed426c4ae5b08befccf9931810be8a98af648f7506",
+      "normal_cleanup": "Passed",
+      "original_result_sha256": "b5f329d8111d019c9bb5362c962d1d95c708fee5020a6a72f18693d2ba8ca681",
+      "source_seal_sha256": "507b547d43723de69795fe1270d582f8b336064f35f645dfffd57b7d56df2ecb"
+    },
+    "post-v9": {
+      "terminal_response_count": 86,
+      "token_totals": {
+        "input_tokens": 2980510,
+        "output_tokens": 84057,
+        "cached_tokens": 2296115,
+        "cache_write_tokens": 684137,
+        "reasoning_tokens": 49825
+      },
+      "token_price_estimate_usd": 0.150532575,
+      "exact_decimal_token_price_estimate_usd": "0.150532575",
+      "elapsed_seconds_unavailable_response_ids": [
+        "resp_0544c6c8131d148c006ad2c7ff5afc87d093dd6a9401ecb07f"
+      ],
+      "attempted_case_count": 8,
+      "full_eight_case_attempt_cost_usd": 0.150532575,
+      "completed_successful_full_suite_cost_usd": null,
+      "strict_completed_tasks": 6,
+      "planned_tasks": 8,
+      "observed_turns": 12,
+      "planned_turns": 12,
+      "status": "Failed",
+      "independent_manual_review_sha256": "bb71825ff13897ab447a24c4a39b55f146dd74bccd4fd0c09783708c4f24b1a5",
+      "normal_cleanup": "Passed actual exit/process/socket closure with preserved console warnings",
+      "original_result_sha256": "b64a3160aff3b0be72e24d2a6e5f73a09a338ba987e92186939e4ef4ff941b20",
+      "source_seal_sha256": "ab9027d1f432f9151fa9a707efd5f706ec126d3d001d52c8f31481ca5c8384b4",
+      "application_deadline_seconds": 360,
+      "harness_wait_seconds": 480
+    }
+  },
+  "task_budget_usd": 20,
+  "full_suite_budget_usd": 5,
+  "task_under_budget": true,
+  "all_attempts_under_suite_budget": true,
+  "completed_successful_full_suite_cost_status": "Not run",
+  "limitations": [
+    "Latest post-v9 executed V10/application360 and original outer480 attempted all8cases/12turns:6Passed, R01/R03Failed. All39 content passes preserve explicit partial-only evidence in failed followups.",
+    "R01followup timedout; R03followup Unverified despite correct first-turn reports and actual UIoperations. No late response or prior artifact availability upgrades either failed workflow.",
+    "All historical failed attempts and original checks remain unchanged. Thirty cost-only absent-field auto flags remain distinct from four real completion/artifact failures.",
+    "Thirteen response transport elapsed fields remain null; provider timestamps and GET reconciliation durations are not substituted for generation transport latency.",
+    "No all-eight-task successful attempt observed; successful fullsuite cost remains Not run/null, not zero.",
+    "Token-price estimates are frozen arithmetic, not invoice reconciliation, controlled performance evidence or a general reliability result.",
+    "Two console observations remain preserved. Actual normal exit0 and process/socket closure passed; cleanup is not claimed fault-free.",
+    "VH01 remains Not run/unreleased/excluded from the main rate.",
+    "Any future application450 condition is a separate unexecuted decision and cannot reclassify this360 attempt or historical240 failures."
+  ],
+  "latest_attempt": "post-v9",
+  "latest_attempt_strict_completed_tasks": 6,
+  "latest_attempt_outcomes": "evals/rebuild_post_v9_outcomes.json",
+  "latest_attempt_outcomes_sha256": "3bacca3a61049a35c3fe6798a67d652f84f6c47d02e680e287ebfb9c9b223072",
+  "independent_price_recompute": {
+    "status": "Passed",
+    "responses_checked": 433,
+    "mismatched_response_ids": [],
+    "basis": "Independent terminal audit reprices unique observed terminal IDs with Decimal at frozen input/cached/write/output prices; not invoice reconciliation.",
+    "independent_terminal_review": {
+      "path": ".runtime\\rebuild-20261016\\independent-review\\post-v9-seal-review-v1.json",
+      "sha256": "c9a3b2fee5a5353fafd3c8821fffd70af70d4934ddbd7d264b38a5d204a3a28d"
+    }
+  },
+  "task_budget_remaining_usd": 19.249157545,
+  "bilingual_handover_addendum": {
+    "status": "Not run",
+    "protocol": "evals/rebuild_bilingual_handover_protocol_v1.json",
+    "protocol_sha256": "e63fb2cb48483ea720ab45988be92457cf1f678a564cd841a08434e17075ef24",
+    "entrypoint": "evals/rebuild_bilingual_handover.py",
+    "entrypoint_sha256": "c0d5bf8b9479798ba47ea1511cfd7813c4074e7c4fedfdb7866c6b23adb64461",
+    "included_in_main_eight_case_metric": false
+  },
+  "latest_attempt_source_revision": "frozen V10/application360; original outer480",
+  "elapsed_seconds_unavailable_response_ids": [
+    "resp_0b69d16938c16a5c006ad24a7bb62487d0adace4f1230edfd4",
+    "resp_09f42054e649e07f006ad251ffe9c887d0a13c070db4d4409b",
+    "resp_0b51a2f903eeb48d006ad25cfd36a887d089694fd84fea0ff4",
+    "resp_00bda55525cef587006ad25dfd5c8087d0a01822147316c378",
+    "resp_02ecf78257a8aa7e006ad25e37757487d0b2cb051b6ef205ac",
+    "resp_01daf43b43b27a5c006ad26766774887d0afbf9713138df19b",
+    "resp_0396d3b63f2549f6006ad274a57c2087d08f26cf085f9cf971",
+    "resp_0e4c4aa8e03e1b19006ad275ac788c87d0b324ed4c9c70fd1e",
+    "resp_02580be729481707006ad285ce2e2087d0b361274346be2f7a",
+    "resp_0b64dc75aa9a7557006ad2a1c441d487d0b9e9af3dd05b3533",
+    "resp_089c55fa5e645357006ad2b13fd84487d08f7642e86432951d",
+    "resp_026051215d4202be006ad2b5c60ec087d0812991b1fb4d87d3",
+    "resp_0544c6c8131d148c006ad2c7ff5afc87d093dd6a9401ecb07f"
+  ],
+  "transport_elapsed_unavailable_response_ids": [
+    "resp_0b69d16938c16a5c006ad24a7bb62487d0adace4f1230edfd4",
+    "resp_09f42054e649e07f006ad251ffe9c887d0a13c070db4d4409b",
+    "resp_0b51a2f903eeb48d006ad25cfd36a887d089694fd84fea0ff4",
+    "resp_00bda55525cef587006ad25dfd5c8087d0a01822147316c378",
+    "resp_02ecf78257a8aa7e006ad25e37757487d0b2cb051b6ef205ac",
+    "resp_01daf43b43b27a5c006ad26766774887d0afbf9713138df19b",
+    "resp_0396d3b63f2549f6006ad274a57c2087d08f26cf085f9cf971",
+    "resp_0e4c4aa8e03e1b19006ad275ac788c87d0b324ed4c9c70fd1e",
+    "resp_02580be729481707006ad285ce2e2087d0b361274346be2f7a",
+    "resp_0b64dc75aa9a7557006ad2a1c441d487d0b9e9af3dd05b3533",
+    "resp_089c55fa5e645357006ad2b13fd84487d08f7642e86432951d",
+    "resp_026051215d4202be006ad2b5c60ec087d0812991b1fb4d87d3",
+    "resp_0544c6c8131d148c006ad2c7ff5afc87d093dd6a9401ecb07f"
+  ],
+  "previous_snapshot": {
+    "path": ".runtime/rebuild-20261016/suites/post-v9/previous_published_task_accounting.json",
+    "sha256": "984a5aba9ed10c3a5cefa744e2dc9cd7f6c4026d3bb6c5bb872977a0ebcf562c"
+  },
+  "latest_outcomes": {
+    "path": "evals/rebuild_post_v9_outcomes.json",
+    "sha256": "3bacca3a61049a35c3fe6798a67d652f84f6c47d02e680e287ebfb9c9b223072"
+  },
+  "task_budget_remaining_exact_decimal_usd": "19.249157545"
+}

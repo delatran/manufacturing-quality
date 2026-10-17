@@ -1,0 +1,63 @@
+.app-header-tools {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+.language-picker select {
+  appearance: none;
+  max-width: 9.5rem;
+  min-height: 44px;
+  border: 1px solid #cfd9ce;
+  border-radius: 0.22rem;
+  background-color: var(--surface-raised);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.4 4.4 6 8l3.6-3.6' fill='none' stroke='%23385743' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px 12px;
+  color: #385743;
+  padding: 7px 28px 7px 12px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.language-picker select:focus-visible {
+  outline: 2px solid #225926;
+  outline-offset: 3px;
+}
+html[lang='vi'] .dashboard-intro h1 {
+  letter-spacing: -0.8px;
+  line-height: 1.35;
+}
+html[lang='vi'] .dashboard-panel h2 {
+  letter-spacing: -0.35px;
+}
+@media (max-width: 1100px) {
+  .app-header-tools {
+    flex: initial;
+  }
+}
+@media (max-width: 620px) {
+  .app-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .app-header .brand {
+    grid-column: 1;
+    width: auto;
+  }
+  .app-header-tools {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .app-tabs {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .language-picker select {
+    max-width: 8.5rem;
+    min-height: 44px;
+    font-size: 12px;
+  }
+}

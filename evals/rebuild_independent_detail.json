@@ -1,0 +1,929 @@
+{
+  "created_at_utc": "2026-10-16T15:31:17.510806+00:00",
+  "derivation": "Supplementary stdlib raw-source arithmetic for frozen requirements; no model dispatch or production analytics imports",
+  "line_costs": {
+    "Line-1": {
+      "": {
+        "event_count": 226,
+        "linked_event_count": 226,
+        "critical_count": 70,
+        "cost_known_count": 222,
+        "cost_unknown_count": 4,
+        "known_repair_cost": "91567.55",
+        "cost_coverage_pct": 98.23008849557522,
+        "cohort_product_count": 19,
+        "month_count": 6,
+        "reference_output": 154686,
+        "reference_intensity_per_1000": 1.4610242685181594,
+        "method_counts": {
+          "Visual Inspection": 100,
+          "Automated Testing": 59,
+          "Manual Testing": 67
+        },
+        "line_counts": {
+          "Line-1": 226
+        },
+        "defect_ids_sha256": "3418be2cf81bc3ccda9962c837a97f0f5b355fc45f242a7edff730c8f6479432"
+      },
+      "exclude_cost_10": {
+        "event_count": 226,
+        "linked_event_count": 226,
+        "critical_count": 70,
+        "cost_known_count": 218,
+        "cost_unknown_count": 8,
+        "known_repair_cost": "91527.55",
+        "cost_coverage_pct": 96.46017699115045,
+        "cohort_product_count": 19,
+        "month_count": 6,
+        "reference_output": 154686,
+        "reference_intensity_per_1000": 1.4610242685181594,
+        "method_counts": {
+          "Visual Inspection": 100,
+          "Automated Testing": 59,
+          "Manual Testing": 67
+        },
+        "line_counts": {
+          "Line-1": 226
+        },
+        "defect_ids_sha256": "3418be2cf81bc3ccda9962c837a97f0f5b355fc45f242a7edff730c8f6479432"
+      }
+    },
+    "Line-2": {
+      "": {
+        "event_count": 219,
+        "linked_event_count": 219,
+        "critical_count": 70,
+        "cost_known_count": 214,
+        "cost_unknown_count": 5,
+        "known_repair_cost": "93298.75",
+        "cost_coverage_pct": 97.71689497716895,
+        "cohort_product_count": 20,
+        "month_count": 6,
+        "reference_output": 154890,
+        "reference_intensity_per_1000": 1.4139066434243657,
+        "method_counts": {
+          "Manual Testing": 83,
+          "Automated Testing": 72,
+          "Visual Inspection": 64
+        },
+        "line_counts": {
+          "Line-2": 219
+        },
+        "defect_ids_sha256": "9c7d98236d0b449a4e3bafd40819c00080eae11619d63477f5138d60627187f2"
+      },
+      "exclude_cost_10": {
+        "event_count": 219,
+        "linked_event_count": 219,
+        "critical_count": 70,
+        "cost_known_count": 213,
+        "cost_unknown_count": 6,
+        "known_repair_cost": "93288.75",
+        "cost_coverage_pct": 97.26027397260275,
+        "cohort_product_count": 20,
+        "month_count": 6,
+        "reference_output": 154890,
+        "reference_intensity_per_1000": 1.4139066434243657,
+        "method_counts": {
+          "Manual Testing": 83,
+          "Automated Testing": 72,
+          "Visual Inspection": 64
+        },
+        "line_counts": {
+          "Line-2": 219
+        },
+        "defect_ids_sha256": "9c7d98236d0b449a4e3bafd40819c00080eae11619d63477f5138d60627187f2"
+      }
+    },
+    "Line-3": {
+      "": {
+        "event_count": 282,
+        "linked_event_count": 282,
+        "critical_count": 95,
+        "cost_known_count": 277,
+        "cost_unknown_count": 5,
+        "known_repair_cost": "189934.78",
+        "cost_coverage_pct": 98.22695035460993,
+        "cohort_product_count": 29,
+        "month_count": 6,
+        "reference_output": 123108,
+        "reference_intensity_per_1000": 2.2906716054196314,
+        "method_counts": {
+          "Manual Testing": 99,
+          "Visual Inspection": 95,
+          "Automated Testing": 88
+        },
+        "line_counts": {
+          "Line-3": 282
+        },
+        "defect_ids_sha256": "7a09b1c3c9a8c4d518c7a9cdf99b74b0bdd9f0ee20c4293638740ecdeca52171"
+      },
+      "exclude_cost_10": {
+        "event_count": 282,
+        "linked_event_count": 282,
+        "critical_count": 95,
+        "cost_known_count": 277,
+        "cost_unknown_count": 5,
+        "known_repair_cost": "189934.78",
+        "cost_coverage_pct": 98.22695035460993,
+        "cohort_product_count": 29,
+        "month_count": 6,
+        "reference_output": 123108,
+        "reference_intensity_per_1000": 2.2906716054196314,
+        "method_counts": {
+          "Manual Testing": 99,
+          "Visual Inspection": 95,
+          "Automated Testing": 88
+        },
+        "line_counts": {
+          "Line-3": 282
+        },
+        "defect_ids_sha256": "7a09b1c3c9a8c4d518c7a9cdf99b74b0bdd9f0ee20c4293638740ecdeca52171"
+      }
+    },
+    "Line-4": {
+      "": {
+        "event_count": 340,
+        "linked_event_count": 340,
+        "critical_count": 111,
+        "cost_known_count": 332,
+        "cost_unknown_count": 8,
+        "known_repair_cost": "132588.45",
+        "cost_coverage_pct": 97.6470588235294,
+        "cohort_product_count": 32,
+        "month_count": 6,
+        "reference_output": 161676,
+        "reference_intensity_per_1000": 2.102971374848462,
+        "method_counts": {
+          "Manual Testing": 122,
+          "Automated Testing": 106,
+          "Visual Inspection": 112
+        },
+        "line_counts": {
+          "Line-4": 340
+        },
+        "defect_ids_sha256": "8f58ec57488e74645418edf05843299d2d80a10ea82755c8039fecaf7181e2ea"
+      },
+      "exclude_cost_10": {
+        "event_count": 340,
+        "linked_event_count": 340,
+        "critical_count": 111,
+        "cost_known_count": 326,
+        "cost_unknown_count": 14,
+        "known_repair_cost": "132528.45",
+        "cost_coverage_pct": 95.88235294117646,
+        "cohort_product_count": 32,
+        "month_count": 6,
+        "reference_output": 161676,
+        "reference_intensity_per_1000": 2.102971374848462,
+        "method_counts": {
+          "Manual Testing": 122,
+          "Automated Testing": 106,
+          "Visual Inspection": 112
+        },
+        "line_counts": {
+          "Line-4": 340
+        },
+        "defect_ids_sha256": "8f58ec57488e74645418edf05843299d2d80a10ea82755c8039fecaf7181e2ea"
+      }
+    }
+  },
+  "june_minus_january": {
+    "production_line": [
+      {
+        "label": "Line-3",
+        "january": 31,
+        "june": 74,
+        "delta": 43
+      },
+      {
+        "label": "Line-2",
+        "january": 26,
+        "june": 54,
+        "delta": 28
+      },
+      {
+        "label": "Line-4",
+        "january": 56,
+        "june": 77,
+        "delta": 21
+      },
+      {
+        "label": "Line-1",
+        "january": 34,
+        "june": 46,
+        "delta": 12
+      },
+      {
+        "label": "Unknown",
+        "january": 0,
+        "june": 1,
+        "delta": 1
+      }
+    ],
+    "category": [
+      {
+        "label": "Category 2",
+        "january": 27,
+        "june": 61,
+        "delta": 34
+      },
+      {
+        "label": "Category 4",
+        "january": 37,
+        "june": 61,
+        "delta": 24
+      },
+      {
+        "label": "Category 1",
+        "january": 44,
+        "june": 67,
+        "delta": 23
+      },
+      {
+        "label": "Category 3",
+        "january": 39,
+        "june": 62,
+        "delta": 23
+      },
+      {
+        "label": "Unknown",
+        "january": 0,
+        "june": 1,
+        "delta": 1
+      }
+    ],
+    "product_id": [
+      {
+        "label": "63",
+        "january": 2,
+        "june": 8,
+        "delta": 6
+      },
+      {
+        "label": "81",
+        "january": 2,
+        "june": 7,
+        "delta": 5
+      },
+      {
+        "label": "95",
+        "january": 1,
+        "june": 6,
+        "delta": 5
+      },
+      {
+        "label": "12",
+        "january": 1,
+        "june": 5,
+        "delta": 4
+      },
+      {
+        "label": "36",
+        "january": 1,
+        "june": 5,
+        "delta": 4
+      },
+      {
+        "label": "7",
+        "january": 0,
+        "june": 4,
+        "delta": 4
+      },
+      {
+        "label": "10",
+        "january": 2,
+        "june": 5,
+        "delta": 3
+      },
+      {
+        "label": "2",
+        "january": 0,
+        "june": 3,
+        "delta": 3
+      },
+      {
+        "label": "27",
+        "january": 2,
+        "june": 5,
+        "delta": 3
+      },
+      {
+        "label": "35",
+        "january": 1,
+        "june": 4,
+        "delta": 3
+      },
+      {
+        "label": "38",
+        "january": 0,
+        "june": 3,
+        "delta": 3
+      },
+      {
+        "label": "43",
+        "january": 2,
+        "june": 5,
+        "delta": 3
+      },
+      {
+        "label": "5",
+        "january": 2,
+        "june": 5,
+        "delta": 3
+      },
+      {
+        "label": "51",
+        "january": 1,
+        "june": 4,
+        "delta": 3
+      },
+      {
+        "label": "53",
+        "january": 0,
+        "june": 3,
+        "delta": 3
+      },
+      {
+        "label": "57",
+        "january": 0,
+        "june": 3,
+        "delta": 3
+      },
+      {
+        "label": "61",
+        "january": 1,
+        "june": 4,
+        "delta": 3
+      },
+      {
+        "label": "67",
+        "january": 1,
+        "june": 4,
+        "delta": 3
+      },
+      {
+        "label": "68",
+        "january": 0,
+        "june": 3,
+        "delta": 3
+      },
+      {
+        "label": "85",
+        "january": 2,
+        "june": 5,
+        "delta": 3
+      },
+      {
+        "label": "91",
+        "january": 0,
+        "june": 3,
+        "delta": 3
+      },
+      {
+        "label": "17",
+        "january": 2,
+        "june": 4,
+        "delta": 2
+      },
+      {
+        "label": "22",
+        "january": 0,
+        "june": 2,
+        "delta": 2
+      },
+      {
+        "label": "24",
+        "january": 0,
+        "june": 2,
+        "delta": 2
+      },
+      {
+        "label": "25",
+        "january": 1,
+        "june": 3,
+        "delta": 2
+      },
+      {
+        "label": "28",
+        "january": 1,
+        "june": 3,
+        "delta": 2
+      },
+      {
+        "label": "29",
+        "january": 0,
+        "june": 2,
+        "delta": 2
+      },
+      {
+        "label": "31",
+        "january": 1,
+        "june": 3,
+        "delta": 2
+      },
+      {
+        "label": "33",
+        "january": 1,
+        "june": 3,
+        "delta": 2
+      },
+      {
+        "label": "39",
+        "january": 1,
+        "june": 3,
+        "delta": 2
+      },
+      {
+        "label": "45",
+        "january": 2,
+        "june": 4,
+        "delta": 2
+      },
+      {
+        "label": "46",
+        "january": 1,
+        "june": 3,
+        "delta": 2
+      },
+      {
+        "label": "47",
+        "january": 0,
+        "june": 2,
+        "delta": 2
+      },
+      {
+        "label": "48",
+        "january": 0,
+        "june": 2,
+        "delta": 2
+      },
+      {
+        "label": "60",
+        "january": 0,
+        "june": 2,
+        "delta": 2
+      },
+      {
+        "label": "75",
+        "january": 1,
+        "june": 3,
+        "delta": 2
+      },
+      {
+        "label": "80",
+        "january": 2,
+        "june": 4,
+        "delta": 2
+      },
+      {
+        "label": "86",
+        "january": 0,
+        "june": 2,
+        "delta": 2
+      },
+      {
+        "label": "96",
+        "january": 1,
+        "june": 3,
+        "delta": 2
+      },
+      {
+        "label": "99",
+        "january": 0,
+        "june": 2,
+        "delta": 2
+      },
+      {
+        "label": "102",
+        "january": 0,
+        "june": 1,
+        "delta": 1
+      },
+      {
+        "label": "13",
+        "january": 2,
+        "june": 3,
+        "delta": 1
+      },
+      {
+        "label": "19",
+        "january": 0,
+        "june": 1,
+        "delta": 1
+      },
+      {
+        "label": "21",
+        "january": 1,
+        "june": 2,
+        "delta": 1
+      },
+      {
+        "label": "34",
+        "january": 1,
+        "june": 2,
+        "delta": 1
+      },
+      {
+        "label": "37",
+        "january": 2,
+        "june": 3,
+        "delta": 1
+      },
+      {
+        "label": "44",
+        "january": 1,
+        "june": 2,
+        "delta": 1
+      },
+      {
+        "label": "54",
+        "january": 2,
+        "june": 3,
+        "delta": 1
+      },
+      {
+        "label": "56",
+        "january": 4,
+        "june": 5,
+        "delta": 1
+      },
+      {
+        "label": "62",
+        "january": 0,
+        "june": 1,
+        "delta": 1
+      },
+      {
+        "label": "65",
+        "january": 1,
+        "june": 2,
+        "delta": 1
+      },
+      {
+        "label": "70",
+        "january": 1,
+        "june": 2,
+        "delta": 1
+      },
+      {
+        "label": "71",
+        "january": 0,
+        "june": 1,
+        "delta": 1
+      },
+      {
+        "label": "72",
+        "january": 1,
+        "june": 2,
+        "delta": 1
+      },
+      {
+        "label": "77",
+        "january": 3,
+        "june": 4,
+        "delta": 1
+      },
+      {
+        "label": "8",
+        "january": 1,
+        "june": 2,
+        "delta": 1
+      },
+      {
+        "label": "82",
+        "january": 3,
+        "june": 4,
+        "delta": 1
+      },
+      {
+        "label": "83",
+        "january": 6,
+        "june": 7,
+        "delta": 1
+      },
+      {
+        "label": "88",
+        "january": 0,
+        "june": 1,
+        "delta": 1
+      },
+      {
+        "label": "90",
+        "january": 1,
+        "june": 2,
+        "delta": 1
+      },
+      {
+        "label": "92",
+        "january": 4,
+        "june": 5,
+        "delta": 1
+      },
+      {
+        "label": "94",
+        "january": 1,
+        "june": 2,
+        "delta": 1
+      },
+      {
+        "label": "98",
+        "january": 1,
+        "june": 2,
+        "delta": 1
+      },
+      {
+        "label": "100",
+        "january": 1,
+        "june": 1,
+        "delta": 0
+      },
+      {
+        "label": "101",
+        "january": 0,
+        "june": 0,
+        "delta": 0
+      },
+      {
+        "label": "103",
+        "january": 0,
+        "june": 0,
+        "delta": 0
+      },
+      {
+        "label": "105",
+        "january": 0,
+        "june": 0,
+        "delta": 0
+      },
+      {
+        "label": "11",
+        "january": 1,
+        "june": 1,
+        "delta": 0
+      },
+      {
+        "label": "14",
+        "january": 3,
+        "june": 3,
+        "delta": 0
+      },
+      {
+        "label": "18",
+        "january": 1,
+        "june": 1,
+        "delta": 0
+      },
+      {
+        "label": "20",
+        "january": 0,
+        "june": 0,
+        "delta": 0
+      },
+      {
+        "label": "26",
+        "january": 2,
+        "june": 2,
+        "delta": 0
+      },
+      {
+        "label": "3",
+        "january": 0,
+        "june": 0,
+        "delta": 0
+      },
+      {
+        "label": "32",
+        "january": 0,
+        "june": 0,
+        "delta": 0
+      },
+      {
+        "label": "40",
+        "january": 0,
+        "june": 0,
+        "delta": 0
+      },
+      {
+        "label": "49",
+        "january": 3,
+        "june": 3,
+        "delta": 0
+      },
+      {
+        "label": "50",
+        "january": 2,
+        "june": 2,
+        "delta": 0
+      },
+      {
+        "label": "55",
+        "january": 0,
+        "june": 0,
+        "delta": 0
+      },
+      {
+        "label": "58",
+        "january": 1,
+        "june": 1,
+        "delta": 0
+      },
+      {
+        "label": "59",
+        "january": 1,
+        "june": 1,
+        "delta": 0
+      },
+      {
+        "label": "73",
+        "january": 2,
+        "june": 2,
+        "delta": 0
+      },
+      {
+        "label": "74",
+        "january": 4,
+        "june": 4,
+        "delta": 0
+      },
+      {
+        "label": "78",
+        "january": 0,
+        "june": 0,
+        "delta": 0
+      },
+      {
+        "label": "84",
+        "january": 3,
+        "june": 3,
+        "delta": 0
+      },
+      {
+        "label": "9",
+        "january": 1,
+        "june": 1,
+        "delta": 0
+      },
+      {
+        "label": "1",
+        "january": 2,
+        "june": 1,
+        "delta": -1
+      },
+      {
+        "label": "15",
+        "january": 3,
+        "june": 2,
+        "delta": -1
+      },
+      {
+        "label": "16",
+        "january": 2,
+        "june": 1,
+        "delta": -1
+      },
+      {
+        "label": "30",
+        "january": 3,
+        "june": 2,
+        "delta": -1
+      },
+      {
+        "label": "41",
+        "january": 2,
+        "june": 1,
+        "delta": -1
+      },
+      {
+        "label": "42",
+        "january": 2,
+        "june": 1,
+        "delta": -1
+      },
+      {
+        "label": "52",
+        "january": 1,
+        "june": 0,
+        "delta": -1
+      },
+      {
+        "label": "64",
+        "january": 3,
+        "june": 2,
+        "delta": -1
+      },
+      {
+        "label": "69",
+        "january": 2,
+        "june": 1,
+        "delta": -1
+      },
+      {
+        "label": "76",
+        "january": 3,
+        "june": 2,
+        "delta": -1
+      },
+      {
+        "label": "87",
+        "january": 3,
+        "june": 2,
+        "delta": -1
+      },
+      {
+        "label": "89",
+        "january": 2,
+        "june": 1,
+        "delta": -1
+      },
+      {
+        "label": "97",
+        "january": 3,
+        "june": 2,
+        "delta": -1
+      },
+      {
+        "label": "23",
+        "january": 2,
+        "june": 0,
+        "delta": -2
+      },
+      {
+        "label": "4",
+        "january": 4,
+        "june": 2,
+        "delta": -2
+      },
+      {
+        "label": "66",
+        "january": 3,
+        "june": 1,
+        "delta": -2
+      },
+      {
+        "label": "93",
+        "january": 3,
+        "june": 1,
+        "delta": -2
+      },
+      {
+        "label": "79",
+        "january": 3,
+        "june": 0,
+        "delta": -3
+      },
+      {
+        "label": "6",
+        "january": 5,
+        "june": 0,
+        "delta": -5
+      }
+    ]
+  },
+  "location_severity": [
+    {
+      "location": "Component",
+      "severity": "Critical",
+      "events": 148
+    },
+    {
+      "location": "Component",
+      "severity": "Minor",
+      "events": 87
+    },
+    {
+      "location": "Component",
+      "severity": "Moderate",
+      "events": 111
+    },
+    {
+      "location": "Internal",
+      "severity": "Critical",
+      "events": 101
+    },
+    {
+      "location": "Internal",
+      "severity": "Minor",
+      "events": 117
+    },
+    {
+      "location": "Internal",
+      "severity": "Moderate",
+      "events": 123
+    },
+    {
+      "location": "Surface",
+      "severity": "Critical",
+      "events": 100
+    },
+    {
+      "location": "Surface",
+      "severity": "Minor",
+      "events": 157
+    },
+    {
+      "location": "Surface",
+      "severity": "Moderate",
+      "events": 127
+    }
+  ]
+}

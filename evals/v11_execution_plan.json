@@ -1,0 +1,144 @@
+{
+  "schema": "evaluation-phase-order-amendment-v1",
+  "candidate_arm": "final_v11",
+  "recorded_at_utc": "2026-10-16T10:40:17.129365+00:00",
+  "status": "frozen_before_candidate_dispatch",
+  "authorized_by": "Root integration owner authorized preparation of this prospective configuration-only arm after the observed V10 Q05 provider max-output stop. No API request is authorized by this plan.",
+  "protocol_file": "evals/quality_operations_cases.json",
+  "protocol_sha256": "14778ae30bb4f138247f2db9c0208314e4a369b19cec4427f69c72d307a6b40d",
+  "questions_criteria_fixtures_expected_values_unchanged": true,
+  "reason": "Retain max reasoning and increase only the evaluation process output cap from12000 to32000, while preserving the exact V9/V10 source, prompts, executor, model, service tier, QA retries, tools and central budget. V10 delivered only a failure fallback when its third generation ended incomplete at12000 output tokens; Q06 and all15 B cases were unrun under the unchanged executor safe-stop. This new arm preserves that trajectory and does not retry within V10. A larger cap is an experimental configuration change, not an assumed quality improvement or unseen benchmark.",
+  "phases": [
+    {
+      "phase": "final_v11_a",
+      "case_ids": [
+        "Q05",
+        "Q06"
+      ],
+      "planned_case_count": 2,
+      "planned_turn_count": 2,
+      "case_order": "Original protocol relative order"
+    },
+    {
+      "phase": "final_v11_b",
+      "case_ids": [
+        "Q01",
+        "Q02",
+        "Q03",
+        "Q04",
+        "Q07",
+        "Q08",
+        "Q09",
+        "Q10",
+        "Q11",
+        "Q12",
+        "Q13",
+        "Q14",
+        "Q15",
+        "Q16",
+        "Q17"
+      ],
+      "planned_case_count": 15,
+      "planned_turn_count": 16,
+      "case_order": "Original protocol relative order"
+    }
+  ],
+  "dispatch_gate": {
+    "phase_a": "V10 failed-case review and immutable pre-reconciliation evidence, a verified owner-authorized narrow new-hold reconciliation readback, exact unchanged inputs, complete safe V11 configuration delta, fresh source/executor/configuration freeze, targeted relevant configuration and offline max/32000 request-construction proof, independent final readback and separate explicit root A-only GO must precede any V11 model request. Reuse full560 and independent40+48 source gates only under exact unchanged covered-source/test identity; do not call reused tests fresh reruns.",
+    "phase_b": "Both Q05 and Q06 must have independent strict_pass=true and application_complete=true, then root gives a fresh phase-B dispatch GO.",
+    "phase_a_failure": "Preserve each failed or incomplete case, actual turn, retry and observed usage. A strict/application failure blocks phase B and leaves all fifteen B cases unrun. Complete the remaining planned phase-A case under the same identity unless a provider, runtime, budget or owner stop applies; a failed case is never silently replayed.",
+    "source_change_after_phase_a": "Any application, prompt, executor or configuration change requires a new candidate revision. Different source/configuration identities cannot be combined into final_v11.",
+    "interruption": "Preserve actual attempts and planned/observed/unrun turns. An undispatched turn is not an actual run. Follow existing provider, central budget and owner stops."
+  },
+  "identity_requirements": [
+    "Both phases bind the same frozen application, prompts, executor, protocol, model, max reasoning effort,32000 output cap and evaluation configuration.",
+    "Each selected input object must equal the unchanged frozen protocol input exactly. No expected answer, evaluator label, rubric, supplementary answer key or evaluation-specific reference material is added to the model input. The ordinary application case brief, source and KPI definitions remain legitimate context.",
+    "Use fresh isolated sessions per case; keep the Q09 session across its two turns. Retain isolated Operations state and source-status restoration before each case.",
+    "Request only gpt-6-luna, max reasoning and32000 output cap for every ordinary Luna role through process-local OPENAI_REASONING_EFFORT=max and OPENAI_MAX_OUTPUT_TOKENS=32000 overrides. Normal UI and .env retain medium reasoning,12000 cap and enabled file search. Preserve original case modes, filters, prompts/context conditions, local canonical tools, evaluation file_search=false, async=false and native multi-agent=false.",
+    "Continue the existing central USD 5 per-run and USD 10 development ledger. Preserve all old holds; do not reset, fork or create another budget. Only luna_engine_sol dispatches paid model requests.",
+    "The generic run_final.py executor remains byte-identical to V9/V10. Any actual necessity for an executor or source edit invalidates this configuration-only comparison and needs a disclosed new revision before dispatch."
+  ],
+  "reporting": {
+    "phase_a_only": "Report two attempted cases and two planned turns with actual observed counts. A-only results are not a completed seventeen-case suite. Q01 original-baseline comparison is absent from phase A.",
+    "complete_candidate": "A complete V11 result requires17 reviewed cases and18 actual planned turns under the same frozen identity; otherwise report each unrun case and interrupted turn. A-only results are not a completed suite.",
+    "metrics": "Keep independent strict task success, application completion and end-to-end completion separate. Count Q09 once as a case and every actual distinct turn once in telemetry. Preserve every earlier revision rather than pooling quality rates.",
+    "comparison_limit": "These are disclosed development regressions on reused questions. Only Q01 has an observed original baseline. No general model improvement or unseen-question benchmark claim is supported.",
+    "semantic_grading": "Apply the unchanged original criteria by semantic meaning across actual delivered chat and selected files. Hidden receipts do not satisfy reported answer coverage. Table-tool usage, table format and exact keywords are not required unless the actual task requires them; optional reported numbers must be correct for their displayed population/labels.",
+    "configuration_comparison": "The sole intended delta from V10 evaluation is max_output_tokens12000 to32000. Max reasoning is retained. Model/source/prompts/executor/QA retries2/service tier/tools/central budgets and existing disabled evaluation file search remain unchanged. Different trajectories, response counts, usage, incomplete generations and QA repairs are outcomes and must be preserved. No general effort or cap superiority can be inferred from this adaptive development trial."
+  },
+  "source_identity_binding": "Pending a fresh final_v11 source/configuration freeze after preserved V10 failure/accounting evidence and exact source/input/configuration checks. Covered V9/V10 source/test/frontend/workbook bytes must remain identical. The plan alone authorizes no request; its exact SHA must bind the V11 freeze and actual manifests.",
+  "preserved_prior_revision": {
+    "candidate_arm": "final_v10",
+    "planned_A_cases": 2,
+    "observed_cases": 1,
+    "observed_runs": 1,
+    "strict_pass_cases": 0,
+    "application_complete_cases": 0,
+    "end_to_end_complete_cases": 0,
+    "Q05_raw_sha256": "8c7ca21b79fb054186d1815bf44798dc7bb829508f4a6fc2ee2c62b3b4c67cd1",
+    "Q05_independent_review_sha256": "5ccb9c94a83acdf05545b3dfd0d1f9f8bc82dfb84b8bbaf1326f77d674afa200",
+    "public_reviewed_results_snapshot_sha256": "41e06124f79214c132521121d2705212ff13ab6ab2eba184c256a636a2363950",
+    "source_freeze_sha256": "4f0e402de798430192f885b36acd4f4c32dba4a2cc9c560bc831fef48d47eb74",
+    "execution_plan_sha256": "55665173e745972abeb87d250add8a8cf8476908c5804ed0b98486aa05b58f8f",
+    "unrun_A_case_ids": [
+      "Q06"
+    ],
+    "phase_b_unrun_case_ids": [
+      "Q01",
+      "Q02",
+      "Q03",
+      "Q04",
+      "Q07",
+      "Q08",
+      "Q09",
+      "Q10",
+      "Q11",
+      "Q12",
+      "Q13",
+      "Q14",
+      "Q15",
+      "Q16",
+      "Q17"
+    ],
+    "all_unrun_case_count": 16,
+    "stop": "Third Lead generation terminal incomplete at12000 output tokens; no ordinary report QA input, no delivered numeric claims or selected artifacts; executor stops before Q06.",
+    "accounting": "Any separately authorized reconciliation affects only the fully known new V10 reservation after immutable pre-reconciliation capture; it does not change the failed outcome, known cost, old V5 unresolved hold or provide API/rerun authority.",
+    "note": "The V10 raw failure, all three terminal provider usage records, tool trace, unselected artifacts, public review and pre/post accounting evidence remain separate. Later closure hashes bind the separate V11 freeze without rewriting this pre-outcome plan."
+  },
+  "configuration_experiment": {
+    "baseline_arm": "final_v10",
+    "baseline_reasoning_effort": "max",
+    "candidate_reasoning_effort": "max",
+    "baseline_max_output_tokens": 12000,
+    "candidate_max_output_tokens": 32000,
+    "process_environment_override": {
+      "OPENAI_REASONING_EFFORT": "max",
+      "OPENAI_MAX_OUTPUT_TOKENS": "32000"
+    },
+    "all_ordinary_Luna_roles": true,
+    "complete_normal_UI_to_experiment_delta": {
+      "reasoning_effort": {
+        "normal_UI_and_env": "medium",
+        "evaluation_process": "max",
+        "new_delta_from_V10": false
+      },
+      "max_output_tokens": {
+        "normal_UI_and_env": 12000,
+        "evaluation_process": 32000,
+        "new_delta_from_V10": true
+      },
+      "enable_file_search": {
+        "normal_UI_and_env": true,
+        "evaluation_process": false,
+        "new_delta_from_V10": false
+      }
+    },
+    "only_new_evaluation_configuration_change": "max_output_tokens12000 to32000",
+    "normal_UI_and_env_file_reasoning_effort": "medium",
+    "normal_UI_and_env_file_output_cap": 12000,
+    "source_and_executor_change_authorized_by_this_plan": false,
+    "normal_UI_adoption_authorized_by_this_plan": false,
+    "expected_quality_improvement": "Not assumed; original independent criteria determine actual outcomes.",
+    "legacy_executor_metadata_limit": "The unchanged configuration_difference_from_ui field records only file_search, not process reasoning or output-cap overrides. The generic manifest does record reasoning_effort, but does not have a standalone max_output_tokens field. Bind the complete safe configuration and source freeze in the manifest and separately retain the actual pre-Workspace effective Settings/normalized-request launch assertion at max/32000; never invent a manifest output-cap field or imply normal UI adoption."
+  }
+}

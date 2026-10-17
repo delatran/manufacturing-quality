@@ -1,0 +1,284 @@
+{
+  "schema_version": 1,
+  "scope": "Pinned manufacturing case only; not a model or provider-quality benchmark.",
+  "provenance": {
+    "source_url": "https://raw.githubusercontent.com/phongtdt/RFID_Data-Analyst_Case-Study-Oct-2026/main/mock-api/defect_records.json",
+    "source_sha256": "863ca40ca37f639c064ce0bb66e679d7c3ab4ceca8cd79569d31310004728dc8",
+    "master_path": "data/master_data.csv",
+    "master_sha256": "8772e8f0d0fbe1bf66b259859055e1742b066f91a31777b9f5e4630f606b9a86",
+    "fetched_at_utc": "2026-10-15T08:07:24.330698+00:00",
+    "builder": "analyst/case_study/oracle_builder.py",
+    "builder_sha256_lf_normalized": "193b4b7fc47d384a27771d66b2c09eec77e088776fd5348004a12987fb62c8f7",
+    "derivation": "Standalone HTTP/CSV parsing with the standard library; no production imports. See builder for explicit rules and manual review instructions.",
+    "record_id_digest": "SHA-256 of ascending decimal defect IDs joined by commas, encoded as ASCII, with no newline.",
+    "money": "Exact Decimal sum of observed nonnegative costs; unknown costs retained as events.",
+    "denominator": "All master products matching line/category/product filters, including zero-event products, multiplied by selected full months. Event filters do not restrict output.",
+    "reconciliation": {
+      "raw": 1090,
+      "exact_copies_removed": 12,
+      "normalized_copy_removed": 1,
+      "compatible_copy_removed": 1,
+      "conflicting_rows_quarantined": 2,
+      "clean": 1074,
+      "out_of_period": 3,
+      "in_scope": 1071
+    },
+    "historical_builder": "backend/tests/fixtures/build_business_questions.py",
+    "migrated_builder_sha256_lf_normalized": "a544f904ab4bdaa89306becc90a1029d7e30c56e1338fded9a51ea8e0d20780e"
+  },
+  "cases": [
+    {
+      "id": "full_scope",
+      "question": "What are total logged workload, observed cost and reference intensity for January-June?",
+      "filters": {},
+      "expected_status": 200,
+      "expected": {
+        "event_count": 1071,
+        "linked_event_count": 1067,
+        "unmatched_event_count": 4,
+        "critical_count": 349,
+        "cost_known_count": 1049,
+        "cost_unknown_count": 22,
+        "known_repair_cost": "508864.39",
+        "cost_coverage_pct": 97.94584500466853,
+        "cost_status": "partial",
+        "cohort_product_count": 100,
+        "month_count": 6,
+        "reference_output": 594360,
+        "reference_intensity_per_1000": 1.7952082912712832,
+        "defect_ids_sha256": "b3cfc0191170dc2ae948fd93e8141f5733ea1956803605a4f5fc72c35c982bdf"
+      }
+    },
+    {
+      "id": "critical_component",
+      "question": "Do Critical Component events retain the full master output denominator?",
+      "filters": {
+        "severity": "Critical",
+        "defect_location": "Component"
+      },
+      "expected_status": 200,
+      "expected": {
+        "event_count": 148,
+        "linked_event_count": 147,
+        "unmatched_event_count": 1,
+        "critical_count": 148,
+        "cost_known_count": 144,
+        "cost_unknown_count": 4,
+        "known_repair_cost": "65386.91",
+        "cost_coverage_pct": 97.2972972972973,
+        "cost_status": "partial",
+        "cohort_product_count": 100,
+        "month_count": 6,
+        "reference_output": 594360,
+        "reference_intensity_per_1000": 0.24732485362406623,
+        "defect_ids_sha256": "be6ed0571b21b450e844208aca501a8be983ba4f57d7ddba614560e2772d4f0e"
+      }
+    },
+    {
+      "id": "product_81",
+      "question": "What are product 81 workload and known cost relative to its six-month reference output?",
+      "filters": {
+        "product_id": "81"
+      },
+      "expected_status": 200,
+      "expected": {
+        "event_count": 34,
+        "linked_event_count": 34,
+        "unmatched_event_count": 0,
+        "critical_count": 11,
+        "cost_known_count": 34,
+        "cost_unknown_count": 0,
+        "known_repair_cost": "16756.54",
+        "cost_coverage_pct": 100.0,
+        "cost_status": "complete",
+        "cohort_product_count": 1,
+        "month_count": 6,
+        "reference_output": 2838,
+        "reference_intensity_per_1000": 11.980267794221282,
+        "defect_ids_sha256": "415c5a641e1cd60db3dd1f37ea3beecffe6040cdefbb11eeedb42634ae5388d4"
+      }
+    },
+    {
+      "id": "line_3",
+      "question": "What are Line-3 workload, observed cost coverage and reference intensity?",
+      "filters": {
+        "production_line": "Line-3"
+      },
+      "expected_status": 200,
+      "expected": {
+        "event_count": 282,
+        "linked_event_count": 282,
+        "unmatched_event_count": 0,
+        "critical_count": 95,
+        "cost_known_count": 277,
+        "cost_unknown_count": 5,
+        "known_repair_cost": "189934.78",
+        "cost_coverage_pct": 98.22695035460993,
+        "cost_status": "partial",
+        "cohort_product_count": 29,
+        "month_count": 6,
+        "reference_output": 123108,
+        "reference_intensity_per_1000": 2.290671605419632,
+        "defect_ids_sha256": "7a09b1c3c9a8c4d518c7a9cdf99b74b0bdd9f0ee20c4293638740ecdeca52171"
+      }
+    },
+    {
+      "id": "empty_line_1_category_2",
+      "question": "Does Line-1 with Category 2 return an empty cohort and unavailable intensity?",
+      "filters": {
+        "production_line": "Line-1",
+        "category": "Category 2"
+      },
+      "expected_status": 200,
+      "expected": {
+        "event_count": 0,
+        "linked_event_count": 0,
+        "unmatched_event_count": 0,
+        "critical_count": 0,
+        "cost_known_count": 0,
+        "cost_unknown_count": 0,
+        "known_repair_cost": "0.00",
+        "cost_coverage_pct": null,
+        "cost_status": "empty",
+        "cohort_product_count": 0,
+        "month_count": 6,
+        "reference_output": null,
+        "reference_intensity_per_1000": null,
+        "defect_ids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "id": "unknown_product_104",
+      "question": "Is product 104 rejected after its only source variant is conflict-quarantined?",
+      "filters": {
+        "product_id": "104"
+      },
+      "expected_status": 422,
+      "expected_detail": "Unknown product_id: 104"
+    },
+    {
+      "id": "unmatched_product_105",
+      "question": "Does unmatched product 105 retain its event and cost without inventing output?",
+      "filters": {
+        "product_id": "105"
+      },
+      "expected_status": 200,
+      "expected": {
+        "event_count": 1,
+        "linked_event_count": 0,
+        "unmatched_event_count": 1,
+        "critical_count": 0,
+        "cost_known_count": 1,
+        "cost_unknown_count": 0,
+        "known_repair_cost": "818.33",
+        "cost_coverage_pct": 100.0,
+        "cost_status": "complete",
+        "cohort_product_count": 0,
+        "month_count": 6,
+        "reference_output": null,
+        "reference_intensity_per_1000": null,
+        "defect_ids_sha256": "1a6562590ef19d1045d06c4055742d38288e9e6dcd71ccde5cee80f1d5a774eb"
+      }
+    },
+    {
+      "id": "january_only",
+      "question": "What are January-only workload and cost coverage using one month of reference output?",
+      "filters": {
+        "start_month": "2024-01",
+        "end_month": "2024-01"
+      },
+      "expected_status": 200,
+      "expected": {
+        "event_count": 147,
+        "linked_event_count": 147,
+        "unmatched_event_count": 0,
+        "critical_count": 50,
+        "cost_known_count": 142,
+        "cost_unknown_count": 5,
+        "known_repair_cost": "65488.29",
+        "cost_coverage_pct": 96.5986394557823,
+        "cost_status": "partial",
+        "cohort_product_count": 100,
+        "month_count": 1,
+        "reference_output": 99060,
+        "reference_intensity_per_1000": 1.4839491217443974,
+        "defect_ids_sha256": "3007d9e51b71ec71554a39bcdf9ea0610a05fb67bb9d6d369093a908aa9cbfe8"
+      }
+    },
+    {
+      "id": "june_only",
+      "question": "What are June-only workload and cost coverage using one month of reference output?",
+      "filters": {
+        "start_month": "2024-06",
+        "end_month": "2024-06"
+      },
+      "expected_status": 200,
+      "expected": {
+        "event_count": 252,
+        "linked_event_count": 251,
+        "unmatched_event_count": 1,
+        "critical_count": 74,
+        "cost_known_count": 245,
+        "cost_unknown_count": 7,
+        "known_repair_cost": "123930.10",
+        "cost_coverage_pct": 97.22222222222221,
+        "cost_status": "partial",
+        "cohort_product_count": 100,
+        "month_count": 1,
+        "reference_output": 99060,
+        "reference_intensity_per_1000": 2.5338178881485964,
+        "defect_ids_sha256": "448bb06b620beed09df261c606af39c72b65647197557a619d95a9418e404895"
+      }
+    },
+    {
+      "id": "line_3_march_may",
+      "question": "What are Line-3 results from March through May using exactly three months of output?",
+      "filters": {
+        "production_line": "Line-3",
+        "start_month": "2024-03",
+        "end_month": "2024-05"
+      },
+      "expected_status": 200,
+      "expected": {
+        "event_count": 144,
+        "linked_event_count": 144,
+        "unmatched_event_count": 0,
+        "critical_count": 48,
+        "cost_known_count": 141,
+        "cost_unknown_count": 3,
+        "known_repair_cost": "97827.64",
+        "cost_coverage_pct": 97.91666666666666,
+        "cost_status": "partial",
+        "cohort_product_count": 29,
+        "month_count": 3,
+        "reference_output": 61554,
+        "reference_intensity_per_1000": 2.3394092991519644,
+        "defect_ids_sha256": "e086db03ecf6a3e0f30439e5f97b17e80fc103dd271539bfed0db4b48febffab"
+      }
+    },
+    {
+      "id": "manual_testing",
+      "question": "What workload and cost did Manual Testing record while retaining the full output cohort?",
+      "filters": {
+        "inspection_method": "Manual Testing"
+      },
+      "expected_status": 200,
+      "expected": {
+        "event_count": 374,
+        "linked_event_count": 371,
+        "unmatched_event_count": 3,
+        "critical_count": 124,
+        "cost_known_count": 369,
+        "cost_unknown_count": 5,
+        "known_repair_cost": "184257.56",
+        "cost_coverage_pct": 98.66310160427807,
+        "cost_status": "partial",
+        "cohort_product_count": 100,
+        "month_count": 6,
+        "reference_output": 594360,
+        "reference_intensity_per_1000": 0.6242008210512148,
+        "defect_ids_sha256": "d18ae85603681137902402cf1bf17be42e6a64586320de6165687568c4c6e11e"
+      }
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "amended_at_utc": "2026-10-16T15:26:15.111556+00:00",
+  "before_protocol_sha256": "f1b7109bcb07b11ee6aaa9a013c18ef3bf0b96a761f4361b397ae6a7e9078a76",
+  "after_protocol_sha256": "a45c5b720da94f7f2cf4c9c6a0e4d5a46a97e71aa1a731dcfe8f57aa9ed4a4d5",
+  "reason": "Corrected manifest label: snapshot is the protocol-freeze working tree, which includes in-progress rebuild edits, rather than original baseline source. No paid request or scored live outcome occurred. Cases, expected values, thresholds and rubric unchanged."
+}

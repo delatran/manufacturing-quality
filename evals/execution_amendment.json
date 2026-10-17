@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "amendment_id": "baseline-scope-after-provider-limit",
+  "recorded_at_utc": "2026-10-16T03:25:31Z",
+  "protocol_sha256": "14778ae30bb4f138247f2db9c0208314e4a369b19cec4427f69c72d307a6b40d",
+  "authorization": "Root integration owner explicitly approved this execution change before improved dispatch.",
+  "timing": "After observing baseline Q01; before improved-arm answer outcomes.",
+  "reason": "The transport-repaired Q01 ran for 478.453 seconds, used an app-estimated USD 0.248400635, failed numeric evidence validation, and its repair attempt ended in provider max_output_tokens incompleteness. Root stopped additional baseline dispatch to repair the observed receipt/claim path failure.",
+  "baseline_attempts": [
+    {
+      "arm": "baseline",
+      "case_id": "Q01",
+      "run_id": "e4042930a6ee48e5b8fb45b4f3dafdcf",
+      "status": "failed",
+      "failure_kind": "tool_or_runtime",
+      "reason": "delegate_data_engineer: unhashable type: list",
+      "elapsed_seconds": 15.531,
+      "cost_usd_estimated": 0.000497425,
+      "evidence": ".runtime/luna-evaluation/baseline-Q01.json"
+    },
+    {
+      "arm": "baseline_transport_repaired",
+      "case_id": "Q01",
+      "run_id": "06b633482b9a47a5a24693e63d21b9ef",
+      "status": "failed",
+      "failure_kind": "tool_or_runtime",
+      "reason": "Invalid claim evidence paths followed by provider max_output_tokens incompleteness",
+      "elapsed_seconds": 478.453,
+      "cost_usd_estimated": 0.248400635,
+      "evidence": ".runtime/luna-evaluation/baseline_transport_repaired-Q01-turn0.json"
+    }
+  ],
+  "unrun_original_baseline_case_ids": [
+    "Q02",
+    "Q06",
+    "Q08"
+  ],
+  "improved_case_ids": [
+    "Q01",
+    "Q02",
+    "Q03",
+    "Q04",
+    "Q05",
+    "Q06",
+    "Q07",
+    "Q08",
+    "Q09",
+    "Q10",
+    "Q11",
+    "Q12",
+    "Q13",
+    "Q14",
+    "Q15",
+    "Q16",
+    "Q17"
+  ],
+  "unchanged": [
+    "All 17 task wordings",
+    "All fixture bytes",
+    "All numeric expectations",
+    "All per-case required behaviors",
+    "All dimensions and strict pass requirements",
+    "Shared existing API budget and Luna-only policy"
+  ],
+  "interpretation": [
+    "The originally planned four-case paired baseline was not completed.",
+    "Only Q01 can support a before/after task comparison, and its baseline was unsuccessful.",
+    "Improved-only cases support absolute observed case results, not baseline superiority claims.",
+    "Baseline-informed changes make the suite a development regression evaluation, not an unseen holdout.",
+    "The baseline manifest records prompt/runtime hashes and canonical analysis identity but not every application source hash during parallel edits; do not claim a fully isolated application A/B."
+  ]
+}

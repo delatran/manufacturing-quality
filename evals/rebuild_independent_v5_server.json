@@ -1,0 +1,48 @@
+{
+  "status": "Passed",
+  "api_base": "http://127.0.0.1:8209",
+  "state_dir": "C:\\Users\\nhanm\\OneDrive\\Ta\u0300i li\u00ea\u0323u\\Data Analyst Case Study\\manufacturing-quality\\.runtime\\rebuild-20261016\\numeric-v5-workspace",
+  "launched_at": "2026-10-16T17:48:09.644227+00:00",
+  "launch_method": "Owned hidden subprocess with explicit Settings(api_key=\"\",mode=\"auto\")",
+  "pid": 60168,
+  "health": {
+    "status": "ready",
+    "mode": "unavailable",
+    "model": "gpt-6-luna",
+    "ai_available": false
+  },
+  "preflight_context": {
+    "code_sha256": "1a2bdff324f23f554f0b1a683e7371732158fa1e0e6b7354dee0726ae46d42eb",
+    "context_id": "2f9244fabb34af4ba809dba46b2a47114b4f7d55565fb095afb56fe5352a71d0",
+    "dataset_version": "dataset-4586b9cf07494f8c8481a2f8f8a578359fbab7c4c7435b06ccb7defef31fa515",
+    "fetched_at": "2026-10-16T17:48:14.831969+00:00",
+    "filters": {
+      "category": "",
+      "defect_location": "",
+      "defect_type": "",
+      "end_month": "2024-06",
+      "inspection_method": "",
+      "product_id": "",
+      "production_line": "",
+      "scenario": "",
+      "severity": "",
+      "start_month": "2024-01"
+    },
+    "kpi_version": "kpi-v1-6e797aa13dff6c87",
+    "master_sha256": "8772e8f0d0fbe1bf66b259859055e1742b066f91a31777b9f5e4630f606b9a86",
+    "policy_version": "canonical-v2",
+    "scenario": "",
+    "snapshot_id": "ed2e98ca8e636350efb983a9f85c3483c62e24f1a1fd44c85285a208888d4108",
+    "source_sha256": "863ca40ca37f639c064ce0bb66e679d7c3ab4ceca8cd79569d31310004728dc8"
+  },
+  "preflight_dashboard_sha256": "834a529a1cbfd0da4d55cab7a9f794847e96ec732236fd3d445bd10bd4b13e8f",
+  "preflight_status": "Passed",
+  "verifier_exit_code": 0,
+  "completed_at": "2026-10-16T17:48:57.976866+00:00",
+  "canonical_context_id": "2f9244fabb34af4ba809dba46b2a47114b4f7d55565fb095afb56fe5352a71d0",
+  "receipt_sha256": "5e2ae7ab02ee989dd0cdfc6b7527689c889618ac1d69c1669ee84cd24cb4a204",
+  "versioned_receipt": "C:\\Users\\nhanm\\OneDrive\\Ta\u0300i li\u00ea\u0323u\\Data Analyst Case Study\\manufacturing-quality\\evals\\rebuild_independent_api_1a2bdff3_v5_20261016T174857.json",
+  "server_stopped": true,
+  "server_returncode": 1,
+  "stopped_at": "2026-10-16T17:48:58.466402+00:00"
+}

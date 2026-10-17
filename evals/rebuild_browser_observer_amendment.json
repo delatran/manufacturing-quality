@@ -1,0 +1,69 @@
+{
+  "recorded_at_utc": "2026-10-16T17:48:39.568446+00:00",
+  "change_kind": "evaluator_only_browser_observation_at_existing_case_boundaries",
+  "protocol_sha256": "a45c5b720da94f7f2cf4c9c6a0e4d5a46a97e71aa1a731dcfe8f57aa9ed4a4d5",
+  "oracle_sha256": "c6cce85ed7be987f1d797ef8e08438810fc8d855b82e896ac9940b50f0f1006c",
+  "evaluator_source_manifest": {
+    "scripts/run_rebuild_eval.py": "0bac7c4a6f70d1222feebba4f9b778e90b0d927d272007bf029ea1d8df444f26",
+    "scripts/eval_browser_observer.py": "292d8165bf83253c182a88654d81242f7712e05844537c538fc1ae065d09f836"
+  },
+  "command": ".venv/Scripts/python.exe scripts/run_rebuild_eval.py run --live --suite-id post-v4 --observe-ui",
+  "source_identity": "Both evaluator files are copied into each new suite and checked before every dispatch; backend manifest and actual built browser assets are separately retained.",
+  "boundaries": {
+    "case_ids": [
+      "R02",
+      "R03"
+    ],
+    "phases": [
+      "predispatch",
+      "turn_1_complete",
+      "turn_2_complete"
+    ],
+    "transport": "same app object, same Workspace, same asyncio event loop, loopback ephemeral uvicorn with lifespan off",
+    "marker_path_pattern": ".runtime/rebuild-20261016/suites/<suite>/browser-observer/root_ready_<barrier_id>.json",
+    "current_boundary": ".runtime/rebuild-20261016/suites/<suite>/browser-observer/observer-current.json",
+    "marker_fields": [
+      "barrier_id",
+      "session_id",
+      "observed_context_id",
+      "evidence_mode=root_cua",
+      "evidence=actual absolute screenshot and DOM receipt paths"
+    ],
+    "release_checks": [
+      "exact marker identity",
+      "actual session WebSocket listener",
+      "actual current UI context",
+      "latest command when present",
+      "unchanged built frontend asset hashes"
+    ],
+    "timing": "All observer setup and post-turn waits are recorded separately and occur outside application/model turn latency. No gate runs inside a model task or before usage reconciliation.",
+    "missing_usage": "A usage hold skips the post-turn observation wait and stops further dispatch."
+  },
+  "unchanged": [
+    "Frozen case wording and twelve planned turns",
+    "Independent expected values and rubric",
+    "gpt-6-luna medium, max_output_tokens12000",
+    "Application timeout240 seconds and outer allowance480 seconds",
+    "USD5 per suite and USD20 per task",
+    "Ordinary failures retained, dependent failed follow-up Not run",
+    "No external send/publication or new model transport"
+  ],
+  "offline_probe": {
+    "path": ".runtime\\rebuild-20261016\\observer-integration-probe-v1\\smoke-proof.json",
+    "sha256": "1e9b910fe99f99dc753a199ac0fb1211c1eaba9b0a1826e82cc2462cddf7d935",
+    "status": "Passed",
+    "flows": 2,
+    "checks": 7,
+    "generation_requests": 0,
+    "mode": "offline_simulated_client",
+    "limitations": "Not live model-issued UI adoption, rendered browser evidence, or a live task pass."
+  },
+  "root_bootstrap_smoke": {
+    "path": "docs/evidence/observer-bootstrap-root-cua.json",
+    "sha256": "c17260c0073a7be08d775469589171012eff5303d9962bb7ceff35b1c10b293b",
+    "status": "Passed",
+    "limitations": "Bootstrap mechanism only on an in-progress application revision; live Luna command adoption and undo remain Not run until the next observed suite."
+  },
+  "prepared_helper_sha256": "ef782514fa840d4ad63a7327d200d0beac1ab472a6cf02cf00c5c43a00829475",
+  "helper_integration_note": "Repository Ruff formatting changed helper byte identity to the evaluator manifest hash. No semantic helper edits; the integrated copy passed the actual loopback smoke."
+}

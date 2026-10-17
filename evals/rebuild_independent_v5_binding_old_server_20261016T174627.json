@@ -1,0 +1,19 @@
+{
+  "status": "Failed",
+  "check": "v5_live_identity_binding",
+  "checked_at": "2026-10-16T17:46:27.169507+00:00",
+  "api_base": "http://127.0.0.1:8011",
+  "required_code_sha256": "1a2bdff324f23f554f0b1a683e7371732158fa1e0e6b7354dee0726ae46d42eb",
+  "required_snapshot_id": "ed2e98ca8e636350efb983a9f85c3483c62e24f1a1fd44c85285a208888d4108",
+  "observed_code_sha256": [
+    "c636e7ac78be8877fb58d9b41cbf0263193441162bcbaf4b86a36c53399635e7"
+  ],
+  "observed_snapshot_ids": [
+    "84bb841ceeb93efb2e27076d46fdd0e0e3c3fffe30c177d12d9ecac7bbca182c"
+  ],
+  "observed_numerical_reconciliation_status": "Passed",
+  "observed_revision_receipt": "evals\\rebuild_independent_api_c636e7ac_v5_attempt_20261016T174523.json",
+  "observed_receipt_sha256": "3e35941288d3003769c1dc225b317f08c011706654d82154b8cbf1937de0185e",
+  "reason": "Live server still serves the earlier code revision; these passing numbers do not bind the requested v5 identity.",
+  "next_action": "Wait for coordinator to release a restarted v5 server, then rerun unchanged verifier."
+}

@@ -1,0 +1,58 @@
+{
+  "report_schema_version": "canonical-submission-v1",
+  "report_id": "2b9bd4ef427437f7c79678cc",
+  "dataset_version": "dataset-4586b9cf07494f8c8481a2f8f8a578359fbab7c4c7435b06ccb7defef31fa515",
+  "policy_version": "canonical-v2",
+  "files": {
+    "README.md": "7f46e15dee494dc37087ff02093f5597578609d3f8855c3657a337018740bbef",
+    "README.vi.md": "56404aa6dc30c05f83254ab47f5688da2fd23478e02f9e48589693a09827e6df",
+    "DATA_QUALITY.xlsx": "fb7d62641a5c13b6f18227e24020d091220d3215d5513507613bebe28ab02fbc",
+    "reports/canonical_snapshot.json": "5374c4eac09a7d612049928e689aebc688c66905a94214cbcead9b1db71b2113"
+  },
+  "workbook_delivery": {
+    "mode": "completed_copy_from_supplied_template",
+    "template": {
+      "name": "DATA_QUALITY_TEMPLATE.xlsx",
+      "sha256_before": "caa6a7897aef99a05e5d8b71644290385999681df97fdb60053506420c14af42",
+      "sha256_after": "caa6a7897aef99a05e5d8b71644290385999681df97fdb60053506420c14af42",
+      "preserved": true
+    },
+    "output": {
+      "name": "DATA_QUALITY.xlsx",
+      "sha256": "fb7d62641a5c13b6f18227e24020d091220d3215d5513507613bebe28ab02fbc"
+    },
+    "readback": {
+      "status": "verified",
+      "scope": "first_four_sheet_names_and_summary_B8",
+      "expected_first_sheet_names": [
+        "Summary",
+        "Issues Found",
+        "Assumptions",
+        "Impact on Results"
+      ],
+      "observed_sheet_names": [
+        "Summary",
+        "Issues Found",
+        "Assumptions",
+        "Impact on Results",
+        "Audit Detail",
+        "Reconciliation",
+        "Provenance",
+        "Metric Definitions",
+        "Monthly Results",
+        "Calendar Gaps"
+      ],
+      "checked_cell": "Summary!B8",
+      "expected_analysis_events": 1071,
+      "observed_analysis_events": 1071,
+      "limitation": "Only the first four sheet names in order and Summary!B8 were checked; other cells, formatting and visual layout were not certified."
+    },
+    "extended_readback": {
+      "status": "verified",
+      "populated_cells_checked": 16494,
+      "issue_actions_checked": 18,
+      "action_validation_preserved_and_extended": true,
+      "visual_layout": "Not run by the portable generator; rendered verification is separate."
+    }
+  }
+}

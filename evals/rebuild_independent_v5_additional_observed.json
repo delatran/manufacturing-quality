@@ -1,0 +1,218 @@
+{
+  "inspection_methods": {
+    "event_count": 1071,
+    "financial_summary": {
+      "average_known_repair_cost": 485.0947473784557,
+      "cost_available": true,
+      "cost_coverage_pct": 97.94584500466853,
+      "cost_known_count": 1049,
+      "cost_status": "partial",
+      "cost_unknown_count": 22,
+      "known_repair_cost": 508864.39
+    },
+    "interpretation": "Counts, shares, severity mix and repair costs describe recorded defect events. Inspected-unit exposure, matched ground truth and missed defects are unavailable, so these observations cannot rank inspection effectiveness. Rows are ordered by method label.",
+    "measurement_requirements": {
+      "additional_data": [
+        "Unit-level method outcomes linked to independently assessed ground truth, including missed defects and false positives.",
+        "Sampling design and tested-unit exposure; produced-unit exposure and comparable operating conditions for an operational comparison."
+      ],
+      "availability": "The supplied defect-event records lack these measurements. No effectiveness value or method ranking is estimated.",
+      "false_negative_rate": "False negatives divided by ground-truth-positive units assessed by that method.",
+      "false_positive_rate": "False positives divided by ground-truth-negative units assessed by that method.",
+      "sensitivity": "True positives divided by ground-truth-positive units assessed by that method.",
+      "specificity": "True negatives divided by ground-truth-negative units assessed by that method."
+    },
+    "rows": [
+      {
+        "average_known_repair_cost": 484.09847133757967,
+        "cost_available": true,
+        "cost_coverage_pct": 96.61538461538461,
+        "cost_known_count": 314,
+        "cost_status": "partial",
+        "cost_unknown_count": 11,
+        "critical_count": 97,
+        "critical_share_pct": 29.846153846153843,
+        "event_count": 325,
+        "event_share_pct": 30.34547152194211,
+        "inspection_method": "Automated Testing",
+        "known_cost_share_pct": 29.871793544052082,
+        "known_repair_cost": 152006.92,
+        "severity_counts": {
+          "Critical": 97,
+          "Minor": 116,
+          "Moderate": 112,
+          "Unknown": 0
+        }
+      },
+      {
+        "average_known_repair_cost": 499.3429810298103,
+        "cost_available": true,
+        "cost_coverage_pct": 98.66310160427807,
+        "cost_known_count": 369,
+        "cost_status": "partial",
+        "cost_unknown_count": 5,
+        "critical_count": 124,
+        "critical_share_pct": 33.155080213903744,
+        "event_count": 374,
+        "event_share_pct": 34.92063492063492,
+        "inspection_method": "Manual Testing",
+        "known_cost_share_pct": 36.209560665072274,
+        "known_repair_cost": 184257.56,
+        "severity_counts": {
+          "Critical": 124,
+          "Minor": 122,
+          "Moderate": 128,
+          "Unknown": 0
+        }
+      },
+      {
+        "average_known_repair_cost": 471.5844535519126,
+        "cost_available": true,
+        "cost_coverage_pct": 98.38709677419355,
+        "cost_known_count": 366,
+        "cost_status": "partial",
+        "cost_unknown_count": 6,
+        "critical_count": 128,
+        "critical_share_pct": 34.40860215053764,
+        "event_count": 372,
+        "event_share_pct": 34.73389355742297,
+        "inspection_method": "Visual Inspection",
+        "known_cost_share_pct": 33.91864579087564,
+        "known_repair_cost": 172599.91,
+        "severity_counts": {
+          "Critical": 128,
+          "Minor": 123,
+          "Moderate": 121,
+          "Unknown": 0
+        }
+      }
+    ],
+    "scope": {
+      "category": "",
+      "defect_location": "",
+      "defect_type": "",
+      "end_month": "2024-06",
+      "inspection_method": "",
+      "product_id": "",
+      "production_line": "",
+      "scenario": "",
+      "severity": "",
+      "start_month": "2024-01"
+    },
+    "share_denominator": "All selected retained logged defect events; within-method Critical share uses that method's recorded events.",
+    "unavailable_metrics": [
+      "inspected_units",
+      "ground_truth",
+      "sensitivity",
+      "miss_rate",
+      "effectiveness_rank"
+    ]
+  },
+  "cleaning_impact": {
+    "comparison_direction": "retained minus raw",
+    "currency_unit": "local currency",
+    "full_source_reconciliation": {
+      "analysis_events": 1071,
+      "duplicate_copies_removed": 14,
+      "out_of_scope_events": 3,
+      "quarantined_rows": 2,
+      "raw_equals_removed_plus_quarantined_plus_clean": true,
+      "raw_rows": 1090,
+      "retained_clean_events": 1074
+    },
+    "full_source_scope": "All received source rows, including years outside the canonical analysis period.",
+    "interpretation": "The differences reflect duplicate resolution, quarantine and cost validation within one canonical period. They do not establish manufacturing improvement, reduced defective units or realized savings.",
+    "known_cost_difference": -6790.52,
+    "metadata": {
+      "dataset_version": "dataset-4586b9cf07494f8c8481a2f8f8a578359fbab7c4c7435b06ccb7defef31fa515",
+      "policy_version": "canonical-v2",
+      "scenario": ""
+    },
+    "quality_scope": {
+      "filters_applied": false,
+      "kind": "canonical_full_snapshot",
+      "scenario_applied": false
+    },
+    "raw": {
+      "cost_known_count": 1064,
+      "cost_status_counts": {
+        "known": 1064,
+        "missing": 20,
+        "negative": 3
+      },
+      "cost_unknown_count": 23,
+      "known_repair_cost": 515654.91,
+      "row_count": 1087,
+      "unit": "received source rows before duplicate resolution"
+    },
+    "raw_numeric_cost_including_negatives": 514520.99,
+    "retained": {
+      "cost_known_count": 1049,
+      "cost_unknown_count": 22,
+      "event_count": 1071,
+      "known_repair_cost": 508864.39,
+      "unit": "retained unique nonconflicting defect events"
+    },
+    "row_count_difference": -16,
+    "scope": {
+      "category": "",
+      "defect_location": "",
+      "defect_type": "",
+      "end_month": "2024-06",
+      "inspection_method": "",
+      "product_id": "",
+      "production_line": "",
+      "scenario": "",
+      "severity": "",
+      "start_month": "2024-01"
+    },
+    "warnings": [
+      "Raw rows can repeat the same event; raw rows and retained events have different grains.",
+      "Raw valid-cost totals exclude missing, negative and invalid costs. The separate raw numeric diagnostic includes negative amounts and is not a valid repair-cost total.",
+      "Full-source dispositions include out-of-period rows and must not be added to explain only the fixed-period comparison.",
+      "Dashboard filters and selected scenarios do not alter this canonical whole-case comparison."
+    ]
+  },
+  "scenario_definition": null,
+  "exclude_cost_10_scenario_definition": {
+    "affects": [
+      "financial availability",
+      "cost rankings"
+    ],
+    "assumption": "Treat observed repair costs equal to 10 as financially unavailable. Keep every canonical event and its original value in the trace.",
+    "id": "exclude_cost_10",
+    "name": "Withhold costs equal to 10",
+    "observed_improvement": false,
+    "parameters": {
+      "effect": "withhold_financial_availability",
+      "repair_cost_equal": 10,
+      "repair_cost_unit": "local currency"
+    }
+  },
+  "context": {
+    "code_sha256": "1a2bdff324f23f554f0b1a683e7371732158fa1e0e6b7354dee0726ae46d42eb",
+    "context_id": "2f9244fabb34af4ba809dba46b2a47114b4f7d55565fb095afb56fe5352a71d0",
+    "dataset_version": "dataset-4586b9cf07494f8c8481a2f8f8a578359fbab7c4c7435b06ccb7defef31fa515",
+    "fetched_at": "2026-10-16T17:48:14.831969+00:00",
+    "filters": {
+      "category": "",
+      "defect_location": "",
+      "defect_type": "",
+      "end_month": "2024-06",
+      "inspection_method": "",
+      "product_id": "",
+      "production_line": "",
+      "scenario": "",
+      "severity": "",
+      "start_month": "2024-01"
+    },
+    "kpi_version": "kpi-v1-6e797aa13dff6c87",
+    "master_sha256": "8772e8f0d0fbe1bf66b259859055e1742b066f91a31777b9f5e4630f606b9a86",
+    "policy_version": "canonical-v2",
+    "scenario": "",
+    "snapshot_id": "ed2e98ca8e636350efb983a9f85c3483c62e24f1a1fd44c85285a208888d4108",
+    "source_sha256": "863ca40ca37f639c064ce0bb66e679d7c3ab4ceca8cd79569d31310004728dc8"
+  },
+  "api_base": "http://127.0.0.1:8209",
+  "observed_at": "2026-10-16T17:48:58.463399+00:00"
+}

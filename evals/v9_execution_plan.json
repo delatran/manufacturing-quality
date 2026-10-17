@@ -1,0 +1,100 @@
+{
+  "schema": "evaluation-phase-order-amendment-v1",
+  "candidate_arm": "final_v9",
+  "recorded_at_utc": "2026-10-16T09:25:49.493595+00:00",
+  "status": "frozen_before_candidate_dispatch",
+  "authorized_by": "Root integration owner explicitly authorized this exact V9 phase order and gate after V8 A closure and before any V9 model outcome. Source implementation is separately authorized; no API request is authorized by this plan.",
+  "protocol_file": "evals/quality_operations_cases.json",
+  "protocol_sha256": "14778ae30bb4f138247f2db9c0208314e4a369b19cec4427f69c72d307a6b40d",
+  "questions_criteria_fixtures_expected_values_unchanged": true,
+  "reason": "Prioritize the two strict failures observed in V8 A, Q05 and Q06, under a separately frozen generic application revision. Run the remaining fifteen cases only after both A cases pass independent strict task success and application completion and root gives a separate phase-B GO. This disclosed selection uses prior outcomes and is not an unseen or representative holdout.",
+  "phases": [
+    {
+      "phase": "final_v9_a",
+      "case_ids": [
+        "Q05",
+        "Q06"
+      ],
+      "planned_case_count": 2,
+      "planned_turn_count": 2,
+      "case_order": "Original protocol relative order"
+    },
+    {
+      "phase": "final_v9_b",
+      "case_ids": [
+        "Q01",
+        "Q02",
+        "Q03",
+        "Q04",
+        "Q07",
+        "Q08",
+        "Q09",
+        "Q10",
+        "Q11",
+        "Q12",
+        "Q13",
+        "Q14",
+        "Q15",
+        "Q16",
+        "Q17"
+      ],
+      "planned_case_count": 15,
+      "planned_turn_count": 16,
+      "case_order": "Original protocol relative order"
+    }
+  ],
+  "dispatch_gate": {
+    "phase_a": "Stable V9 implementation READY, independent review, required full tests including actual HTTP, frontend verification, fresh source/executor/configuration freeze, exact input bindings and explicit root execution GO must exist before any V9 model request.",
+    "phase_b": "Both Q05 and Q06 must have independent strict_pass=true and application_complete=true, then root gives a fresh phase-B dispatch GO.",
+    "phase_a_failure": "Preserve each failed or incomplete case, actual turn, retry and observed usage. A strict/application failure blocks phase B and leaves all fifteen B cases unrun. Complete the remaining planned phase-A case under the same identity unless a provider, runtime, budget or owner stop applies; a failed case is never silently replayed.",
+    "source_change_after_phase_a": "Any application, prompt, executor or configuration change requires a new candidate revision. Different source/configuration identities cannot be combined into final_v9.",
+    "interruption": "Preserve actual attempts and planned/observed/unrun turns. An undispatched turn is not an actual run. Follow existing provider, central budget and owner stops."
+  },
+  "identity_requirements": [
+    "Both phases must bind the same frozen application source inventory, executor, protocol, model, reasoning effort and evaluation configuration.",
+    "Each selected input object must equal the unchanged frozen protocol input exactly. No expected answer, evaluator label, rubric, supplementary answer key or evaluation-specific reference material is added to the model input. The ordinary application case brief, source and KPI definitions remain legitimate context.",
+    "Use fresh isolated sessions per case; keep the Q09 session across its two turns. Retain isolated Operations state and source-status restoration before each case.",
+    "Request and verify only gpt-6-luna with medium effort. Keep the original case modes, filters, prompts and context conditions, local canonical tools, hosted file search disabled, async tools disabled and native multi-agent disabled for this fixed evaluation.",
+    "Continue the existing central USD 5 per-run and USD 10 development ledger. Preserve all old holds; do not reset, fork or create another budget. Only luna_engine_sol dispatches paid model requests.",
+    "The generic run_final.py executor remains unchanged unless an actual necessity is documented and bound to a fresh executor identity before dispatch."
+  ],
+  "reporting": {
+    "phase_a_only": "Report two attempted cases and two planned turns with actual observed counts. A-only results are not a completed seventeen-case suite. Q01 original-baseline comparison is absent from phase A.",
+    "complete_candidate": "A complete V9 result requires seventeen reviewed cases, eighteen observed planned turns across both phases and matching source/executor/configuration identities; otherwise list all unrun and incomplete cases.",
+    "metrics": "Keep independent strict task success, application completion and end-to-end completion separate. Count Q09 once as a case and every actual distinct turn once in telemetry. Preserve every earlier revision rather than pooling quality rates.",
+    "comparison_limit": "These are disclosed development regressions on reused questions. Only Q01 has an observed original baseline. No general model improvement or unseen-question benchmark claim is supported.",
+    "semantic_grading": "Apply the unchanged original criteria by semantic meaning across actual delivered chat and selected files. Hidden receipts do not satisfy reported answer coverage. Table-tool usage, table format and exact keywords are not required unless the actual task requires them; optional reported numbers must be correct for their displayed population/labels."
+  },
+  "source_identity_binding": "Pending a not-yet-dispatched V9 source freeze after stable implementation READY, required verification and independent review. This plan authorizes no model request. Its exact SHA-256 must be recorded in the V9 freeze and execution manifests.",
+  "preserved_prior_revision": {
+    "candidate_arm": "final_v8",
+    "observed_cases": 2,
+    "observed_runs": 2,
+    "strict_pass_cases": 0,
+    "application_complete_cases": 2,
+    "end_to_end_complete_cases": 0,
+    "phase_b_unrun_case_ids": [
+      "Q01",
+      "Q02",
+      "Q03",
+      "Q04",
+      "Q07",
+      "Q08",
+      "Q09",
+      "Q10",
+      "Q11",
+      "Q12",
+      "Q13",
+      "Q14",
+      "Q15",
+      "Q16",
+      "Q17"
+    ],
+    "source_freeze_sha256": "3df1c2938feddd632d1cc9fbf1d810f8fffae761765f0c140cec80ef276b6789",
+    "execution_plan_sha256": "4a9a514dd31c554eb6e36be2ba11738074433c00ffc69ecbd2db0d53f21d16ad",
+    "terminal_archive_sha256": "babe9710937b59f1728ec768d38b019da8081815d88019423757373df194cb72",
+    "source_addendum_archive_sha256": "7c5b1ac6cc3e82c014c0867cf8e45298f737a396bd9bdae1a804b2ad663bfaf4",
+    "review_closure_archive_sha256": "d1fbc5acfceab3a475441ae826f8073b0be4c8c1a1426bd481b4466a2581b0fd",
+    "note": "Every V8 attempt, failure, selected artifact, review and immutable snapshot remains preserved. V9 cannot fill V8 unrun cases or replace V8 results."
+  }
+}

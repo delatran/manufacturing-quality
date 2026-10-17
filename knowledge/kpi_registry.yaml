@@ -1,0 +1,259 @@
+{
+  "schema_version": "2.0",
+  "knowledge_type": "case_business_rules",
+  "source": {
+    "title": "Data Analyst Case Study October 2026",
+    "file": "Data-Analyst_Case-Study_Oct-2026.pdf",
+    "sha256": "20bd43cbbed48c025e2b18e3e205e3ca1e013b711cec2843619922222ba8432b",
+    "pages": 4,
+    "numerical_answer_key": false,
+    "note": "The PDF supplies questions and requirements, not numerical answers. Independent oracle is separate verification evidence."
+  },
+  "pdf_requirements": [
+    {
+      "id": "http_ingestion",
+      "page": 2,
+      "rule": "Fetch defect_records JSON via HTTP directly into memory. Do not save or load local raw JSON."
+    },
+    {
+      "id": "master",
+      "page": 2,
+      "fields": [
+        "product_id",
+        "product_name",
+        "category",
+        "production_line",
+        "monthly_output"
+      ]
+    },
+    {
+      "id": "defects",
+      "page": 2,
+      "fields": [
+        "defect_id",
+        "product_id",
+        "defect_type",
+        "defect_date",
+        "defect_location",
+        "severity",
+        "inspection_method",
+        "repair_cost"
+      ]
+    },
+    {
+      "id": "data_quality",
+      "page": 3,
+      "rule": "Document every data quality issue and handling in DATA_QUALITY.xlsx based on supplied DATA_QUALITY_TEMPLATE.xlsx."
+    },
+    {
+      "id": "analytical_questions",
+      "page": 3,
+      "questions": [
+        "January to June 2024 defect trend with numeric support and qualified operational interpretation",
+        "Location frequency and location-severity relationship; Production focus",
+        "Other notable patterns and operational relevance"
+      ]
+    },
+    {
+      "id": "recommendations",
+      "page": 3,
+      "rule": "Top three issues: evidence, action, owner, success measure. Describe static tool limitations and next capabilities."
+    },
+    {
+      "id": "original_delivery",
+      "pages": [
+        3,
+        4
+      ],
+      "rule": "The original brief asks for a Python backend and web app dashboard, README, analytical answers and completed workbook."
+    }
+  ],
+  "adopted_assumptions": {
+    "grain": "One defect_id is a logged event, not a distinct defective unit. No unit/serial denominator; never call intensity defect probability or yield.",
+    "scope": "Inclusive January-June 2024 full months. Valid 2026 dates remain unchanged and outside primary scope.",
+    "dates": "ISO supported. Slash convention M/D/YYYY inferred from unambiguous source majority; unambiguous D/M exceptions parsed explicitly. Both components <=12 and unequal are convention-dependent and flagged; confirm source owner.",
+    "deduplication": "Remove identical payload copies; canonical case/whitespace equivalent same-ID copies collapse. Same noncost fields with one distinct known cost plus null can retain observed cost. Any contradictory same-ID variants all quarantined, including invalid mandatory-field variant.",
+    "master_join": "Validate master unique product_id, collapse exact equivalent master copies, reject conflicting master IDs. Left join events; unmatched remain in plant totals Unknown, excluded linked intensity.",
+    "cost": "Valid finite nonnegative observed numeric costs, zero included; missing/negative/invalid remain unknown and retained for counts. No imputation. Currency is unspecified local currency. Observed cost 10 remains valid in canonical; financial withholding is a separately labeled scenario.",
+    "exposure": "monthly_output is static reference exposure repeated each full month. Include every eligible master product, including zero-event products. Product/line/category restrict master cohort; event attributes restrict numerator only. Missing output makes intensity unavailable.",
+    "calendar": "No logged events on a date does not prove no defects, zero production or complete reporting.",
+    "association": "Exploratory chi-square excludes Unknown cells; require minimum expected >=1 and <=20 percent expected cells below5. Cramers V describes association size, not causality.",
+    "anomaly": "Freeze January mean over31 calendar days. Flag February-June counts strictly greater than mean+3sqrt(mean). No validated SPC/detector accuracy without exposure/reporting and truth labels.",
+    "causality": "Static line/category mapping confounds line and product mix. Changes in observed counts cannot establish process improvement or deterioration causally."
+  },
+  "kpis": {
+    "event_count": {
+      "formula": "count(retained nonconflicting unique in-scope defect events)",
+      "unit": "logged events",
+      "population": "Selected retained defect events after canonical cleaning and declared scenario, unless the formula specifies master products",
+      "period": "Selected inclusive full months",
+      "rounding": "Backend retains full precision for ratios; observed cost totals use two decimal places. UI locale rounding does not change evidence values.",
+      "exclusions": "Quarantined rows and out-of-period events excluded from selected events; invalid/missing/scenario-withheld cost excluded only from financial metrics; orphan events excluded only from reference-output numerator."
+    },
+    "critical_share_pct": {
+      "formula": "count(severity=Critical)/event_count*100",
+      "zero_denominator": null,
+      "population": "Selected retained defect events after canonical cleaning and declared scenario, unless the formula specifies master products",
+      "period": "Selected inclusive full months",
+      "rounding": "Backend retains full precision for ratios; observed cost totals use two decimal places. UI locale rounding does not change evidence values.",
+      "exclusions": "Quarantined rows and out-of-period events excluded from selected events; invalid/missing/scenario-withheld cost excluded only from financial metrics; orphan events excluded only from reference-output numerator."
+    },
+    "known_repair_cost": {
+      "formula": "sum(valid observed nonnegative repair_cost)",
+      "unit": "unspecified local currency",
+      "coverage_required": true,
+      "population": "Selected retained defect events after canonical cleaning and declared scenario, unless the formula specifies master products",
+      "period": "Selected inclusive full months",
+      "rounding": "Backend retains full precision for ratios; observed cost totals use two decimal places. UI locale rounding does not change evidence values.",
+      "exclusions": "Quarantined rows and out-of-period events excluded from selected events; invalid/missing/scenario-withheld cost excluded only from financial metrics; orphan events excluded only from reference-output numerator."
+    },
+    "cost_coverage_pct": {
+      "formula": "known_cost_count/event_count*100",
+      "zero_denominator": null,
+      "population": "Selected retained defect events after canonical cleaning and declared scenario, unless the formula specifies master products",
+      "period": "Selected inclusive full months",
+      "rounding": "Backend retains full precision for ratios; observed cost totals use two decimal places. UI locale rounding does not change evidence values.",
+      "exclusions": "Quarantined rows and out-of-period events excluded from selected events; invalid/missing/scenario-withheld cost excluded only from financial metrics; orphan events excluded only from reference-output numerator."
+    },
+    "reference_output": {
+      "formula": "sum(monthly_output of all eligible master products)*full_month_count",
+      "unit": "reference units",
+      "population": "Selected retained defect events after canonical cleaning and declared scenario, unless the formula specifies master products",
+      "period": "Selected inclusive full months",
+      "rounding": "Backend retains full precision for ratios; observed cost totals use two decimal places. UI locale rounding does not change evidence values.",
+      "exclusions": "Quarantined rows and out-of-period events excluded from selected events; invalid/missing/scenario-withheld cost excluded only from financial metrics; orphan events excluded only from reference-output numerator."
+    },
+    "reference_intensity_per_1000": {
+      "formula": "linked_event_count/reference_output*1000",
+      "unit": "logged events per1000 reference units",
+      "is_defect_probability": false,
+      "population": "Selected retained defect events after canonical cleaning and declared scenario, unless the formula specifies master products",
+      "period": "Selected inclusive full months",
+      "rounding": "Backend retains full precision for ratios; observed cost totals use two decimal places. UI locale rounding does not change evidence values.",
+      "exclusions": "Quarantined rows and out-of-period events excluded from selected events; invalid/missing/scenario-withheld cost excluded only from financial metrics; orphan events excluded only from reference-output numerator.",
+      "denominator": "Every eligible master product monthly_output multiplied by the number of selected full months, including zero-event products. Event attributes never shrink this cohort. Any missing output makes the complete intensity unavailable."
+    },
+    "january_june_change_pct": {
+      "formula": "(June_event_count-January_event_count)/January_event_count*100",
+      "zero_denominator": null,
+      "population": "Selected retained defect events after canonical cleaning and declared scenario, unless the formula specifies master products",
+      "period": "Selected inclusive full months",
+      "rounding": "Backend retains full precision for ratios; observed cost totals use two decimal places. UI locale rounding does not change evidence values.",
+      "exclusions": "Quarantined rows and out-of-period events excluded from selected events; invalid/missing/scenario-withheld cost excluded only from financial metrics; orphan events excluded only from reference-output numerator."
+    },
+    "cramers_v": {
+      "formula": "sqrt(chi2/(n*min(rows-1,columns-1)))",
+      "population": "Selected retained defect events after canonical cleaning and declared scenario, unless the formula specifies master products",
+      "period": "Selected inclusive full months",
+      "rounding": "Backend retains full precision for ratios; observed cost totals use two decimal places. UI locale rounding does not change evidence values.",
+      "exclusions": "Quarantined rows and out-of-period events excluded from selected events; invalid/missing/scenario-withheld cost excluded only from financial metrics; orphan events excluded only from reference-output numerator."
+    },
+    "daily_candidate": {
+      "formula": "evaluation_day_count>January_calendar_mean+3*sqrt(January_calendar_mean)",
+      "validated_detector": false,
+      "population": "Selected retained defect events after canonical cleaning and declared scenario, unless the formula specifies master products",
+      "period": "Selected inclusive full months",
+      "rounding": "Backend retains full precision for ratios; observed cost totals use two decimal places. UI locale rounding does not change evidence values.",
+      "exclusions": "Quarantined rows and out-of-period events excluded from selected events; invalid/missing/scenario-withheld cost excluded only from financial metrics; orphan events excluded only from reference-output numerator."
+    },
+    "output_coverage_pct": {
+      "formula": "products with valid positive monthly_output / all selected master products * 100",
+      "unit": "percent of cohort master products",
+      "zero_denominator": null,
+      "partial_denominator": "Report known output subtotal and coverage, but never use the subtotal as the full denominator."
+    },
+    "cost_distribution": {
+      "population": "Selected events with available valid observed cost",
+      "unit": "local currency",
+      "quantile_method": "Linear interpolation at (n-1)*p",
+      "histogram_boundaries": [
+        0,
+        100,
+        250,
+        500,
+        750,
+        1000,
+        null
+      ],
+      "interval_rule": "Lower inclusive, upper exclusive; final upper bound unbounded",
+      "coverage_denominator": "All selected events, including unknown and scenario-withheld costs"
+    },
+    "decomposition": {
+      "formula": "comparison period minus baseline period, partitioned by one declared dimension",
+      "dimensions": [
+        "production_line",
+        "category",
+        "product_id",
+        "defect_type",
+        "defect_location",
+        "severity",
+        "inspection_method"
+      ],
+      "interpretation": "Arithmetic contributions, not causes. Signed group changes reconcile to total event and known-cost changes. Each intensity contribution uses the whole period reference denominator."
+    }
+  },
+  "beyond_brief": {
+    "required": [
+      "data quality reconciliation",
+      "ambiguous-date sensitivity three scenarios",
+      "three additional insights",
+      "action owners and measurable next steps"
+    ],
+    "stop_rule": "Stop when marginal information is small or run budget is reached; deterministic helper computes finite predeclared analyses without API spend."
+  },
+  "verification": {
+    "independent_oracle": "knowledge/independent_oracle.json",
+    "independent_builder": "analyst/case_study/oracle_builder.py",
+    "source_sha256": "863ca40ca37f639c064ce0bb66e679d7c3ab4ceca8cd79569d31310004728dc8",
+    "master_sha256": "8772e8f0d0fbe1bf66b259859055e1742b066f91a31777b9f5e4630f606b9a86",
+    "scope": "Reviewed historical case bytes only, separate from PDF, not model quality or plant truth."
+  },
+  "owner_ui_choice": {
+    "authority": "Current owner instruction, separate from the original PDF requirements.",
+    "tabs": [
+      "Dashboard",
+      "Agent"
+    ],
+    "default_tab": "Dashboard",
+    "shared_contract": "Both tabs share the same datasets, KPI definitions, analytical filters and execution evidence.",
+    "analytical_scope": "All analytical tasks, workbook evidence, source protections and numerical provenance remain required."
+  },
+  "policy_version": "canonical-v2",
+  "scope_contract": {
+    "dataset_version": "dataset- followed by SHA-256(source-byte-SHA-256 + colon + master-byte-SHA-256); changes when either actual input changes",
+    "policy_version": "canonical-v2",
+    "period": "Inclusive full months from 2024-01 through 2024-06",
+    "filters": [
+      "start_month",
+      "end_month",
+      "production_line",
+      "category",
+      "severity",
+      "defect_type",
+      "defect_location",
+      "inspection_method",
+      "product_id",
+      "scenario"
+    ],
+    "canonical_scenario": "",
+    "scenario_identifiers": [
+      "exclude_cost_10",
+      "ambiguous_dm",
+      "year_2024"
+    ],
+    "scenario_rules": {
+      "exclude_cost_10": "Retain all canonical events. Treat exactly-10 observed cost as financially unavailable; do not delete rows or overwrite raw values.",
+      "ambiguous_dm": "Reinterpret only order-sensitive ambiguous slash dates as D/M before duplicate resolution. Keep actual source years and all other fields.",
+      "year_2024": "Assume event years are 2024, preserve month/day and reapply duplicate resolution. Original source years remain in the immutable in-memory lineage."
+    },
+    "quality_scope": "Canonical full source snapshot, independent of selected filters and scenarios",
+    "raw_retention": "Original HTTP-derived row values held as immutable strings in server memory only; never use a local raw JSON file as input or cache",
+    "reproducibility": "Frozen contexts seal source/master/content hashes, dataset and policy version, full scope, code manifest, cleaned inputs, result and exports."
+  },
+  "metric_boundaries": {
+    "defect_probability": "Unavailable: no individual defective-unit identifiers or actual produced-unit history",
+    "inspection_effectiveness": "Unavailable: no inspected-unit exposure, ground truth or missed-defect labels",
+    "root_cause": "Unavailable: no process step, machine, shift, lot or physical test parameters",
+    "realized_savings": "Unavailable: scenarios are assumptions, not implemented actions or measured savings"
+  }
+}

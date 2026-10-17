@@ -1,0 +1,14 @@
+{
+  "status": "Passed",
+  "check": "v5_live_identity_binding",
+  "checked_at": "2026-10-16T17:50:23.808808+00:00",
+  "api_base": "http://127.0.0.1:8209",
+  "code_sha256": "1a2bdff324f23f554f0b1a683e7371732158fa1e0e6b7354dee0726ae46d42eb",
+  "snapshot_id": "ed2e98ca8e636350efb983a9f85c3483c62e24f1a1fd44c85285a208888d4108",
+  "canonical_context_id": "2f9244fabb34af4ba809dba46b2a47114b4f7d55565fb095afb56fe5352a71d0",
+  "receipt_sha256": "5e2ae7ab02ee989dd0cdfc6b7527689c889618ac1d69c1669ee84cd24cb4a204",
+  "versioned_receipt": "C:\\Users\\nhanm\\OneDrive\\Tài liệu\\Data Analyst Case Study\\manufacturing-quality\\evals\\rebuild_independent_api_1a2bdff3_v5_20261016T174857.json",
+  "previous_failed_identity_attempt": "C:\\Users\\nhanm\\OneDrive\\Tài liệu\\Data Analyst Case Study\\manufacturing-quality\\evals\\rebuild_independent_v5_binding_old_server_20261016T174627.json",
+  "server_stopped": true,
+  "additional_check_status": "Passed"
+}

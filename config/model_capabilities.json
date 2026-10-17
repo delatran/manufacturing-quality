@@ -1,0 +1,558 @@
+{
+  "schema_version": 1,
+  "sourced_at": "2026-10-15",
+  "unknown_model_policy": "reject_before_network",
+  "application_model_policy": {
+    "allowed_models": ["gpt-6-luna"],
+    "fallback": false,
+    "verified_at": "2026-10-16",
+    "historical_records": "Other model records are retained only for historical usage accounting."
+  },
+  "sources": [
+    "https://developers.openai.com/api/docs/guides/agents",
+    "https://developers.openai.com/api/docs/guides/prompt-caching",
+    "https://developers.openai.com/api/docs/guides/fast-mode",
+    "https://developers.openai.com/api/docs/guides/ultrafast-mode",
+    "https://developers.openai.com/api/docs/guides/steering",
+    "https://developers.openai.com/api/docs/guides/compaction",
+    "https://developers.openai.com/api/docs/guides/background"
+  ],
+  "hosted_tool_prices_usd": {
+    "web_search_per_call": 0.01,
+    "file_search_per_call": 0.0025,
+    "code_interpreter_container_1g_per_20min": 0.03,
+    "file_search_storage_gb_day": 0.1
+  },
+  "models": {
+    "gpt-6-astra": {
+      "sources": [
+        "https://developers.openai.com/api/docs/models/gpt-6-astra",
+        "https://developers.openai.com/api/docs/guides/latest-model",
+        "https://developers.openai.com/api/docs/guides/reasoning",
+        "https://developers.openai.com/api/docs/pricing"
+      ],
+      "reasoning_efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "default_effort": "medium",
+      "reasoning_modes": [
+        "standard",
+        "pro"
+      ],
+      "reasoning_summary": true,
+      "verbosity": true,
+      "sampling_requires_none": true,
+      "compaction": true,
+      "background": true,
+      "async_functions": true,
+      "steering": true,
+      "prompt_cache_options": true,
+      "tools": [
+        "web_search",
+        "file_search",
+        "image_generation",
+        "code_interpreter",
+        "hosted_shell",
+        "apply_patch",
+        "skills",
+        "computer_use",
+        "mcp",
+        "tool_search"
+      ],
+      "service_tiers": [
+        "default",
+        "auto",
+        "flex",
+        "fast",
+        "priority",
+        "ultrafast"
+      ],
+      "context_window": 1050000,
+      "max_output_tokens": 128000,
+      "pricing_usd_per_million": {
+        "input": 10.0,
+        "cached_input": 1.0,
+        "cache_write": 12.5,
+        "output": 50.0
+      },
+      "long_context_threshold": 272000,
+      "long_context_multipliers": {
+        "input": 2,
+        "output": 1.5
+      },
+      "tier_multipliers": {
+        "default": 1,
+        "auto": 1,
+        "flex": 0.5,
+        "fast": 2,
+        "priority": 2,
+        "ultrafast": 6
+      }
+    },
+    "gpt-6.1-sol": {
+      "sources": [
+        "https://developers.openai.com/api/docs/models/gpt-6.1-sol",
+        "https://developers.openai.com/api/docs/guides/latest-model",
+        "https://developers.openai.com/api/docs/guides/reasoning",
+        "https://developers.openai.com/api/docs/pricing"
+      ],
+      "reasoning_efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "default_effort": "medium",
+      "reasoning_modes": [
+        "standard",
+        "pro"
+      ],
+      "reasoning_summary": true,
+      "verbosity": true,
+      "sampling_requires_none": true,
+      "compaction": true,
+      "background": true,
+      "async_functions": true,
+      "steering": true,
+      "prompt_cache_options": true,
+      "tools": [
+        "web_search",
+        "file_search",
+        "image_generation",
+        "code_interpreter",
+        "hosted_shell",
+        "apply_patch",
+        "skills",
+        "computer_use",
+        "mcp",
+        "tool_search"
+      ],
+      "service_tiers": [
+        "default",
+        "auto",
+        "flex",
+        "fast",
+        "priority",
+        "ultrafast"
+      ],
+      "context_window": 1050000,
+      "max_output_tokens": 128000,
+      "pricing_usd_per_million": {
+        "input": 2.0,
+        "cached_input": 0.1,
+        "cache_write": 2.5,
+        "output": 10.0
+      },
+      "long_context_threshold": 272000,
+      "long_context_multipliers": {
+        "input": 2,
+        "output": 1.5
+      },
+      "tier_multipliers": {
+        "default": 1,
+        "auto": 1,
+        "flex": 0.5,
+        "fast": 2,
+        "priority": 2,
+        "ultrafast": 6
+      }
+    },
+    "gpt-6-sol": {
+      "sources": [
+        "https://developers.openai.com/api/docs/models/gpt-6-sol",
+        "https://developers.openai.com/api/docs/guides/latest-model",
+        "https://developers.openai.com/api/docs/guides/reasoning",
+        "https://developers.openai.com/api/docs/pricing"
+      ],
+      "reasoning_efforts": [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "default_effort": "medium",
+      "reasoning_modes": [
+        "standard",
+        "pro"
+      ],
+      "reasoning_summary": true,
+      "verbosity": true,
+      "sampling_requires_none": true,
+      "compaction": true,
+      "background": true,
+      "async_functions": true,
+      "steering": true,
+      "prompt_cache_options": true,
+      "tools": [
+        "web_search",
+        "file_search",
+        "image_generation",
+        "code_interpreter",
+        "hosted_shell",
+        "apply_patch",
+        "skills",
+        "computer_use",
+        "mcp",
+        "tool_search"
+      ],
+      "service_tiers": [
+        "default",
+        "auto",
+        "flex",
+        "fast",
+        "priority"
+      ],
+      "context_window": 1050000,
+      "max_output_tokens": 128000,
+      "pricing_usd_per_million": {
+        "input": 2.0,
+        "cached_input": 0.2,
+        "cache_write": 2.5,
+        "output": 10.0
+      },
+      "long_context_threshold": 272000,
+      "long_context_multipliers": {
+        "input": 2,
+        "output": 1.5
+      },
+      "tier_multipliers": {
+        "default": 1,
+        "auto": 1,
+        "flex": 0.5,
+        "fast": 2,
+        "priority": 2
+      }
+    },
+    "gpt-6-luna": {
+      "sources": [
+        "https://developers.openai.com/api/docs/models/gpt-6-luna",
+        "https://developers.openai.com/api/docs/guides/latest-model",
+        "https://developers.openai.com/api/docs/guides/reasoning",
+        "https://developers.openai.com/api/docs/pricing"
+      ],
+      "reasoning_efforts": [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "default_effort": "medium",
+      "reasoning_modes": [
+        "standard",
+        "pro"
+      ],
+      "reasoning_summary": true,
+      "verbosity": true,
+      "sampling_requires_none": true,
+      "compaction": true,
+      "background": true,
+      "async_functions": true,
+      "steering": true,
+      "prompt_cache_options": true,
+      "tools": [
+        "web_search",
+        "file_search",
+        "image_generation",
+        "code_interpreter",
+        "hosted_shell",
+        "apply_patch",
+        "skills",
+        "computer_use",
+        "mcp",
+        "tool_search"
+      ],
+      "service_tiers": [
+        "default",
+        "auto",
+        "flex",
+        "fast",
+        "priority"
+      ],
+      "context_window": 1050000,
+      "max_output_tokens": 128000,
+      "pricing_usd_per_million": {
+        "input": 0.1,
+        "cached_input": 0.01,
+        "cache_write": 0.125,
+        "output": 0.5
+      },
+      "long_context_threshold": 272000,
+      "long_context_multipliers": {
+        "input": 2,
+        "output": 1.5
+      },
+      "tier_multipliers": {
+        "default": 1,
+        "auto": 1,
+        "flex": 0.5,
+        "fast": 2,
+        "priority": 2
+      }
+    },
+    "gpt-5.6-sol": {
+      "sources": [
+        "https://developers.openai.com/api/docs/models/gpt-5.6-sol",
+        "https://developers.openai.com/api/docs/guides/latest-model",
+        "https://developers.openai.com/api/docs/guides/reasoning",
+        "https://developers.openai.com/api/docs/pricing"
+      ],
+      "reasoning_efforts": [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "default_effort": "medium",
+      "reasoning_modes": [
+        "standard",
+        "pro"
+      ],
+      "reasoning_summary": true,
+      "verbosity": true,
+      "sampling_requires_none": true,
+      "compaction": true,
+      "background": true,
+      "async_functions": false,
+      "steering": false,
+      "prompt_cache_options": true,
+      "tools": [
+        "web_search",
+        "file_search",
+        "image_generation",
+        "code_interpreter",
+        "hosted_shell",
+        "apply_patch",
+        "skills",
+        "computer_use",
+        "mcp",
+        "tool_search"
+      ],
+      "service_tiers": [
+        "default",
+        "auto",
+        "flex",
+        "fast",
+        "priority"
+      ],
+      "context_window": 1050000,
+      "max_output_tokens": 128000,
+      "pricing_usd_per_million": {
+        "input": 4.0,
+        "cached_input": 0.4,
+        "cache_write": 5.0,
+        "output": 20.0
+      },
+      "long_context_threshold": 272000,
+      "long_context_multipliers": {
+        "input": 2,
+        "output": 1.5
+      },
+      "tier_multipliers": {
+        "default": 1,
+        "auto": 1,
+        "flex": 0.5,
+        "fast": 2,
+        "priority": 2
+      }
+    },
+    "gpt-5.6-terra": {
+      "sources": [
+        "https://developers.openai.com/api/docs/models/gpt-5.6-terra",
+        "https://developers.openai.com/api/docs/guides/latest-model",
+        "https://developers.openai.com/api/docs/guides/reasoning",
+        "https://developers.openai.com/api/docs/pricing"
+      ],
+      "reasoning_efforts": [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "default_effort": "medium",
+      "reasoning_modes": [
+        "standard",
+        "pro"
+      ],
+      "reasoning_summary": true,
+      "verbosity": true,
+      "sampling_requires_none": true,
+      "compaction": true,
+      "background": true,
+      "async_functions": false,
+      "steering": false,
+      "prompt_cache_options": true,
+      "tools": [
+        "web_search",
+        "file_search",
+        "image_generation",
+        "code_interpreter",
+        "hosted_shell",
+        "apply_patch",
+        "skills",
+        "computer_use",
+        "mcp",
+        "tool_search"
+      ],
+      "service_tiers": [
+        "default",
+        "auto",
+        "flex",
+        "fast",
+        "priority"
+      ],
+      "context_window": 1050000,
+      "max_output_tokens": 128000,
+      "pricing_usd_per_million": {
+        "input": 2.0,
+        "cached_input": 0.2,
+        "cache_write": 2.5,
+        "output": 12.0
+      },
+      "long_context_threshold": 272000,
+      "long_context_multipliers": {
+        "input": 2,
+        "output": 1.5
+      },
+      "tier_multipliers": {
+        "default": 1,
+        "auto": 1,
+        "flex": 0.5,
+        "fast": 2,
+        "priority": 2
+      }
+    },
+    "gpt-5.6-luna": {
+      "sources": [
+        "https://developers.openai.com/api/docs/models/gpt-5.6-luna",
+        "https://developers.openai.com/api/docs/guides/latest-model",
+        "https://developers.openai.com/api/docs/guides/reasoning",
+        "https://developers.openai.com/api/docs/pricing"
+      ],
+      "reasoning_efforts": [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "default_effort": "medium",
+      "reasoning_modes": [
+        "standard",
+        "pro"
+      ],
+      "reasoning_summary": true,
+      "verbosity": true,
+      "sampling_requires_none": true,
+      "compaction": true,
+      "background": true,
+      "async_functions": false,
+      "steering": false,
+      "prompt_cache_options": true,
+      "tools": [
+        "web_search",
+        "file_search",
+        "image_generation",
+        "code_interpreter",
+        "hosted_shell",
+        "apply_patch",
+        "skills",
+        "computer_use",
+        "mcp",
+        "tool_search"
+      ],
+      "service_tiers": [
+        "default",
+        "auto",
+        "flex",
+        "fast",
+        "priority"
+      ],
+      "context_window": 1050000,
+      "max_output_tokens": 128000,
+      "pricing_usd_per_million": {
+        "input": 0.2,
+        "cached_input": 0.02,
+        "cache_write": 0.25,
+        "output": 1.2
+      },
+      "long_context_threshold": 272000,
+      "long_context_multipliers": {
+        "input": 2,
+        "output": 1.5
+      },
+      "tier_multipliers": {
+        "default": 1,
+        "auto": 1,
+        "flex": 0.5,
+        "fast": 2,
+        "priority": 2
+      }
+    },
+    "gpt-4.1": {
+      "sources": [
+        "https://developers.openai.com/api/docs/models/gpt-4.1",
+        "https://developers.openai.com/api/docs/guides/latest-model",
+        "https://developers.openai.com/api/docs/guides/reasoning",
+        "https://developers.openai.com/api/docs/pricing"
+      ],
+      "reasoning_efforts": [],
+      "default_effort": null,
+      "reasoning_modes": [],
+      "reasoning_summary": false,
+      "verbosity": false,
+      "sampling_requires_none": false,
+      "compaction": false,
+      "background": true,
+      "async_functions": false,
+      "steering": false,
+      "prompt_cache_options": false,
+      "tools": [
+        "function_calling",
+        "web_search",
+        "file_search",
+        "image_generation",
+        "code_interpreter",
+        "mcp"
+      ],
+      "service_tiers": [
+        "default",
+        "auto",
+        "fast",
+        "priority"
+      ],
+      "context_window": 1047576,
+      "max_output_tokens": 32768,
+      "pricing_usd_per_million": {
+        "input": 2.0,
+        "cached_input": 0.5,
+        "cache_write": 2.0,
+        "output": 8.0
+      },
+      "long_context_threshold": null,
+      "long_context_multipliers": {
+        "input": 1,
+        "output": 1
+      },
+      "tier_multipliers": {
+        "default": 1,
+        "auto": 1,
+        "fast": 1.75,
+        "priority": 1.75
+      }
+    }
+  }
+}

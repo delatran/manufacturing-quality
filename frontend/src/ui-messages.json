@@ -1,0 +1,3737 @@
+{
+  "messages": {
+    "ui.agent_steer_current_work": {
+      "en": "Add instructions to this analysis",
+      "vi": "Bổ sung hướng dẫn cho phân tích này"
+    },
+    "ui.agent_send_instruction": {
+      "en": "Send instructions",
+      "vi": "Gửi hướng dẫn"
+    },
+    "ui.agent_next_question": {
+      "en": "Ask a follow-up question",
+      "vi": "Đặt câu hỏi tiếp theo"
+    },
+    "ui.agent_flow_note_provider": {
+      "en": "Model status",
+      "vi": "Trạng thái xử lý"
+    },
+    "ui.agent_flow_phase_created": {
+      "en": "session ready",
+      "vi": "phiên đã sẵn sàng"
+    },
+    "ui.agent_flow_phase_in_progress": {
+      "en": "working",
+      "vi": "đang xử lý"
+    },
+    "ui.agent_flow_phase_requires_action": {
+      "en": "awaiting tool results",
+      "vi": "đang chờ kết quả công cụ"
+    },
+    "ui.agent_flow_phase_idle": {
+      "en": "turn idle",
+      "vi": "lượt đang chờ"
+    },
+    "ui.agent_flow_phase_completed": {
+      "en": "turn completed",
+      "vi": "lượt đã hoàn tất"
+    },
+    "ui.agent_flow_phase_failed": {
+      "en": "turn failed",
+      "vi": "lượt gặp lỗi"
+    },
+    "ui.agent_flow_phase_cancelled": {
+      "en": "turn cancelled",
+      "vi": "lượt đã hủy"
+    },
+    "ui.agent_flow_cancelled": {
+      "en": "cancelled",
+      "vi": "đã hủy"
+    },
+    "ui.agent_flow_label": {
+      "en": "Agent flow",
+      "vi": "Luồng xử lý"
+    },
+    "ui.agent_flow_thinking": {
+      "en": "Thinking",
+      "vi": "Suy luận"
+    },
+    "ui.agent_flow_answer": {
+      "en": "Response",
+      "vi": "Phản hồi"
+    },
+    "ui.agent_flow_tool": {
+      "en": "Tool call",
+      "vi": "Gọi công cụ"
+    },
+    "ui.agent_flow_receipt": {
+      "en": "Receipt",
+      "vi": "Biên nhận"
+    },
+    "ui.agent_flow_pending": {
+      "en": "preparing",
+      "vi": "đang soạn"
+    },
+    "ui.agent_flow_running": {
+      "en": "running",
+      "vi": "đang chạy"
+    },
+    "ui.agent_flow_completed": {
+      "en": "done",
+      "vi": "xong"
+    },
+    "ui.agent_flow_failed": {
+      "en": "failed",
+      "vi": "lỗi"
+    },
+    "ui.agent_flow_stopped": {
+      "en": "Stopped",
+      "vi": "Đã dừng"
+    },
+    "ui.agent_flow_simulated": {
+      "en": "simulated",
+      "vi": "mô phỏng"
+    },
+    "ui.agent_flow_encrypted_reasoning": {
+      "en": "No summary detail for this step.",
+      "vi": "Bước này không có tóm tắt chi tiết."
+    },
+    "ui.agent_flow_waiting": {
+      "en": "Waiting for the first step…",
+      "vi": "Đang chờ sự kiện đầu tiên…"
+    },
+    "ui.agent_flow_compaction": {
+      "en": "context compacted: {value0}",
+      "vi": "rút gọn ngữ cảnh: {value0}"
+    },
+    "ui.agent_flow_effort": {
+      "en": "depth",
+      "vi": "độ sâu"
+    },
+    "ui.agent_flow_background": {
+      "en": "background",
+      "vi": "chạy nền"
+    },
+    "ui.agent_flow_note_plan": {
+      "en": "Plan",
+      "vi": "Kế hoạch"
+    },
+    "ui.agent_flow_note_review": {
+      "en": "Review",
+      "vi": "Kiểm tra"
+    },
+    "ui.agent_flow_note_file": {
+      "en": "File",
+      "vi": "Tệp"
+    },
+    "ui.agent_flow_note_steering": {
+      "en": "Instructions applied",
+      "vi": "Đã áp dụng hướng dẫn"
+    },
+    "ui.agent_flow_note_reconnected": {
+      "en": "Reconnected",
+      "vi": "Đã kết nối lại"
+    },
+    "ui.agent_flow_note_retry": {
+      "en": "Retry",
+      "vi": "Thử lại"
+    },
+    "ui.agent_flow_note_stopped": {
+      "en": "Analysis stopped",
+      "vi": "Đã dừng phân tích"
+    },
+    "ui.agent_flow_note_cancel_requested": {
+      "en": "Stop requested",
+      "vi": "Đã yêu cầu dừng"
+    },
+    "ui.agent_flow_stop_failed": {
+      "en": "Analysis ended with an error",
+      "vi": "Phân tích kết thúc do lỗi"
+    },
+    "ui.agent_scope_scenario": {
+      "en": "Scenario",
+      "vi": "Giả định"
+    },
+    "ui.agent_scope_all": {
+      "en": "All lines · All products",
+      "vi": "Tất cả chuyền · Tất cả sản phẩm"
+    },
+    "ui.agent_review_dashboard": {
+      "en": "Review data in Dashboard",
+      "vi": "Xem dữ liệu trên Tổng quan"
+    },
+    "ui.agent_scope_loading": {
+      "en": "Loading the data selection saved with this question…",
+      "vi": "Đang tải phạm vi dữ liệu đã lưu cùng câu hỏi…"
+    },
+    "ui.agent_scope_retry_note": {
+      "en": "The saved selection could not be loaded. Your question is kept. Retry this selection, or open Dashboard to review the data selection.",
+      "vi": "Chưa tải được phạm vi đã lưu. Câu hỏi vẫn được giữ lại. Thử tải lại phạm vi này, hoặc mở Tổng quan để kiểm tra lựa chọn dữ liệu."
+    },
+    "ui.agent_scope_retry": {
+      "en": "Retry saved selection",
+      "vi": "Tải lại phạm vi đã lưu"
+    },
+    "ui.the_earlier_data_selection_saved_with_this_question": {
+      "en": "The earlier data selection saved with this question",
+      "vi": "Phạm vi trước đó được giữ cùng câu hỏi này"
+    },
+    "ui.the_current_dashboard_filters": {
+      "en": "The current Dashboard filters",
+      "vi": "Các bộ lọc hiện tại trên Tổng quan"
+    },
+    "ui.attached_files_and_available_case_sources": {
+      "en": "Attached files and available case sources",
+      "vi": "Tệp đính kèm và nguồn dữ liệu của bài phân tích"
+    },
+    "ui.the_data_selected_for_this_analysis": {
+      "en": "The data selected for this analysis",
+      "vi": "Dữ liệu đã chọn cho phân tích này"
+    },
+    "ui.to": {
+      "en": "to",
+      "vi": "đến"
+    },
+    "ui.product": {
+      "en": "Product ",
+      "vi": "Sản phẩm "
+    },
+    "ui.all_available_data": {
+      "en": "All available data",
+      "vi": "Toàn bộ dữ liệu hiện có"
+    },
+    "ui.understand_the_trend": {
+      "en": "Understand the trend",
+      "vi": "Hiểu xu hướng lỗi"
+    },
+    "ui.how_are_recorded_defects_changing": {
+      "en": "Q1: How did defect counts and repair costs change from Jan to Jun 2024?",
+      "vi": "Câu 1: Số lỗi và chi phí sửa chữa biến động thế nào từ tháng 1 đến tháng 6/2024?"
+    },
+    "ui.analyze_how_recorded_defect_counts_change_over_the_selected_perio": {
+      "en": "How did recorded defects, Critical events, and repair costs change over the selected period? Highlight the main monthly shifts and key data limits.",
+      "vi": "Số lỗi ghi nhận, lỗi Nghiêm trọng và chi phí sửa chữa thay đổi thế nào trong kỳ đã chọn? Chỉ rõ biến động chính giữa các tháng và giới hạn dữ liệu cần lưu ý."
+    },
+    "ui.find_the_critical_concentration": {
+      "en": "Pinpoint Critical hotspots",
+      "vi": "Xác định điểm nóng lỗi Nghiêm trọng"
+    },
+    "ui.which_locations_need_closer_attention": {
+      "en": "Q2: Which location has the most defects vs. the highest Critical rate?",
+      "vi": "Câu 2: Vị trí nào có tổng lỗi cao nhất và vị trí nào có tỷ lệ Nghiêm trọng cao nhất?"
+    },
+    "ui.compare_defect_location_and_severity_in_the_selected_data_where_a": {
+      "en": "Break down defects by location and severity. Which location has the highest total volume vs. the highest Critical share, is the difference statistically significant, and where should we inspect first?",
+      "vi": "Phân tích lỗi theo vị trí và mức độ nghiêm trọng: vị trí nào nhiều lỗi nhất, vị trí nào có tỷ lệ Nghiêm trọng cao nhất, sự khác biệt có ý nghĩa thống kê không và nên kiểm tra đâu trước?"
+    },
+    "ui.investigate_a_pattern": {
+      "en": "Compare lines, products & costs",
+      "vi": "So sánh chuyền, sản phẩm & chi phí"
+    },
+    "ui.compare_lines_products_and_repair_costs": {
+      "en": "Q3: Which lines and product categories drive defect volume, defect rate, and repair cost?",
+      "vi": "Câu 3: Chuyền và nhóm sản phẩm nào kéo số lỗi, tỷ lệ lỗi và chi phí sửa chữa tăng cao?"
+    },
+    "ui.find_notable_patterns_across_production_lines_products_and_record": {
+      "en": "Compare production lines, product categories, and repair costs in the selected scope. Which products and lines stand out on defect rate vs. unit repair cost, and how does missing cost data affect the picture?",
+      "vi": "So sánh các chuyền sản xuất, nhóm sản phẩm và chi phí sửa chữa trong phạm vi đang chọn. Sản phẩm và chuyền nào nổi bật về tỷ lệ lỗi hoặc chi phí sửa trung bình, và dữ liệu khuyết chi phí ảnh hưởng thế nào?"
+    },
+    "ui.plan_the_next_actions": {
+      "en": "Prioritize next actions",
+      "vi": "Đề xuất ưu tiên hành động"
+    },
+    "ui.priorities_suggested_owners_and_measures": {
+      "en": "Top 3 priorities, owners, and target metrics.",
+      "vi": "3 ưu tiên hàng đầu, đầu mối phụ trách và chỉ số đo lường."
+    },
+    "ui.recommend_the_top_three_issues_production_should_investigate_firs": {
+      "en": "What are the top 3 issues we should investigate first in this scope? For each, list the evidence, next check, suggested owner role, and target metric.",
+      "vi": "Đâu là 3 vấn đề cần ưu tiên kiểm tra trước trong phạm vi này? Với mỗi vấn đề, nêu rõ số liệu dẫn chứng, bước kiểm tra tiếp theo, vai trò phụ trách dự kiến và chỉ số đo lường."
+    },
+    "ui.quality_analyst": {
+      "en": "QUALITY ANALYST",
+      "vi": "TRỢ LÝ CHẤT LƯỢNG"
+    },
+    "ui.ask_about_production_quality": {
+      "en": "Ask the Quality Analyst",
+      "vi": "Hỏi Trợ lý Chất lượng"
+    },
+    "ui.explore_a_finding_understand_a_change_and_decide_what_to_investig": {
+      "en": "Ask about defect trends, Critical hotspots, line & product differences, or repair costs in the selected scope.",
+      "vi": "Hỏi trực tiếp về xu hướng lỗi, điểm nóng lỗi Nghiêm trọng, chênh lệch giữa các chuyền/sản phẩm và chi phí sửa chữa trong phạm vi đang chọn."
+    },
+    "ui.ai_unavailable": {
+      "en": "AI unavailable",
+      "vi": "AI chưa khả dụng"
+    },
+    "ui.stopped": {
+      "en": "Stopped",
+      "vi": "Đã dừng"
+    },
+    "ui.sending": {
+      "en": "Sending",
+      "vi": "Đang gửi"
+    },
+    "ui.analyzing": {
+      "en": "Analyzing",
+      "vi": "Đang phân tích"
+    },
+    "ui.ready": {
+      "en": "Ready",
+      "vi": "Sẵn sàng"
+    },
+    "ui.connecting": {
+      "en": "Connecting",
+      "vi": "Đang kết nối"
+    },
+    "ui.data_for_this_question": {
+      "en": "Data for this question",
+      "vi": "Dữ liệu cho câu hỏi này"
+    },
+    "ui.dashboard_view": {
+      "en": "Dashboard view",
+      "vi": "Dữ liệu tổng quan"
+    },
+    "ui.files_and_case_sources": {
+      "en": "Files and case sources",
+      "vi": "Tệp và nguồn dữ liệu"
+    },
+    "ui.selected_scope": {
+      "en": "Selected scope",
+      "vi": "Phạm vi đã chọn"
+    },
+    "ui.available_sources": {
+      "en": "Available sources",
+      "vi": "Nguồn hiện có"
+    },
+    "ui.load_a_dashboard_view_to_get_started": {
+      "en": "Load a Dashboard view to get started",
+      "vi": "Tải dữ liệu Tổng quan để bắt đầu"
+    },
+    "ui.this_draft_keeps_an_earlier_selection": {
+      "en": "This question is pinned to an earlier filter selection.",
+      "vi": "Câu hỏi đang giữ bộ lọc đã chọn trước đó."
+    },
+    "ui.use_current_dashboard": {
+      "en": "Use current Dashboard",
+      "vi": "Dùng Tổng quan hiện tại"
+    },
+    "ui.the_selected_data_is_kept_with_your_question_when_you_send_it": {
+      "en": "This scope is saved with your question.",
+      "vi": "Phạm vi này được lưu cùng câu hỏi."
+    },
+    "ui.attach_a_file_below_or_ask_about_the_available_case_data": {
+      "en": "Attach a file below, or ask about the available case data.",
+      "vi": "Đính kèm tệp bên dưới hoặc hỏi về dữ liệu hiện có của bài phân tích."
+    },
+    "ui.the_analysis_in_progress_keeps_its_original_selection": {
+      "en": "Current analysis is using its original scope:",
+      "vi": "Phân tích đang chạy dùng phạm vi ban đầu:"
+    },
+    "ui.prepare_a_new_action_draft": {
+      "en": "Prepare a new action draft",
+      "vi": "Chuẩn bị bản nháp công việc mới"
+    },
+    "ui.revise_an_existing_draft": {
+      "en": "Revise an existing draft",
+      "vi": "Chỉnh sửa bản nháp hiện có"
+    },
+    "ui.need_help_preparing_an_action": {
+      "en": "Need help preparing an action?",
+      "vi": "Cần hỗ trợ chuẩn bị công việc?"
+    },
+    "ui.what_should_the_analyst_do": {
+      "en": "What should the analyst do?",
+      "vi": "Bạn muốn trợ lý làm gì?"
+    },
+    "ui.answer_a_question": {
+      "en": "Answer a question",
+      "vi": "Trả lời câu hỏi"
+    },
+    "ui.for_this_request_the_analyst_may_save_an_action_draft_in_follow_u": {
+      "en": "For this request, the analyst may save an action draft in Follow-up work. You review it before assigning work or changing its status.",
+      "vi": "Với yêu cầu này, trợ lý có thể lưu bản nháp vào Công việc theo dõi. Bạn xem lại trước khi giao việc hoặc thay đổi trạng thái."
+    },
+    "ui.name_the_draft_and_the_changes_you_want_in_your_question_the_anal": {
+      "en": "Name the draft and the changes you want in your question. The analyst may revise that draft; assigning work and changing status still need your review.",
+      "vi": "Nêu tên bản nháp và nội dung cần sửa trong câu hỏi. Trợ lý có thể chỉnh bản nháp đó; việc giao người phụ trách và đổi trạng thái vẫn cần bạn xem lại."
+    },
+    "ui.select_dashboard_data_to_prepare_or_revise_action_drafts": {
+      "en": "Select Dashboard data to prepare or revise action drafts.",
+      "vi": "Chọn dữ liệu Tổng quan để chuẩn bị hoặc sửa bản nháp công việc."
+    },
+    "ui.choose_a_draft_task_when_you_want_the_analyst_to_save_an_action_f": {
+      "en": "Choose a draft task when you want the analyst to save an action for review. Answering a question does not authorize changes to your work list.",
+      "vi": "Chọn tác vụ bản nháp khi bạn muốn trợ lý lưu công việc để xem xét. Chế độ trả lời câu hỏi không cho phép thay đổi danh sách công việc."
+    },
+    "ui.ai_is_unavailable_in_this_environment": {
+      "en": "AI is unavailable in this environment",
+      "vi": "AI chưa khả dụng trong môi trường này"
+    },
+    "ui.the_analyst_cannot_run_model_requests_you_can_still_use_the_dashb": {
+      "en": "The analyst is unavailable. You can still review the Dashboard, inspect evidence and export data.",
+      "vi": "Trợ lý chưa khả dụng. Bạn vẫn có thể xem Tổng quan, kiểm tra bằng chứng và xuất dữ liệu."
+    },
+    "ui.the_analyst_opened_the_requested_view_the_scope_is_shown_on_the_d": {
+      "en": "View opened. Check the selected scope on the Dashboard.",
+      "vi": "Đã mở phạm vi được yêu cầu. Kiểm tra phạm vi đã chọn trên Tổng quan."
+    },
+    "ui.your_selection_changed_the_earlier_agent_command_was_not_applied": {
+      "en": "Your selection changed. The earlier Agent command was not applied.",
+      "vi": "Lựa chọn của bạn đã thay đổi. Lệnh từ lượt Agent trước chưa được áp dụng."
+    },
+    "ui.the_view_command_could_not_be_applied_try_the_dashboard_controls": {
+      "en": "The view command could not be applied. Try the Dashboard controls.",
+      "vi": "Chưa áp dụng được lệnh đổi phạm vi. Bạn có thể dùng bộ điều khiển trên Tổng quan."
+    },
+    "ui.undo_agent_view_change": {
+      "en": "Undo Agent view change",
+      "vi": "Hoàn tác thay đổi phạm vi của Agent"
+    },
+    "ui.analyst_conversation": {
+      "en": "Analyst conversation",
+      "vi": "Hội thoại phân tích"
+    },
+    "ui.simulation_mode_responses_demonstrate_the_workflow_they_are_not_l": {
+      "en": "Simulation mode. Responses demonstrate the workflow; they are not live analyst answers.",
+      "vi": "Chế độ mô phỏng. Câu trả lời minh họa quy trình, chưa phải câu trả lời phân tích trực tiếp."
+    },
+    "ui.choose_a_starting_question": {
+      "en": "Choose a starting question",
+      "vi": "Chọn câu hỏi để bắt đầu"
+    },
+    "ui.edit_the_question_before_sending": {
+      "en": "Edit the question before sending.",
+      "vi": "Bạn có thể chỉnh câu hỏi trước khi gửi."
+    },
+    "ui.based_on": {
+      "en": "Based on",
+      "vi": "Dựa trên"
+    },
+    "ui.y": {
+      "en": "Y",
+      "vi": "B"
+    },
+    "ui.you": {
+      "en": "You",
+      "vi": "Bạn"
+    },
+    "ui.waiting_for_confirmation": {
+      "en": "Waiting for confirmation",
+      "vi": "Đang chờ xác nhận"
+    },
+    "ui.next_steps": {
+      "en": "Next steps",
+      "vi": "Bước tiếp theo"
+    },
+    "ui.next_step": {
+      "en": "NEXT STEP",
+      "vi": "BƯỚC TIẾP THEO"
+    },
+    "ui.review_the_saved_work": {
+      "en": "Review the saved work",
+      "vi": "Xem lại việc đã lưu"
+    },
+    "ui.put_this_analysis_to_work": {
+      "en": "Choose a follow-up",
+      "vi": "Chọn việc cần theo dõi"
+    },
+    "ui.this_analysis_saved_changes_to_follow_up_work_review_the_item_in_": {
+      "en": "Changes saved to Follow-up work. Open the item to review its current details and status.",
+      "vi": "Đã lưu thay đổi vào Việc cần theo dõi. Mở công việc để xem nội dung và trạng thái hiện tại."
+    },
+    "ui.explore_a_detail_or_prepare_an_action_for_review": {
+      "en": "Explore a detail or prepare an action for review.",
+      "vi": "Làm rõ một chi tiết hoặc chuẩn bị công việc để xem xét."
+    },
+    "ui.from_this_report_which_findings_should_production_investigate_fir": {
+      "en": "Based on these findings, what should we verify first on the floor, and what missing data do we need before taking action?",
+      "vi": "Từ kết quả trên, cần kiểm tra điểm nào trước tại xưởng và cần bổ sung dữ liệu gì trước khi chốt phương án xử lý?"
+    },
+    "ui.explore_the_next_check": {
+      "en": "Prioritize next checks",
+      "vi": "Ưu tiên bước kiểm tra tiếp"
+    },
+    "ui.review_saved_work": {
+      "en": "Review saved work",
+      "vi": "Xem việc đã lưu"
+    },
+    "ui.follow_up_on_the_quality_analysis": {
+      "en": "Follow up on the quality analysis",
+      "vi": "Theo dõi kết quả phân tích chất lượng"
+    },
+    "ui.open_follow_up_form": {
+      "en": "Open follow-up form",
+      "vi": "Mở phiếu theo dõi"
+    },
+    "ui.review_and_resend_the_last_question": {
+      "en": "Review and resend the last question",
+      "vi": "Xem lại và gửi lại câu hỏi gần nhất"
+    },
+    "ui.latest_response": {
+      "en": "Latest response",
+      "vi": "Câu trả lời mới nhất"
+    },
+    "ui.value_source_files_available": {
+      "en": "{value0} source files available",
+      "vi": "{value0} tệp nguồn hiện có"
+    },
+    "ui.dismiss_message": {
+      "en": "Dismiss message",
+      "vi": "Đóng thông báo"
+    },
+    "ui.delivery_has_not_been_confirmed_check_the_conversation_before_sen": {
+      "en": "Delivery has not been confirmed. Check the conversation before sending again to avoid a duplicate request.",
+      "vi": "Chưa xác nhận được yêu cầu đã đến hệ thống. Kiểm tra hội thoại trước khi gửi lại để tránh yêu cầu trùng."
+    },
+    "ui.restore_the_question_for_review": {
+      "en": "Restore the question for review",
+      "vi": "Khôi phục câu hỏi để xem lại"
+    },
+    "ui.remove_value": {
+      "en": "Remove {value0}",
+      "vi": "Xóa {value0}"
+    },
+    "ui.your_analysis_question": {
+      "en": "Your analysis question",
+      "vi": "Câu hỏi phân tích của bạn"
+    },
+    "ui.add_a_detail_or_ask_a_follow_up": {
+      "en": "Add a detail or ask a follow-up…",
+      "vi": "Bổ sung chi tiết hoặc đặt câu hỏi tiếp…"
+    },
+    "ui.ask_a_question_about_your_production_data": {
+      "en": "Ask a question about your production data…",
+      "vi": "Đặt câu hỏi về dữ liệu sản xuất của bạn…"
+    },
+    "ui.attach_a_file": {
+      "en": "Attach a file",
+      "vi": "Đính kèm tệp"
+    },
+    "ui.attach": {
+      "en": "Attach",
+      "vi": "Đính kèm"
+    },
+    "ui.attaching_files": {
+      "en": "Attaching files…",
+      "vi": "Đang đính kèm tệp…"
+    },
+    "ui.using_selected_dashboard_data": {
+      "en": "Using selected Dashboard data",
+      "vi": "Dùng dữ liệu Tổng quan đã chọn"
+    },
+    "ui.using_files_and_case_sources": {
+      "en": "Using files and case sources",
+      "vi": "Dùng tệp và nguồn dữ liệu"
+    },
+    "ui.send_question": {
+      "en": "Send question",
+      "vi": "Gửi câu hỏi"
+    },
+    "ui.send_question_enter": {
+      "en": "Send question (Enter)",
+      "vi": "Gửi câu hỏi (Enter)"
+    },
+    "ui.ai_unavailable_analytical_tools_remain_available": {
+      "en": "AI unavailable; analytical tools remain available",
+      "vi": "AI chưa khả dụng; vẫn dùng được công cụ phân tích"
+    },
+    "ui.reconnecting_automatically": {
+      "en": "Reconnecting automatically",
+      "vi": "Đang tự động kết nối lại"
+    },
+    "ui.this_conversation_has_stopped": {
+      "en": "This conversation has stopped",
+      "vi": "Hội thoại này đã dừng"
+    },
+    "ui.ready_for_your_question": {
+      "en": "Ready for your question",
+      "vi": "Sẵn sàng nhận câu hỏi"
+    },
+    "ui.enter_to_send": {
+      "en": "Enter to send",
+      "vi": "Enter để gửi"
+    },
+    "ui.shift_enter_for_a_new_line": {
+      "en": "Shift + Enter for a new line",
+      "vi": "Shift + Enter để xuống dòng"
+    },
+    "ui.this_request_can_save_a_new_action_draft": {
+      "en": "This request can save a new action draft.",
+      "vi": "Yêu cầu này có thể lưu bản nháp công việc mới."
+    },
+    "ui.this_request_can_revise_an_existing_draft": {
+      "en": "This request can revise an existing draft.",
+      "vi": "Yêu cầu này có thể chỉnh sửa bản nháp hiện có."
+    },
+    "ui.stopping_analysis": {
+      "en": "Stopping analysis…",
+      "vi": "Đang dừng phân tích…"
+    },
+    "ui.stop_analysis": {
+      "en": "Stop analysis",
+      "vi": "Dừng phân tích"
+    },
+    "ui.product_2": {
+      "en": "Product",
+      "vi": "Sản phẩm"
+    },
+    "ui.investigate_this_priority_in_the_selected_scope_value_verify_the_": {
+      "en": "Deep-dive into this priority ({value0}): check the supporting numbers, test alternative explanations (such as product mix or missing data), and outline the next check, owner role, and target metric.",
+      "vi": "Phân tích sâu vấn đề ưu tiên ({value0}): kiểm tra số liệu dẫn chứng, đối chiếu các nguyên nhân khác (như cơ cấu sản phẩm hoặc dữ liệu khuyết), và đề xuất bước kiểm tra tiếp theo, vai trò phụ trách cùng chỉ số mục tiêu."
+    },
+    "ui.analyze_this_dashboard_view_value_explain_the_main_trends_where_p": {
+      "en": "Summarize the key findings for {value0}: main defect trends, top hotspots to prioritize, and what to check next.",
+      "vi": "Tóm tắt kết quả chính cho phạm vi {value0}: xu hướng lỗi nổi bật, điểm nóng cần ưu tiên xử lý và bước kiểm tra tiếp theo."
+    },
+    "ui.skip_to_content": {
+      "en": "Skip to content",
+      "vi": "Đến nội dung chính"
+    },
+    "ui.manufacturing_quality_home": {
+      "en": "Manufacturing quality home",
+      "vi": "Trang chủ chất lượng sản xuất"
+    },
+    "ui.quality": {
+      "en": "Quality",
+      "vi": "Chất lượng"
+    },
+    "ui.production_workspace": {
+      "en": "Production defects",
+      "vi": "Lỗi sản xuất"
+    },
+    "ui.workspace_views": {
+      "en": "Workspace views",
+      "vi": "Chế độ làm việc"
+    },
+    "ui.dashboard": {
+      "en": "Dashboard",
+      "vi": "Tổng quan"
+    },
+    "ui.agent": {
+      "en": "Agent",
+      "vi": "Trợ lý"
+    },
+    "ui.language": {
+      "en": "Language",
+      "vi": "Ngôn ngữ"
+    },
+    "ui.source_checked_successfully_this_view_uses_the_latest_retained_so": {
+      "en": "Source checked. Showing the latest saved snapshot.",
+      "vi": "Đã kiểm tra nguồn. Đang hiển thị bản dữ liệu mới nhất đã lưu."
+    },
+    "ui.opening_the_analyst": {
+      "en": "Opening the analyst…",
+      "vi": "Đang mở trợ lý phân tích…"
+    },
+    "ui.production_quality": {
+      "en": "Production quality",
+      "vi": "Chất lượng sản xuất"
+    },
+    "ui.choose_the_next_quality_investigation": {
+      "en": "Choose the next quality investigation",
+      "vi": "Chọn vấn đề chất lượng cần điều tra"
+    },
+    "ui.review_the_priorities_inspect_the_evidence_and_test_the_assumptio": {
+      "en": "Review priorities and check the evidence before assigning follow-up work.",
+      "vi": "Xem ưu tiên và kiểm tra bằng chứng trước khi giao việc theo dõi."
+    },
+    "ui.ask_the_analyst": {
+      "en": "Ask the analyst",
+      "vi": "Hỏi trợ lý phân tích"
+    },
+    "ui.historical_case_study": {
+      "en": "Historical case study",
+      "vi": "Dữ liệu tình huống lịch sử"
+    },
+    "ui.canonical_policy": {
+      "en": "Canonical policy",
+      "vi": "Quy tắc chuẩn"
+    },
+    "ui.dashboard_filters": {
+      "en": "Dashboard filters",
+      "vi": "Bộ lọc bảng tổng quan"
+    },
+    "ui.viewing": {
+      "en": "VIEWING",
+      "vi": "ĐANG XEM"
+    },
+    "ui.all_lines_all_products": {
+      "en": "All lines · All products",
+      "vi": "Tất cả chuyền · Tất cả sản phẩm"
+    },
+    "ui.filters": {
+      "en": "Filters",
+      "vi": "Bộ lọc"
+    },
+    "ui.choose_your_view": {
+      "en": "Choose your view",
+      "vi": "Chọn phạm vi muốn xem"
+    },
+    "ui.unapplied_changes": {
+      "en": "Unapplied changes",
+      "vi": "Có thay đổi chưa áp dụng"
+    },
+    "ui.applied_filters": {
+      "en": "Applied filters",
+      "vi": "Bộ lọc đã áp dụng"
+    },
+    "ui.the_start_month_must_be_on_or_before_the_end_month": {
+      "en": "The start month must be on or before the end month.",
+      "vi": "Tháng bắt đầu phải trước hoặc trùng tháng kết thúc."
+    },
+    "ui.changes_take_effect_when_you_apply_the_view_uses_complete_months": {
+      "en": "Click Apply filters to update the charts. Periods use full calendar months.",
+      "vi": "Nhấn Áp dụng bộ lọc để cập nhật biểu đồ. Dữ liệu tính theo từng tháng trọn vẹn."
+    },
+    "ui.reset_filters": {
+      "en": "Reset filters",
+      "vi": "Đặt lại bộ lọc"
+    },
+    "ui.applying": {
+      "en": "Applying…",
+      "vi": "Đang áp dụng…"
+    },
+    "ui.apply_filters": {
+      "en": "Apply filters",
+      "vi": "Áp dụng bộ lọc"
+    },
+    "ui.could_not_update_this_view": {
+      "en": "Could not update this view.",
+      "vi": "Chưa thể cập nhật góc nhìn này."
+    },
+    "ui.the_last_successful_view_is_still_shown_your_selection_has_not_be": {
+      "en": "The last successful view is still shown. Your selection has not been applied.",
+      "vi": "Vẫn đang hiển thị kết quả gần nhất. Lựa chọn mới chưa được áp dụng."
+    },
+    "ui.check_the_connection_and_try_again": {
+      "en": "Check the connection and try again.",
+      "vi": "Kiểm tra kết nối rồi thử lại."
+    },
+    "ui.retry": {
+      "en": "Retry",
+      "vi": "Thử lại"
+    },
+    "ui.source_check_failed_saved_data_is_still_available": {
+      "en": "Source check failed. Saved data is still available.",
+      "vi": "Chưa kiểm tra được nguồn. Dữ liệu đã lưu vẫn dùng được."
+    },
+    "ui.last_attempt": {
+      "en": "Last attempt:",
+      "vi": "Lần thử gần nhất:"
+    },
+    "ui.source_checked_the_records_still_cover_the_historical_study_perio": {
+      "en": "Source checked. The records still cover the historical study period.",
+      "vi": "Đã kiểm tra nguồn. Các bản ghi vẫn thuộc kỳ nghiên cứu lịch sử."
+    },
+    "ui.updating_your_view": {
+      "en": "Updating your view…",
+      "vi": "Đang cập nhật phạm vi…"
+    },
+    "ui.preparing_your_quality_overview": {
+      "en": "Preparing your quality overview…",
+      "vi": "Đang chuẩn bị tổng quan chất lượng…"
+    },
+    "ui.key_performance_indicators": {
+      "en": "Key performance indicators",
+      "vi": "Các chỉ số chính"
+    },
+    "ui.logged_defect_events": {
+      "en": "Defects",
+      "vi": "Số lỗi"
+    },
+    "ui.recorded_events_not_unique_defective_units": {
+      "en": "Recorded events, not unique defective units",
+      "vi": "Sự kiện đã ghi nhận, không phải số sản phẩm lỗi"
+    },
+    "ui.critical_events": {
+      "en": "Critical defects",
+      "vi": "Lỗi nghiêm trọng"
+    },
+    "ui.of_all_logged_events": {
+      "en": "of all logged events",
+      "vi": "trong tổng số sự kiện ghi nhận"
+    },
+    "ui.events_1_000_reference_units": {
+      "en": "Events / 1,000 reference units",
+      "vi": "Sự kiện / 1.000 đơn vị tham chiếu"
+    },
+    "ui.static_output_reference_actual_defect_rate_unavailable": {
+      "en": "Static output reference · Actual defect rate unavailable",
+      "vi": "Sản lượng tham chiếu tĩnh · Chưa có tỷ lệ lỗi thực tế"
+    },
+    "ui.known_repair_cost": {
+      "en": "Known repair cost",
+      "vi": "Chi phí sửa chữa đã biết"
+    },
+    "ui.unavailable": {
+      "en": "Unavailable",
+      "vi": "Chưa có dữ liệu"
+    },
+    "ui.cost_coverage_currency_unspecified": {
+      "en": "cost coverage · currency unspecified",
+      "vi": "có dữ liệu chi phí · chưa rõ loại tiền"
+    },
+    "ui.no_logged_events_in_this_scope": {
+      "en": "No defects in this view",
+      "vi": "Không có lỗi trong phạm vi này"
+    },
+    "ui.try_a_wider_view_no_records_does_not_establish_zero_defects_or_ze": {
+      "en": "Try broadening your filters. Zero logged records does not confirm zero defects or zero production.",
+      "vi": "Hãy thử mở rộng bộ lọc. Không có bản ghi chưa đồng nghĩa với việc không phát sinh lỗi hay không sản xuất."
+    },
+    "ui.show_all_data": {
+      "en": "Show all data",
+      "vi": "Xem toàn bộ dữ liệu"
+    },
+    "ui.start_here": {
+      "en": "START HERE",
+      "vi": "BẮT ĐẦU TỪ ĐÂY"
+    },
+    "ui.three_places_to_focus": {
+      "en": "Three places to focus",
+      "vi": "Ba hướng cần ưu tiên"
+    },
+    "ui.where_to_focus": {
+      "en": "Where to focus",
+      "vi": "Hướng cần ưu tiên"
+    },
+    "ui.investigation_priorities_for_this_view": {
+      "en": "Investigation priorities for this view",
+      "vi": "Hướng điều tra theo phạm vi đang xem"
+    },
+    "ui.investigate": {
+      "en": "INVESTIGATE",
+      "vi": "CẦN TÌM HIỂU"
+    },
+    "ui.proposed_owner": {
+      "en": "Proposed owner",
+      "vi": "Vai trò phụ trách đề xuất"
+    },
+    "ui.success_measure_at_comparable_output": {
+      "en": "Success measure at comparable output",
+      "vi": "Thước đo ở sản lượng tương đương"
+    },
+    "ui.view_evidence": {
+      "en": "View evidence",
+      "vi": "Xem bằng chứng"
+    },
+    "ui.investigate_2": {
+      "en": "Investigate",
+      "vi": "Điều tra"
+    },
+    "ui.over_time": {
+      "en": "OVER TIME",
+      "vi": "THEO THỜI GIAN"
+    },
+    "ui.logged_event_trend": {
+      "en": "Logged-event trend",
+      "vi": "Xu hướng sự kiện lỗi"
+    },
+    "ui.monthly_workload": {
+      "en": "Monthly workload",
+      "vi": "Khối lượng ghi nhận theo tháng"
+    },
+    "ui.first_to_last_month": {
+      "en": "first to last month",
+      "vi": "tháng đầu đến tháng cuối"
+    },
+    "ui.location_severity": {
+      "en": "LOCATION & SEVERITY",
+      "vi": "VỊ TRÍ VÀ MỨC ĐỘ"
+    },
+    "ui.where_defects_occur": {
+      "en": "Where defects occur",
+      "vi": "Lỗi xuất hiện ở đâu"
+    },
+    "ui.compare_lines": {
+      "en": "COMPARE LINES",
+      "vi": "SO SÁNH CHUYỀN"
+    },
+    "ui.production_lines": {
+      "en": "Production lines",
+      "vi": "Các chuyền sản xuất"
+    },
+    "ui.ranked_by_events_per_1_000_reference_output_units": {
+      "en": "Ranked by events per 1,000 reference output units.",
+      "vi": "Xếp theo số sự kiện trên 1.000 đơn vị sản lượng tham chiếu."
+    },
+    "ui.confirm_actual_output_and_inspection_coverage_before_comparing_pe": {
+      "en": "Confirm actual output and inspection coverage before comparing performance.",
+      "vi": "Cần xác nhận sản lượng và độ bao phủ kiểm tra thực tế trước khi so sánh hiệu quả."
+    },
+    "ui.compare_products": {
+      "en": "COMPARE PRODUCTS",
+      "vi": "SO SÁNH SẢN PHẨM"
+    },
+    "ui.products_to_review": {
+      "en": "Products to review",
+      "vi": "Sản phẩm cần xem xét"
+    },
+    "ui.repair_costs": {
+      "en": "REPAIR COSTS",
+      "vi": "CHI PHÍ SỬA CHỮA"
+    },
+    "ui.where_repair_costs_accumulate": {
+      "en": "Where repair costs accumulate",
+      "vi": "Chi phí sửa chữa tập trung ở đâu"
+    },
+    "ui.observed_repair_cost": {
+      "en": "Repair cost",
+      "vi": "Chi phí sửa chữa"
+    },
+    "ui.local_currency_unspecified": {
+      "en": "Local currency, unspecified",
+      "vi": "Nội tệ, chưa rõ loại tiền"
+    },
+    "ui.cost_coverage": {
+      "en": "Cost recorded",
+      "vi": "Có ghi nhận chi phí"
+    },
+    "ui.selected_events_have_unknown_cost": {
+      "en": "defects without a valid cost",
+      "vi": "lỗi chưa có chi phí hợp lệ"
+    },
+    "ui.of_selected_events_have_known_repair_costs": {
+      "en": "of selected events have known repair costs",
+      "vi": "sự kiện được chọn có chi phí sửa chữa đã ghi nhận"
+    },
+    "ui.cost_coverage_2": {
+      "en": "cost coverage",
+      "vi": "độ phủ chi phí"
+    },
+    "ui.unknown_costs_are_excluded_this_is_observed_cost_not_an_estimate_": {
+      "en": "Unknown costs are excluded. This is observed cost, not an estimate of the full repair burden.",
+      "vi": "Chi phí chưa biết được loại khỏi tổng. Đây là chi phí đã ghi nhận, chưa phải ước tính toàn bộ chi phí sửa chữa."
+    },
+    "ui.product_repair_cost_concentration": {
+      "en": "Top 10 costliest products & Pareto 80% check",
+      "vi": "Top 10 sản phẩm tốn chi phí sửa chữa nhất (Pareto 80%)"
+    },
+    "ui.product_repair_costs": {
+      "en": "Product repair costs",
+      "vi": "Chi phí sửa chữa theo sản phẩm"
+    },
+    "ui.known_cost": {
+      "en": "Total repair cost",
+      "vi": "Tổng chi phí sửa"
+    },
+    "ui.coverage": {
+      "en": "Cost recorded",
+      "vi": "Tỷ lệ có chi phí"
+    },
+    "ui.no_known_repair_cost_in_this_view": {
+      "en": "No known repair cost in this view.",
+      "vi": "Chưa có chi phí sửa chữa đã biết trong phạm vi này."
+    },
+    "ui.products_account_for_80_of_known_linked_repair_costs": {
+      "en": "of 100 products account for 80% of recorded repair costs (costs are spread across many products rather than concentrated in a few).",
+      "vi": "trên 100 sản phẩm chiếm 80% tổng chi phí sửa chữa (chi phí trải rộng trên nhiều mã sản phẩm chứ không chỉ dồn vào một vài mã)."
+    },
+    "ui.historical_signal_check": {
+      "en": "HISTORICAL SIGNAL CHECK",
+      "vi": "SÀNG LỌC DỮ LIỆU LỊCH SỬ"
+    },
+    "ui.daily_candidates_for_investigation": {
+      "en": "Daily candidates for investigation",
+      "vi": "Ngày cần xem xét thêm"
+    },
+    "ui.exploratory": {
+      "en": "Exploratory",
+      "vi": "Thăm dò"
+    },
+    "ui.candidate_dates_are_prompts_to_investigate_not_confirmed_process_": {
+      "en": "Candidate dates are prompts to investigate, not confirmed process alarms.",
+      "vi": "Các ngày gợi ý để điều tra, chưa phải cảnh báo quy trình đã xác nhận."
+    },
+    "ui.january_daily_mean": {
+      "en": "January daily mean",
+      "vi": "Trung bình ngày tháng 1"
+    },
+    "ui.upper_reference": {
+      "en": "Upper reference",
+      "vi": "Ngưỡng tham chiếu trên"
+    },
+    "ui.no_january_baseline_events_for_this_scope_the_screen_is_unavailab": {
+      "en": "No January baseline events for this scope. The screen is unavailable.",
+      "vi": "Không có sự kiện tháng 1 làm đường cơ sở trong phạm vi này. Chưa thể sàng lọc."
+    },
+    "ui.candidate_dates": {
+      "en": "Candidate dates",
+      "vi": "Các ngày cần xem xét"
+    },
+    "ui.events": {
+      "en": "defects",
+      "vi": "lỗi"
+    },
+    "ui.no_dates_exceed_the_reference_in_this_view": {
+      "en": "No dates exceed the reference in this view.",
+      "vi": "Không có ngày nào vượt ngưỡng tham chiếu trong góc nhìn này."
+    },
+    "ui.how_to_read_this_signal": {
+      "en": "How the alert threshold (11.27) is calculated & data notes",
+      "vi": "Cách tính ngưỡng cảnh báo (11,27) & lưu ý dữ liệu"
+    },
+    "ui.january_stays_fixed_when_selected_months_change": {
+      "en": ". The January baseline stays fixed when you change the month filter.",
+      "vi": ". Ngưỡng cơ sở tháng 1 được giữ cố định khi bạn đổi bộ lọc tháng."
+    },
+    "ui.before_you_decide": {
+      "en": "BEFORE YOU DECIDE",
+      "vi": "TRƯỚC KHI QUYẾT ĐỊNH"
+    },
+    "ui.keep_these_data_limits_in_view": {
+      "en": "Keep these data limits in view",
+      "vi": "Lưu ý khi đọc dữ liệu"
+    },
+    "ui.applies_to_this_view": {
+      "en": "Applies to this view",
+      "vi": "Theo phạm vi đang xem"
+    },
+    "ui.actual_defect_rate_is_unavailable": {
+      "en": "Actual defect rate is unavailable",
+      "vi": "Chưa có tỷ lệ lỗi thực tế"
+    },
+    "ui.actual_production_and_inspected_units_were_not_supplied_reference": {
+      "en": "Actual production and inspected units were not supplied. Reference intensity helps compare logged burden.",
+      "vi": "Chưa có sản lượng và số đơn vị được kiểm tra thực tế. Cường độ tham chiếu giúp so sánh mức lỗi đã ghi nhận."
+    },
+    "ui.events_with_unknown_cost": {
+      "en": "events with unknown cost",
+      "vi": "sự kiện chưa rõ chi phí"
+    },
+    "ui.missing_costs_stay_unknown_and_are_excluded_from_repair_totals": {
+      "en": "Missing costs stay unknown and are excluded from repair totals.",
+      "vi": "Chi phí thiếu vẫn là chưa biết và không được tính vào tổng chi phí sửa chữa."
+    },
+    "ui.events_without_a_product_match": {
+      "en": "events without a product match",
+      "vi": "sự kiện chưa khớp sản phẩm"
+    },
+    "ui.included_in_plant_totals_excluded_from_comparisons_that_need_prod": {
+      "en": "Included in plant totals; excluded from comparisons that need product output.",
+      "vi": "Vẫn được tính trong tổng nhà máy; loại khỏi so sánh cần sản lượng của sản phẩm."
+    },
+    "ui.source_quality_assumptions": {
+      "en": "Source quality & assumptions",
+      "vi": "Chất lượng nguồn và giả định"
+    },
+    "ui.source_event_rows": {
+      "en": "Rows received",
+      "vi": "Dòng nhận được"
+    },
+    "ui.retained_study_events": {
+      "en": "Defects analysed",
+      "vi": "Lỗi được phân tích"
+    },
+    "ui.quarantined_rows": {
+      "en": "Rows set aside",
+      "vi": "Dòng tách riêng"
+    },
+    "ui.dates_with_no_logged_events": {
+      "en": "Days with no defects logged",
+      "vi": "Ngày không ghi nhận lỗi"
+    },
+    "ui.explore_the_defect_log": {
+      "en": "Inspect individual defect records",
+      "vi": "Tra cứu danh sách bản ghi lỗi"
+    },
+    "ui.events_in_this_view": {
+      "en": "defects in this view",
+      "vi": "lỗi trong phạm vi đang xem"
+    },
+    "ui.take_the_analysis_with_you": {
+      "en": "Take the analysis with you",
+      "vi": "Mang dữ liệu vào công việc"
+    },
+    "ui.export_this_view_or_review_the_full_study_s_data_quality_workbook": {
+      "en": "Export this view or review the full study’s data-quality workbook.",
+      "vi": "Xuất dữ liệu đang xem hoặc xem sổ chất lượng dữ liệu của toàn bộ nghiên cứu."
+    },
+    "ui.export_filtered_csv": {
+      "en": "Export filtered CSV",
+      "vi": "Tải CSV theo bộ lọc"
+    },
+    "ui.full_study_quality_workbook": {
+      "en": "Full-study quality workbook",
+      "vi": "Sổ chất lượng toàn bộ nghiên cứu"
+    },
+    "ui.the_workbook_is_a_separate_full_case_file_and_does_not_follow_das": {
+      "en": "The workbook is a separate full-case file and does not follow dashboard filters.",
+      "vi": "Sổ chất lượng là file riêng cho toàn bộ nghiên cứu, không thay đổi theo bộ lọc."
+    },
+    "ui.last_source_check": {
+      "en": "Last source check",
+      "vi": "Lần kiểm tra nguồn gần nhất"
+    },
+    "ui.checking": {
+      "en": "Checking…",
+      "vi": "Đang kiểm tra…"
+    },
+    "ui.check_source": {
+      "en": "Check source",
+      "vi": "Kiểm tra nguồn"
+    },
+    "ui.a_source_check_does_not_change_the_study_s_historical_dates": {
+      "en": "A source check does not change the study’s historical dates.",
+      "vi": "Kiểm tra nguồn không làm thay đổi kỳ dữ liệu lịch sử."
+    },
+    "ui.repair_cost_distribution": {
+      "en": "Repair cost distribution",
+      "vi": "Phân phối chi phí sửa chữa"
+    },
+    "ui.distribution_of_observed_valid_costs": {
+      "en": "Spread of repair cost per defect",
+      "vi": "Phân bố chi phí sửa trên mỗi lỗi"
+    },
+    "ui.events_with_valid_observed_costs": {
+      "en": "defects with a recorded cost",
+      "vi": "lỗi có ghi nhận chi phí"
+    },
+    "ui.cost_coverage_3": {
+      "en": "of all defects",
+      "vi": "tổng số lỗi"
+    },
+    "ui.median": {
+      "en": "Median",
+      "vi": "Trung vị"
+    },
+    "ui.25th_percentile": {
+      "en": "25th percentile",
+      "vi": "Phân vị 25"
+    },
+    "ui.75th_percentile": {
+      "en": "75th percentile",
+      "vi": "Phân vị 75"
+    },
+    "ui.95th_percentile": {
+      "en": "95th percentile",
+      "vi": "Phân vị 95"
+    },
+    "ui.local_currency_counts_cover_events_with_valid_cost_only_missing_o": {
+      "en": "Values in local currency (unspecified). Includes only defects with valid recorded costs; missing or negative entries are excluded.",
+      "vi": "Đơn vị: nội tệ (chưa rõ loại tiền). Chỉ tính các lỗi có chi phí hợp lệ; các bản ghi thiếu hoặc âm đã được loại trừ."
+    },
+    "ui.logged_events": {
+      "en": "Defects",
+      "vi": "Số lỗi"
+    },
+    "ui.logged_events_2": {
+      "en": "defects",
+      "vi": "lỗi"
+    },
+    "ui.critical": {
+      "en": "Critical",
+      "vi": "Nghiêm trọng"
+    },
+    "ui.critical_events_within_total": {
+      "en": "Critical",
+      "vi": "Nghiêm trọng"
+    },
+    "ui.compare_the_severity_mix_within_each_location": {
+      "en": "Compare the severity mix within each location.",
+      "vi": "So sánh cơ cấu mức độ lỗi tại từng vị trí."
+    },
+    "ui.critical_2": {
+      "en": "Critical",
+      "vi": "nghiêm trọng"
+    },
+    "ui.no_location_records_in_this_view": {
+      "en": "No location records in this view.",
+      "vi": "Không có bản ghi vị trí trong góc nhìn này."
+    },
+    "ui.counts_relationship": {
+      "en": "Location × Severity breakdown & statistical test (Chi-square)",
+      "vi": "Bảng chi tiết (Vị trí × Mức độ) & Kiểm định thống kê (Chi-square)"
+    },
+    "ui.logged_events_by_defect_location_and_severity": {
+      "en": "Logged events by defect location and severity",
+      "vi": "Sự kiện lỗi theo vị trí và mức độ"
+    },
+    "ui.location": {
+      "en": "Location",
+      "vi": "Vị trí"
+    },
+    "ui.cram_r_s_v": {
+      "en": "Cramér's V:",
+      "vi": "Cramér's V:"
+    },
+    "ui.p_value": {
+      "en": "· p-value:",
+      "vi": "· Giá trị p:"
+    },
+    "ui.meets_expected_cell_checks": {
+      "en": "valid Chi-square sample size",
+      "vi": "đủ cỡ mẫu kiểm định Chi-square hợp lệ"
+    },
+    "ui.unreliable": {
+      "en": "unreliable",
+      "vi": "không đáng tin cậy"
+    },
+    "ui.linked_events": {
+      "en": "defects",
+      "vi": "lỗi"
+    },
+    "ui.reference_units": {
+      "en": "units",
+      "vi": "sản phẩm"
+    },
+    "ui.critical_events_2": {
+      "en": "Critical",
+      "vi": "nghiêm trọng"
+    },
+    "ui.no_eligible_lines_in_this_cohort": {
+      "en": "No eligible lines in this cohort.",
+      "vi": "Không có chuyền phù hợp trong nhóm này."
+    },
+    "ui.rank_products_by": {
+      "en": "Rank products by",
+      "vi": "Xếp hạng sản phẩm theo"
+    },
+    "ui.reference_intensity": {
+      "en": "By rate (/1,000 units)",
+      "vi": "Theo tỷ lệ (/1.000 SP)"
+    },
+    "ui.event_count": {
+      "en": "By total defects",
+      "vi": "Theo tổng số lỗi"
+    },
+    "ui.highest_linked_events_per_1_000_reference_output_units": {
+      "en": "Defects per 1,000 reference output units, highest first.",
+      "vi": "Số lỗi trên 1.000 sản phẩm định mức, xếp từ cao xuống thấp."
+    },
+    "ui.highest_number_of_logged_events_in_the_selected_view": {
+      "en": "Products with the highest total defect count in this view.",
+      "vi": "Các sản phẩm có tổng số lượng lỗi nhiều nhất trong phạm vi đang xem."
+    },
+    "ui.product_ranking": {
+      "en": "Product ranking",
+      "vi": "Xếp hạng sản phẩm"
+    },
+    "ui.products_ranked_by_reference_output_intensity": {
+      "en": "Products ranked by reference-output intensity",
+      "vi": "Sản phẩm xếp theo cường độ trên sản lượng tham chiếu"
+    },
+    "ui.top_products_ranked_by_logged_event_count": {
+      "en": "Top products ranked by logged event count",
+      "vi": "Sản phẩm dẫn đầu theo số sự kiện lỗi"
+    },
+    "ui.linked_events_2": {
+      "en": "Defects",
+      "vi": "Số lỗi"
+    },
+    "ui.events_2": {
+      "en": "Defects",
+      "vi": "Số lỗi"
+    },
+    "ui.reference_units_2": {
+      "en": "Reference output",
+      "vi": "Sản lượng tham chiếu"
+    },
+    "ui.per_1_000": {
+      "en": "Per 1,000 units",
+      "vi": "Trên 1.000 SP"
+    },
+    "ui.cumulative": {
+      "en": "Cumulative",
+      "vi": "Lũy kế"
+    },
+    "ui.no_eligible_products_for_this_ranking": {
+      "en": "No eligible products for this ranking.",
+      "vi": "Không có sản phẩm phù hợp để xếp hạng."
+    },
+    "ui.show_leading_products": {
+      "en": "Show top products only",
+      "vi": "Chỉ hiện sản phẩm đứng đầu"
+    },
+    "ui.show_all_eligible_products": {
+      "en": "Show all products",
+      "vi": "Hiện tất cả sản phẩm"
+    },
+    "ui.static_monthly_output_selected_months_event_filters_change_the_ev": {
+      "en": "Reference output = fixed monthly output × full months in view. Severity, type and location filters change the event count, not the reference output.",
+      "vi": "Sản lượng tham chiếu = sản lượng tháng cố định × số tháng trọn vẹn trong phạm vi. Bộ lọc mức độ, loại và vị trí lỗi thay đổi số sự kiện, không thay đổi sản lượng tham chiếu."
+    },
+    "ui.no_positive_linked_event_burden_for_a_pareto_threshold": {
+      "en": "No positive linked-event burden for a Pareto threshold.",
+      "vi": "Không có sự kiện đã ghép để xác định ngưỡng Pareto."
+    },
+    "ui.master_products_reach_80_of_linked_logged_events_in_this_scope": {
+      "en": "of 100 products account for 80% of matched defects in this view.",
+      "vi": "trên 100 mã sản phẩm chiếm 80% tổng số lỗi khớp mã trong phạm vi này."
+    },
+    "ui.daily_logged_events": {
+      "en": "Defects per day",
+      "vi": "Số lỗi mỗi ngày"
+    },
+    "ui.january_reference": {
+      "en": "Limit from January",
+      "vi": "Ngưỡng từ tháng 1"
+    },
+    "ui.candidate": {
+      "en": "Day above the limit",
+      "vi": "Ngày vượt ngưỡng"
+    },
+    "ui.the_records_behind_this_view": {
+      "en": "UNDERLYING DEFECT LOG",
+      "vi": "DỮ LIỆU BẢN GHI GỐC"
+    },
+    "ui.explore_the_filtered_defect_log": {
+      "en": "Filtered defect records",
+      "vi": "Danh sách bản ghi lỗi theo bộ lọc"
+    },
+    "ui.retained_events_in_this_applied_scope": {
+      "en": "defects match the applied filters",
+      "vi": "lỗi khớp bộ lọc đang áp dụng"
+    },
+    "ui.loading_filtered_records": {
+      "en": "Loading filtered records…",
+      "vi": "Đang tải bản ghi theo bộ lọc…"
+    },
+    "ui.sort_by": {
+      "en": "Sort by",
+      "vi": "Sắp xếp theo"
+    },
+    "ui.sort_direction": {
+      "en": "Sort direction",
+      "vi": "Chiều sắp xếp"
+    },
+    "ui.descending": {
+      "en": "Descending",
+      "vi": "Giảm dần"
+    },
+    "ui.ascending": {
+      "en": "Ascending",
+      "vi": "Tăng dần"
+    },
+    "ui.retry_records": {
+      "en": "Retry records",
+      "vi": "Tải lại bản ghi"
+    },
+    "ui.scrollable_filtered_defect_records": {
+      "en": "Scrollable filtered defect records",
+      "vi": "Bản ghi lỗi theo bộ lọc có thể cuộn"
+    },
+    "ui.filtered_defect_records": {
+      "en": "Filtered defect records",
+      "vi": "Bản ghi lỗi theo bộ lọc"
+    },
+    "ui.id": {
+      "en": "ID",
+      "vi": "Mã lỗi"
+    },
+    "ui.date": {
+      "en": "Date",
+      "vi": "Ngày"
+    },
+    "ui.product_line": {
+      "en": "Product / line",
+      "vi": "Sản phẩm / chuyền"
+    },
+    "ui.defect_location": {
+      "en": "Defect / location",
+      "vi": "Lỗi / vị trí"
+    },
+    "ui.severity": {
+      "en": "Severity",
+      "vi": "Mức độ"
+    },
+    "ui.inspection": {
+      "en": "Inspection",
+      "vi": "Kiểm tra"
+    },
+    "ui.repair_cost": {
+      "en": "Repair cost",
+      "vi": "Chi phí sửa chữa"
+    },
+    "ui.unknown": {
+      "en": "Unknown",
+      "vi": "Không rõ"
+    },
+    "ui.no_records_match_this_scope": {
+      "en": "No records match this scope.",
+      "vi": "Không có bản ghi phù hợp phạm vi này."
+    },
+    "ui.loading_records": {
+      "en": "Loading records…",
+      "vi": "Đang tải bản ghi…"
+    },
+    "ui.page": {
+      "en": "Page",
+      "vi": "Trang"
+    },
+    "ui.of": {
+      "en": "of",
+      "vi": "trên"
+    },
+    "ui.previous_records_page": {
+      "en": "Previous records page",
+      "vi": "Trang bản ghi trước"
+    },
+    "ui.next_records_page": {
+      "en": "Next records page",
+      "vi": "Trang bản ghi sau"
+    },
+    "ui.report_data_table": {
+      "en": "Report data table",
+      "vi": "Bảng số liệu báo cáo"
+    },
+    "ui.analysis_chart": {
+      "en": "Analysis chart",
+      "vi": "Biểu đồ phân tích"
+    },
+    "ui.chart": {
+      "en": "Chart",
+      "vi": "Biểu đồ"
+    },
+    "ui.not_available": {
+      "en": "not available",
+      "vi": "chưa có"
+    },
+    "ui.reviewing_follow_up_work": {
+      "en": "Reviewing follow-up work",
+      "vi": "Xem công việc theo dõi"
+    },
+    "ui.preparing_an_action_draft": {
+      "en": "Preparing an action draft",
+      "vi": "Chuẩn bị bản nháp công việc"
+    },
+    "ui.revising_the_action_draft": {
+      "en": "Revising the action draft",
+      "vi": "Chỉnh sửa bản nháp công việc"
+    },
+    "ui.comparing_the_selected_views": {
+      "en": "Comparing the selected views",
+      "vi": "So sánh các phạm vi đã chọn"
+    },
+    "ui.reading_the_selected_data": {
+      "en": "Reading the selected data",
+      "vi": "Đọc dữ liệu đã chọn"
+    },
+    "ui.checking_the_data": {
+      "en": "Checking the data",
+      "vi": "Kiểm tra dữ liệu"
+    },
+    "ui.analyzing_the_results": {
+      "en": "Analyzing the results",
+      "vi": "Phân tích kết quả"
+    },
+    "ui.analysis_ready": {
+      "en": "Analysis ready",
+      "vi": "Đã có kết quả phân tích"
+    },
+    "ui.draft_needs_review": {
+      "en": "Draft needs review",
+      "vi": "Bản nháp cần kiểm tra thêm"
+    },
+    "ui.analysis_interrupted": {
+      "en": "Analysis interrupted",
+      "vi": "Phân tích bị gián đoạn"
+    },
+    "ui.analysis_cancelled": {
+      "en": "Analysis cancelled",
+      "vi": "Đã hủy phân tích"
+    },
+    "ui.this_analysis_cannot_continue": {
+      "en": "This analysis cannot continue",
+      "vi": "Không thể tiếp tục phân tích này"
+    },
+    "ui.analysis_paused_at_its_usage_limit": {
+      "en": "Analysis paused at its usage limit",
+      "vi": "Phân tích dừng ở giới hạn sử dụng"
+    },
+    "ui.analysis_stopped_before_finishing": {
+      "en": "Analysis stopped before finishing",
+      "vi": "Phân tích dừng khi chưa hoàn tất"
+    },
+    "ui.your_request_is_queued": {
+      "en": "Your request is queued",
+      "vi": "Yêu cầu đang chờ xử lý"
+    },
+    "ui.checking_the_results": {
+      "en": "Checking the results",
+      "vi": "Kiểm tra kết quả"
+    },
+    "ui.the_selected_data_is_no_longer_available_refresh_the_dashboard_re": {
+      "en": "The selected data is no longer available. Refresh the Dashboard, review the filters, then send your question again.",
+      "vi": "Dữ liệu đã chọn không còn khả dụng. Làm mới Tổng quan, kiểm tra bộ lọc rồi gửi lại câu hỏi."
+    },
+    "ui.this_request_is_too_long_shorten_it_or_attach_the_details_as_a_fi": {
+      "en": "This request is too long. Shorten it or attach the details as a file.",
+      "vi": "Yêu cầu này quá dài. Rút gọn nội dung hoặc đính kèm phần chi tiết bằng tệp."
+    },
+    "ui.this_conversation_cannot_continue_your_previous_results_are_still": {
+      "en": "This conversation cannot continue. Your previous results are still available.",
+      "vi": "Không thể tiếp tục hội thoại này. Các kết quả trước vẫn được giữ lại."
+    },
+    "ui.the_analysis_reached_its_usage_limit_before_finishing_results_so_": {
+      "en": "The analysis reached its usage limit before finishing. Results so far have been saved.",
+      "vi": "Phân tích đã chạm giới hạn sử dụng trước khi hoàn tất. Kết quả hiện có đã được lưu."
+    },
+    "ui.a_file_could_not_be_attached_check_its_format_and_size_then_try_a": {
+      "en": "A file could not be attached. Check its format and size, then try again. Your question is still here.",
+      "vi": "Chưa đính kèm được tệp. Kiểm tra định dạng và dung lượng rồi thử lại. Câu hỏi của bạn vẫn được giữ lại."
+    },
+    "ui.connection_interrupted_we_are_reconnecting_your_draft_is_kept_her": {
+      "en": "Connection interrupted. We are reconnecting; your draft is kept here.",
+      "vi": "Kết nối bị gián đoạn. Hệ thống đang kết nối lại; bản nháp của bạn được giữ ở đây."
+    },
+    "ui.result_could_not_be_verified": {
+      "en": "The result could not be verified. Your question and any saved results are kept here. Review them before trying again.",
+      "vi": "Kết quả chưa được xác minh. Câu hỏi và kết quả đã lưu vẫn ở đây. Hãy xem lại trước khi thử lại."
+    },
+    "ui.the_analysis_could_not_finish_your_request_and_any_saved_results_": {
+      "en": "The analysis could not finish. Your request and any saved results are kept here. Review them before trying again.",
+      "vi": "Phân tích chưa hoàn tất. Yêu cầu và kết quả đã lưu vẫn ở đây. Hãy xem lại trước khi thử lại."
+    },
+    "ui.activity": {
+      "en": "Activity",
+      "vi": "Tiến trình"
+    },
+    "ui.done": {
+      "en": "Done",
+      "vi": "Đã xong"
+    },
+    "ui.could_not_finish": {
+      "en": "Could not finish",
+      "vi": "Chưa hoàn tất"
+    },
+    "ui.not_confirmed": {
+      "en": "Not confirmed",
+      "vi": "Chưa xác nhận"
+    },
+    "ui.in_progress": {
+      "en": "In progress",
+      "vi": "Đang thực hiện"
+    },
+    "ui.your_analysis_is_available_below": {
+      "en": "Your analysis is available below.",
+      "vi": "Kết quả phân tích ở bên dưới."
+    },
+    "ui.any_available_results_are_kept_in_this_conversation": {
+      "en": "Any available results are kept in this conversation.",
+      "vi": "Kết quả hiện có được giữ trong hội thoại này."
+    },
+    "ui.the_analyst_is_preparing_your_request": {
+      "en": "Preparing your analysis…",
+      "vi": "Đang chuẩn bị phân tích…"
+    },
+    "ui.some_figures_could_not_be_confirmed_review_the_draft_before_using": {
+      "en": "Some figures could not be confirmed. Review the draft before using it to make a decision.",
+      "vi": "Một số số liệu chưa được xác nhận. Kiểm tra bản nháp trước khi dùng để ra quyết định."
+    },
+    "ui.the_usage_limit_was_reached_this_analysis_is_incomplete": {
+      "en": "The usage limit was reached. This analysis is incomplete.",
+      "vi": "Đã chạm giới hạn sử dụng. Phân tích này chưa hoàn tất."
+    },
+    "ui.quality_analyst_2": {
+      "en": "Quality analyst",
+      "vi": "Trợ lý chất lượng"
+    },
+    "ui.prepare_an_action_draft": {
+      "en": "Prepare an action draft",
+      "vi": "Chuẩn bị bản nháp công việc"
+    },
+    "ui.revise_a_draft": {
+      "en": "Revise a draft",
+      "vi": "Chỉnh sửa bản nháp"
+    },
+    "ui.simulated_response": {
+      "en": "Simulated response",
+      "vi": "Câu trả lời mô phỏng"
+    },
+    "ui.draft_some_figures_still_need_checking_review_before_acting_on_th": {
+      "en": "Draft: some figures still need checking. Review before acting on these results.",
+      "vi": "Bản nháp: một số số liệu cần kiểm tra thêm. Xem lại trước khi áp dụng kết quả."
+    },
+    "ui.check_the_evidence": {
+      "en": "CHECK THE EVIDENCE",
+      "vi": "KIỂM TRA BẰNG CHỨNG"
+    },
+    "ui.evidence_for_this_view": {
+      "en": "Evidence for this view",
+      "vi": "Bằng chứng của phạm vi này"
+    },
+    "ui.close_evidence": {
+      "en": "Close evidence",
+      "vi": "Đóng bằng chứng"
+    },
+    "ui.the_metrics_and_downloads_below_use_the_applied_snapshot_and_filt": {
+      "en": "The metrics and downloads below use the applied snapshot and filters.",
+      "vi": "Chỉ số và tệp bên dưới dùng đúng bản dữ liệu và bộ lọc đang áp dụng."
+    },
+    "ui.reference_output_denominator": {
+      "en": "Reference output",
+      "vi": "Sản lượng tham chiếu"
+    },
+    "ui.counts_describe_defect_events_reference_intensity_uses_all_master": {
+      "en": "Counts reflect cleaned defect records. Reference rate = matched defects ÷ fixed monthly reference output × 1,000 units (actual production volume is unverified).",
+      "vi": "Số liệu tính trên bản ghi lỗi đã làm sạch. Tỷ lệ lỗi tham chiếu = số lỗi khớp mã ÷ sản lượng định mức tháng cố định × 1.000 đơn vị (chưa có sản lượng thực tế)."
+    },
+    "ui.open_scoped_records": {
+      "en": "View matching defect records",
+      "vi": "Xem danh sách bản ghi lỗi"
+    },
+    "ui.download_evidence_bundle": {
+      "en": "Download evidence bundle",
+      "vi": "Tải gói bằng chứng"
+    },
+    "ui.open_receipt_json": {
+      "en": "Open receipt JSON",
+      "vi": "Mở biên nhận JSON"
+    },
+    "ui.snapshot_and_verification_references": {
+      "en": "Snapshot and verification references",
+      "vi": "Tham chiếu bản dữ liệu và kiểm chứng"
+    },
+    "ui.context": {
+      "en": "Context",
+      "vi": "Ngữ cảnh"
+    },
+    "ui.dataset_version": {
+      "en": "Dataset version",
+      "vi": "Phiên bản dữ liệu"
+    },
+    "ui.policy_version": {
+      "en": "Policy version",
+      "vi": "Phiên bản quy tắc"
+    },
+    "ui.execution_receipt": {
+      "en": "Execution receipt",
+      "vi": "Biên nhận thực thi"
+    },
+    "ui.source_sha_256": {
+      "en": "Source SHA-256",
+      "vi": "SHA-256 của nguồn"
+    },
+    "ui.result_sha_256": {
+      "en": "Result SHA-256",
+      "vi": "SHA-256 của kết quả"
+    },
+    "ui.investigation_and_handoff_brief": {
+      "en": "Investigation and handoff brief",
+      "vi": "Hồ sơ điều tra và brief bàn giao"
+    },
+    "ui.keep_checked_findings_open_hypotheses_and_the_next_measurement_to": {
+      "en": "Keep checked findings, open hypotheses and the next measurement together.",
+      "vi": "Lưu kết quả đã kiểm, giả thuyết còn mở và phép đo tiếp theo cùng một chỗ."
+    },
+    "ui.close": {
+      "en": "Close",
+      "vi": "Đóng"
+    },
+    "ui.open": {
+      "en": "Open",
+      "vi": "Mở"
+    },
+    "ui.the_investigation_could_not_be_loaded_or_saved_your_edits_remain_": {
+      "en": "The investigation could not be loaded or saved. Your edits remain in this tab.",
+      "vi": "Chưa tải hoặc lưu được hồ sơ điều tra. Nội dung bạn sửa vẫn còn trong tab này."
+    },
+    "ui.reload_saved_version": {
+      "en": "Reload saved version",
+      "vi": "Tải lại bản đã lưu"
+    },
+    "ui.this_investigation_belongs_to_an_earlier_scope_its_findings_do_no": {
+      "en": "This investigation belongs to an earlier scope. Its findings do not describe the current Dashboard selection.",
+      "vi": "Hồ sơ này thuộc phạm vi trước đó. Kết quả trong hồ sơ chưa mô tả lựa chọn hiện tại trên Tổng quan."
+    },
+    "ui.saved_version": {
+      "en": "Saved version",
+      "vi": "Phiên bản đã lưu"
+    },
+    "ui.investigation_units": {
+      "en": "Units and metric definitions",
+      "vi": "Đơn vị và cách tính chỉ số"
+    },
+    "ui.the_saved_investigation_changed_while_you_were_editing_copy_your_": {
+      "en": "The saved investigation changed while you were editing. Copy your edits, then load the saved version before saving.",
+      "vi": "Bản đã lưu thay đổi trong lúc bạn sửa. Sao chép nội dung đang sửa rồi tải bản đã lưu trước khi lưu tiếp."
+    },
+    "ui.investigation_question": {
+      "en": "Investigation question",
+      "vi": "Câu hỏi điều tra"
+    },
+    "ui.working_summary": {
+      "en": "Working summary",
+      "vi": "Tóm tắt hiện tại"
+    },
+    "ui.checked_findings": {
+      "en": "Findings and evidence review",
+      "vi": "Kết quả và trạng thái rà soát bằng chứng"
+    },
+    "ui.evidence_references": {
+      "en": "evidence references",
+      "vi": "tham chiếu bằng chứng"
+    },
+    "ui.no_checked_findings_saved_yet": {
+      "en": "No checked findings saved yet.",
+      "vi": "Chưa lưu kết quả đã kiểm."
+    },
+    "ui.open_and_tested_hypotheses": {
+      "en": "Open and tested hypotheses",
+      "vi": "Giả thuyết đang mở và đã kiểm"
+    },
+    "ui.add_a_hypothesis": {
+      "en": "Add a hypothesis",
+      "vi": "Thêm giả thuyết"
+    },
+    "ui.handoff_priorities": {
+      "en": "Handoff priorities",
+      "vi": "Ưu tiên bàn giao"
+    },
+    "ui.priority": {
+      "en": "Priority",
+      "vi": "Ưu tiên"
+    },
+    "ui.evidence": {
+      "en": "Evidence",
+      "vi": "Bằng chứng"
+    },
+    "ui.action": {
+      "en": "Action",
+      "vi": "Hành động"
+    },
+    "ui.proposed_owner_role": {
+      "en": "Proposed owner role",
+      "vi": "Vai trò phụ trách đề xuất"
+    },
+    "ui.metric": {
+      "en": "Metric",
+      "vi": "Chỉ số"
+    },
+    "ui.next_steps_one_per_line": {
+      "en": "Next steps, one per line",
+      "vi": "Bước tiếp theo, mỗi dòng một bước"
+    },
+    "ui.edited_findings_are_marked_as_user_edited_editing_text_does_not_r": {
+      "en": "Edited findings are marked as user edited. Editing text does not revalidate its evidence.",
+      "vi": "Kết quả bạn sửa được đánh dấu là người dùng đã sửa. Sửa văn bản không tự kiểm chứng lại bằng chứng."
+    },
+    "ui.saving": {
+      "en": "Saving…",
+      "vi": "Đang lưu…"
+    },
+    "ui.save_investigation": {
+      "en": "Save investigation",
+      "vi": "Lưu hồ sơ điều tra"
+    },
+    "ui.use_saved_version": {
+      "en": "Use saved version",
+      "vi": "Dùng bản đã lưu"
+    },
+    "ui.registered_briefs_and_artifacts": {
+      "en": "Registered briefs and artifacts",
+      "vi": "Brief và đầu ra đã đăng ký"
+    },
+    "ui.no_registered_brief_yet_ask_the_analyst_to_prepare_a_handoff_brie": {
+      "en": "No registered brief yet. Ask the analyst to prepare a handoff brief from this investigation.",
+      "vi": "Chưa có brief đã đăng ký. Yêu cầu trợ lý chuẩn bị brief bàn giao từ hồ sơ điều tra này."
+    },
+    "ui.loading_the_saved_investigation": {
+      "en": "Loading the saved investigation…",
+      "vi": "Đang tải hồ sơ điều tra đã lưu…"
+    },
+    "ui.line": {
+      "en": "Line",
+      "vi": "Chuyền"
+    },
+    "ui.category": {
+      "en": "Category",
+      "vi": "Nhóm sản phẩm"
+    },
+    "ui.type": {
+      "en": "Type",
+      "vi": "Loại lỗi"
+    },
+    "ui.all_production_lines": {
+      "en": "All production lines",
+      "vi": "Tất cả chuyền"
+    },
+    "ui.review_the_selected_investigation": {
+      "en": "Review the selected investigation.",
+      "vi": "Rà soát nội dung điều tra đã chọn."
+    },
+    "ui.excerpt_from_the_analysis_report_the_complete_report_remains_in_a": {
+      "en": "Excerpt from the analysis report. The complete report remains in Agent.",
+      "vi": "Trích đoạn báo cáo phân tích. Báo cáo đầy đủ vẫn được giữ trong Trợ lý."
+    },
+    "ui.this_work_changed_elsewhere_load_the_latest_version_before_saving": {
+      "en": "This work changed elsewhere. Load the latest version before saving again.",
+      "vi": "Việc này đã được thay đổi ở nơi khác. Tải bản mới nhất trước khi lưu lại."
+    },
+    "ui.this_work_or_its_saved_data_view_is_unavailable_reload_the_list_a": {
+      "en": "This work or its saved data view is unavailable. Reload the list and try again.",
+      "vi": "Không tìm thấy việc này hoặc phạm vi dữ liệu đã lưu. Tải lại danh sách rồi thử lại."
+    },
+    "ui.some_details_could_not_be_accepted_check_the_title_date_and_requi": {
+      "en": "Some details could not be accepted. Check the title, date and required update fields.",
+      "vi": "Một số thông tin chưa hợp lệ. Kiểm tra tên việc, ngày và các mục bắt buộc khi cập nhật."
+    },
+    "ui.could_not_save_the_change_your_entries_are_still_here_try_again": {
+      "en": "Could not save the change. Your entries are still here; try again.",
+      "vi": "Chưa lưu được thay đổi. Nội dung đã nhập vẫn còn; hãy thử lại."
+    },
+    "ui.this_report_has_no_saved_dashboard_scope_use_add_work_to_start_a_": {
+      "en": "This report has no saved dashboard scope. Use Add work to start a separate follow-up in a chosen view.",
+      "vi": "Báo cáo này không có phạm vi tổng quan đã lưu. Dùng Thêm việc để tạo việc riêng trong phạm vi bạn chọn."
+    },
+    "ui.this_report_s_saved_data_view_is_no_longer_available_for_a_new_fo": {
+      "en": "This report’s saved data view is no longer available for a new follow-up. Run a new analysis from the Dashboard, or use Add work to choose a separate current view.",
+      "vi": "Phạm vi dữ liệu đã lưu của báo cáo không còn dùng được để tạo việc mới. Chạy phân tích mới từ Tổng quan hoặc dùng Thêm việc để chọn một phạm vi hiện có riêng."
+    },
+    "ui.the_report_s_saved_scope_could_not_be_loaded_return_to_the_report": {
+      "en": "The report’s saved scope could not be loaded. Return to the report and try again.",
+      "vi": "Chưa tải được phạm vi đã lưu của báo cáo. Quay lại báo cáo rồi thử lại."
+    },
+    "ui.this_report_does_not_identify_the_saved_work_and_its_original_vie": {
+      "en": "This report does not identify the saved work and its original view. Return to the report to check the saved-work reference.",
+      "vi": "Báo cáo này chưa xác định được việc đã lưu và phạm vi gốc. Quay lại báo cáo để kiểm tra thông tin việc đã lưu."
+    },
+    "ui.the_saved_work_does_not_match_this_report_s_original_view_check_t": {
+      "en": "The saved work does not match this report’s original view. Check the original report or open the work from the follow-up list.",
+      "vi": "Việc đã lưu không khớp phạm vi gốc của báo cáo này. Kiểm tra báo cáo gốc hoặc mở việc từ danh sách theo dõi."
+    },
+    "ui.the_saved_work_could_not_be_found_return_to_the_report_to_check_w": {
+      "en": "The saved work could not be found. Return to the report to check which work was saved.",
+      "vi": "Không tìm thấy việc đã lưu. Quay lại báo cáo để kiểm tra việc đã được lưu trong lượt đó."
+    },
+    "ui.could_not_open_the_saved_work_return_to_the_report_and_choose_rev": {
+      "en": "Could not open the saved work. Return to the report and choose Review saved work to try again.",
+      "vi": "Chưa mở được việc đã lưu. Quay lại báo cáo và chọn Xem việc đã lưu để thử lại."
+    },
+    "ui.review_logged_defects_on_value": {
+      "en": "Review logged defects on {value0}",
+      "vi": "Rà soát lỗi ghi nhận ngày {value0}"
+    },
+    "ui.verify_the_day_s_production_inspection_and_reporting_then_review_": {
+      "en": "Verify the day’s production, inspection and reporting, then review the recorded defects with the relevant team.",
+      "vi": "Xác minh sản lượng, hoạt động kiểm tra và việc ghi nhận trong ngày, rồi cùng nhóm liên quan rà soát các lỗi đã ghi nhận."
+    },
+    "ui.proposed_value": {
+      "en": "Proposed: {value0}",
+      "vi": "Đầu mối dự kiến: {value0}"
+    },
+    "ui.owner_to_confirm": {
+      "en": "Owner to confirm",
+      "vi": "Cần xác nhận đầu mối"
+    },
+    "ui.past_due": {
+      "en": "Past due",
+      "vi": "Quá hạn"
+    },
+    "ui.due": {
+      "en": "Due",
+      "vi": "Hạn"
+    },
+    "ui.follow_up_work": {
+      "en": "Follow-up work",
+      "vi": "Việc cần theo dõi"
+    },
+    "ui.keep_the_next_step_owner_and_outcome_together": {
+      "en": "Keep the next step, owner and outcome together.",
+      "vi": "Ghi lại bước tiếp theo, đầu mối và kết quả xử lý."
+    },
+    "ui.add_work": {
+      "en": "Add work",
+      "vi": "Thêm việc"
+    },
+    "ui.loading_the_report_s_saved_scope": {
+      "en": "Loading the report’s saved scope…",
+      "vi": "Đang tải phạm vi đã lưu của báo cáo…"
+    },
+    "ui.opening_saved_work": {
+      "en": "Opening saved work…",
+      "vi": "Đang mở việc đã lưu…"
+    },
+    "ui.loading_follow_up_work": {
+      "en": "Loading follow-up work…",
+      "vi": "Đang tải việc theo dõi…"
+    },
+    "ui.could_not_load_saved_work": {
+      "en": "Could not load saved work.",
+      "vi": "Chưa tải được các việc đã lưu."
+    },
+    "ui.try_again": {
+      "en": "Try again",
+      "vi": "Thử lại"
+    },
+    "ui.no_open_follow_up_work": {
+      "en": "No open follow-up work",
+      "vi": "Chưa có việc đang theo dõi"
+    },
+    "ui.choose_an_investigation_to_follow_up_or_add_your_own": {
+      "en": "Choose an investigation to follow up, or add your own.",
+      "vi": "Chọn một hướng điều tra cần theo dõi hoặc tự tạo việc."
+    },
+    "ui.open_work": {
+      "en": "Open work",
+      "vi": "Việc đang theo dõi"
+    },
+    "ui.show_fewer": {
+      "en": "Show fewer",
+      "vi": "Thu gọn"
+    },
+    "ui.show_all_value_open_items": {
+      "en": "Show all {value0} open items",
+      "vi": "Xem {value0} việc đang theo dõi"
+    },
+    "ui.closed_or_set_aside": {
+      "en": "Closed or set aside",
+      "vi": "Việc đã đóng hoặc tạm ngừng"
+    },
+    "ui.value_is_saved_in_follow_up_work": {
+      "en": "“{value0}” is saved in follow-up work. No one has been notified.",
+      "vi": "“{value0}” đã được lưu vào công việc theo dõi. Chưa gửi thông báo cho ai."
+    },
+    "ui.saved_value": {
+      "en": "Saved “{value0}”.",
+      "vi": "Đã lưu “{value0}”."
+    },
+    "ui.please_shorten_this_entry": {
+      "en": "Please shorten this entry.",
+      "vi": "Vui lòng rút gọn nội dung."
+    },
+    "ui.enter_a_valid_date": {
+      "en": "Enter a valid date.",
+      "vi": "Nhập ngày hợp lệ."
+    },
+    "ui.enter_a_work_title": {
+      "en": "Enter a work title.",
+      "vi": "Nhập tên việc cần theo dõi."
+    },
+    "ui.describe_the_planned_action_first": {
+      "en": "Describe the planned action first.",
+      "vi": "Mô tả hành động dự kiến trước khi đổi trạng thái."
+    },
+    "ui.describe_the_observed_outcome_before_closing": {
+      "en": "Describe the observed outcome before closing.",
+      "vi": "Ghi nhận kết quả quan sát được trước khi đóng việc."
+    },
+    "ui.give_a_reason_for_this_change": {
+      "en": "Give a reason for this change.",
+      "vi": "Ghi rõ lý do thay đổi này."
+    },
+    "ui.this_investigation_is_already_being_followed_your_entries_are_sti": {
+      "en": "This investigation is already being followed. Your entries are still shown; review the saved status, then save an update if needed.",
+      "vi": "Hướng điều tra này đã có trong danh sách theo dõi. Nội dung bạn nhập vẫn còn; xem trạng thái đã lưu rồi lưu cập nhật nếu cần."
+    },
+    "ui.this_request_may_already_be_saved_review_the_work_list_before_try": {
+      "en": "This request may already be saved. Review the work list before trying to add it again.",
+      "vi": "Yêu cầu này có thể đã được lưu. Xem lại danh sách trước khi thử thêm lần nữa."
+    },
+    "ui.historical_review": {
+      "en": "Historical review",
+      "vi": "Rà soát dữ liệu lịch sử"
+    },
+    "ui.review_and_update": {
+      "en": "Review and update",
+      "vi": "Xem và cập nhật"
+    },
+    "ui.add_follow_up_work": {
+      "en": "Add follow-up work",
+      "vi": "Thêm việc theo dõi"
+    },
+    "ui.close_work_details": {
+      "en": "Close work details",
+      "vi": "Đóng chi tiết việc"
+    },
+    "ui.report_s_saved_scope": {
+      "en": "Report’s saved scope",
+      "vi": "Phạm vi đã lưu của báo cáo"
+    },
+    "ui.this_item_reviews_a_past_day_in_the_saved_data_confirm_reporting_": {
+      "en": "This item reviews a past day in the saved data. Confirm reporting and production before choosing an action.",
+      "vi": "Việc này rà soát một ngày trong dữ liệu đã lưu. Cần xác nhận việc ghi nhận và sản lượng trước khi chọn hành động."
+    },
+    "ui.updated": {
+      "en": "Updated",
+      "vi": "Cập nhật"
+    },
+    "ui.you_can_add_a_note_reopen_and_save_this_work_before_editing_its_d": {
+      "en": "You can add a note. Reopen and save this work before editing its details.",
+      "vi": "Bạn có thể thêm ghi chú. Hãy mở lại và lưu việc này trước khi sửa chi tiết."
+    },
+    "ui.start_from": {
+      "en": "Start from",
+      "vi": "Bắt đầu từ"
+    },
+    "ui.my_own_follow_up": {
+      "en": "My own follow-up",
+      "vi": "Việc tự tạo"
+    },
+    "ui.suggested_investigations": {
+      "en": "Suggested investigations",
+      "vi": "Hướng điều tra gợi ý"
+    },
+    "ui.already_followed": {
+      "en": " (already followed)",
+      "vi": " (đã theo dõi)"
+    },
+    "ui.past_days_to_review": {
+      "en": "Past days to review",
+      "vi": "Ngày lịch sử cần rà soát"
+    },
+    "ui.review_and_edit_the_draft_before_adding_it": {
+      "en": "Review and edit the draft before adding it.",
+      "vi": "Xem lại và sửa nội dung nháp trước khi thêm."
+    },
+    "ui.work_title": {
+      "en": "Work title",
+      "vi": "Tên việc"
+    },
+    "ui.proposed_owner_2": {
+      "en": "Proposed owner",
+      "vi": "Đầu mối dự kiến"
+    },
+    "ui.name_or_team": {
+      "en": "Name or team",
+      "vi": "Tên người hoặc nhóm"
+    },
+    "ui.confirm_responsibility_with_the_person_or_team": {
+      "en": "Confirm responsibility with the person or team.",
+      "vi": "Cần xác nhận trách nhiệm với người hoặc nhóm này."
+    },
+    "ui.due_date": {
+      "en": "Due date",
+      "vi": "Hạn xử lý"
+    },
+    "ui.next_step_2": {
+      "en": "Next step",
+      "vi": "Bước tiếp theo"
+    },
+    "ui.describe_the_specific_action_to_take": {
+      "en": "Describe the specific action to take.",
+      "vi": "Mô tả hành động cụ thể cần làm."
+    },
+    "ui.analysis_context_excerpt": {
+      "en": "Analysis context · excerpt",
+      "vi": "Bối cảnh phân tích · trích đoạn"
+    },
+    "ui.analysis_context": {
+      "en": "Analysis context",
+      "vi": "Bối cảnh phân tích"
+    },
+    "ui.a_shortened_excerpt_will_be_saved_with_this_work_read_the_complet": {
+      "en": "A shortened excerpt will be saved with this work. Read the complete report in Agent for the full analysis.",
+      "vi": "Một trích đoạn rút gọn sẽ được lưu cùng việc này. Xem báo cáo đầy đủ trong Trợ lý để đọc toàn bộ phân tích."
+    },
+    "ui.reference_from_the_saved_analysis_report_the_original_report_rema": {
+      "en": "Reference from the saved analysis report. The original report remains in Agent.",
+      "vi": "Nội dung tham khảo từ báo cáo phân tích đã lưu. Báo cáo gốc vẫn được giữ trong Trợ lý."
+    },
+    "ui.reference_material_for_this_work": {
+      "en": "Reference material for this work.",
+      "vi": "Nội dung tham khảo cho việc này."
+    },
+    "ui.status": {
+      "en": "Status",
+      "vi": "Trạng thái"
+    },
+    "ui.reopen_investigation": {
+      "en": "Reopen investigation",
+      "vi": "Mở lại để rà soát"
+    },
+    "ui.observed_outcome": {
+      "en": "Observed outcome",
+      "vi": "Kết quả quan sát được"
+    },
+    "ui.describe_what_was_checked_or_changed_and_what_still_needs_verific": {
+      "en": "Describe what was checked or changed and what still needs verification.",
+      "vi": "Ghi rõ nội dung đã kiểm tra hoặc thay đổi và điều gì vẫn cần xác minh."
+    },
+    "ui.recorded_outcome": {
+      "en": "Recorded outcome",
+      "vi": "Kết quả đã ghi nhận"
+    },
+    "ui.reason_for_this_change": {
+      "en": "Reason for this change",
+      "vi": "Lý do thay đổi"
+    },
+    "ui.add_a_progress_note": {
+      "en": "Add a progress note",
+      "vi": "Thêm ghi chú tiến độ"
+    },
+    "ui.previous_updates": {
+      "en": "Previous updates",
+      "vi": "Các cập nhật trước"
+    },
+    "ui.work_added": {
+      "en": "Work added",
+      "vi": "Đã thêm việc"
+    },
+    "ui.comparison_saved": {
+      "en": "Comparison saved",
+      "vi": "Đã lưu so sánh"
+    },
+    "ui.progress_note": {
+      "en": "Progress note",
+      "vi": "Ghi chú tiến độ"
+    },
+    "ui.details_updated": {
+      "en": "Details updated",
+      "vi": "Đã cập nhật chi tiết"
+    },
+    "ui.loading_the_latest_version_replaces_the_unsaved_entries_above": {
+      "en": "Loading the latest version replaces the unsaved entries above.",
+      "vi": "Tải bản mới nhất sẽ thay nội dung chưa lưu ở trên."
+    },
+    "ui.returning_to_the_list_closes_this_draft_and_discards_its_unsaved_": {
+      "en": "Returning to the list closes this draft and discards its unsaved entries.",
+      "vi": "Quay lại danh sách sẽ đóng bản nháp này và bỏ các nội dung chưa lưu."
+    },
+    "ui.load_latest_version": {
+      "en": "Load latest version",
+      "vi": "Tải bản mới nhất"
+    },
+    "ui.cancel": {
+      "en": "Cancel",
+      "vi": "Hủy"
+    },
+    "ui.reopen_work": {
+      "en": "Reopen work",
+      "vi": "Mở lại việc"
+    },
+    "ui.save_update": {
+      "en": "Save update",
+      "vi": "Lưu cập nhật"
+    },
+    "ui.add_to_follow_up": {
+      "en": "Add to follow-up",
+      "vi": "Thêm vào theo dõi"
+    },
+    "ui.the_source_could_not_be_checked_the_saved_view_is_still_available": {
+      "en": "The source could not be checked. The saved view is still available.",
+      "vi": "Chưa kiểm tra được nguồn. Phạm vi dữ liệu đã lưu vẫn còn."
+    },
+    "ui.the_source_is_unchanged_there_is_no_new_data_here_to_assess_the_o": {
+      "en": "The source is unchanged. There is no new data here to assess the outcome.",
+      "vi": "Nguồn chưa thay đổi. Chưa có dữ liệu mới để đánh giá kết quả."
+    },
+    "ui.the_source_has_changed_review_the_observed_differences_below": {
+      "en": "The source has changed. Review the observed differences below.",
+      "vi": "Nguồn đã thay đổi. Hãy xem chênh lệch quan sát được bên dưới."
+    },
+    "ui.saved_view_and_follow_up_comparison": {
+      "en": "Saved view and follow-up comparison",
+      "vi": "So sánh phạm vi đã lưu và dữ liệu theo dõi"
+    },
+    "ui.measure": {
+      "en": "Measure",
+      "vi": "Chỉ số"
+    },
+    "ui.saved": {
+      "en": "Saved",
+      "vi": "Đã lưu"
+    },
+    "ui.checked": {
+      "en": "Checked",
+      "vi": "Vừa kiểm tra"
+    },
+    "ui.change": {
+      "en": "Change",
+      "vi": "Chênh lệch"
+    },
+    "ui.latest_recorded_date_in_this_view": {
+      "en": "Latest recorded date in this view:",
+      "vi": "Ngày ghi nhận mới nhất trong phạm vi này:"
+    },
+    "ui.counts_describe_the_recorded_data_actual_production_inspection_an": {
+      "en": "Counts describe the recorded data. Actual production, inspection and reporting coverage are still needed to assess improvement.",
+      "vi": "Số liệu mô tả dữ liệu được ghi nhận. Cần thêm sản lượng, quy mô kiểm tra và độ đầy đủ báo cáo để đánh giá cải thiện."
+    },
+    "ui.checked_2": {
+      "en": "Checked",
+      "vi": "Đã kiểm tra"
+    },
+    "ui.source_check_finished_review_the_comparison_before_saving_it_to_t": {
+      "en": "Source check finished. Review the comparison before saving it to this work.",
+      "vi": "Đã kiểm tra nguồn. Xem lại phần so sánh trước khi lưu vào việc này."
+    },
+    "ui.could_not_check_the_source_try_again_when_the_connection_is_avail": {
+      "en": "Could not check the source. Try again when the connection is available.",
+      "vi": "Chưa kiểm tra được nguồn. Hãy thử lại khi có kết nối."
+    },
+    "ui.comparison_saved_to_this_work": {
+      "en": "Comparison saved to this work.",
+      "vi": "Đã lưu phần so sánh vào việc này."
+    },
+    "ui.the_checked_view_cannot_be_compared_with_this_work_the_saved_filt": {
+      "en": "The checked view cannot be compared with this work. The saved filters and measure definitions must match.",
+      "vi": "Chưa thể so sánh phạm vi vừa kiểm tra với việc này. Phạm vi lọc và định nghĩa chỉ số phải khớp nhau."
+    },
+    "ui.review_with_newer_data": {
+      "en": "Review with newer data",
+      "vi": "Rà soát bằng dữ liệu mới hơn"
+    },
+    "ui.check_the_source_using_this_work_s_saved_month_and_line_filters": {
+      "en": "Check the source using this work’s saved month and line filters.",
+      "vi": "Kiểm tra nguồn với cùng phạm vi tháng và chuyền của việc đã lưu."
+    },
+    "ui.checking_source": {
+      "en": "Checking source…",
+      "vi": "Đang kiểm tra nguồn…"
+    },
+    "ui.check_source_now": {
+      "en": "Check source now",
+      "vi": "Kiểm tra nguồn lúc này"
+    },
+    "ui.saving_comparison": {
+      "en": "Saving comparison…",
+      "vi": "Đang lưu so sánh…"
+    },
+    "ui.save_comparison_to_this_work": {
+      "en": "Save comparison to this work",
+      "vi": "Lưu so sánh vào việc này"
+    },
+    "ui.defect_events": {
+      "en": "Defect events",
+      "vi": "Sự kiện lỗi"
+    },
+    "ui.cost_coverage_4": {
+      "en": "Cost coverage",
+      "vi": "Độ phủ chi phí"
+    },
+    "ui.test_the_assumption": {
+      "en": "TEST THE ASSUMPTION",
+      "vi": "THỬ GIẢ ĐỊNH"
+    },
+    "ui.would_the_priority_change": {
+      "en": "Would the priority change?",
+      "vi": "Ưu tiên có thay đổi không?"
+    },
+    "ui.a_scenario_recalculates_this_scope_beside_the_canonical_policy_th": {
+      "en": "A scenario recalculates this scope beside the canonical policy. The original records and canonical results remain available.",
+      "vi": "Kịch bản giả định tính lại phạm vi này để so với quy tắc chuẩn. Vẫn có thể mở bản ghi gốc và kết quả chuẩn."
+    },
+    "ui.scenario": {
+      "en": "Scenario",
+      "vi": "Kịch bản giả định"
+    },
+    "ui.this_changes_financial_availability_only_events_with_observed_cos": {
+      "en": "This changes financial availability only. Events with observed cost 10 remain in event counts.",
+      "vi": "Chỉ thay đổi dữ liệu dùng cho phân tích tài chính. Sự kiện có chi phí bằng 10 vẫn nằm trong số đếm sự kiện."
+    },
+    "ui.ambiguous_dates_use_day_month_some_events_may_move_outside_januar": {
+      "en": "Ambiguous dates use day/month. Some events may move outside January to June; original date text is retained.",
+      "vi": "Ngày mơ hồ được đọc theo ngày/tháng. Một số sự kiện có thể ra ngoài tháng 1 đến 6; chuỗi ngày gốc vẫn được giữ."
+    },
+    "ui.this_assumes_the_source_year_2026_should_be_2024_it_is_a_sensitiv": {
+      "en": "This assumes the source year 2026 should be 2024. It is a sensitivity test, not a correction to the source.",
+      "vi": "Kịch bản giả định năm 2026 trong nguồn là năm 2024. Đây là phép kiểm độ nhạy, chưa phải dữ liệu nguồn đã được sửa."
+    },
+    "ui.reset_to_canonical": {
+      "en": "Reset to canonical",
+      "vi": "Về quy tắc chuẩn"
+    },
+    "ui.comparing_against_the_same_canonical_scope": {
+      "en": "Comparing against the same canonical scope…",
+      "vi": "Đang so sánh với cùng phạm vi theo quy tắc chuẩn…"
+    },
+    "ui.the_scenario_is_applied_but_its_comparison_could_not_be_loaded": {
+      "en": "The scenario is applied, but its comparison could not be loaded.",
+      "vi": "Đã áp dụng kịch bản giả định nhưng chưa tải được phần so sánh."
+    },
+    "ui.retry_comparison": {
+      "en": "Retry comparison",
+      "vi": "Thử lại phép so sánh"
+    },
+    "ui.percentage_points": {
+      "en": "percentage points",
+      "vi": "điểm phần trăm"
+    },
+    "ui.the_priority_order_changes_under_this_assumption_review_the_compa": {
+      "en": "The priority order changes under this assumption. Review the comparison before choosing an action.",
+      "vi": "Thứ tự ưu tiên thay đổi dưới giả định này. Xem phần so sánh trước khi chọn hành động."
+    },
+    "ui.the_priority_order_is_unchanged_under_this_assumption_data_limits": {
+      "en": "The priority order is unchanged under this assumption. Data limits still apply.",
+      "vi": "Thứ tự ưu tiên giữ nguyên dưới giả định này. Các giới hạn dữ liệu vẫn áp dụng."
+    },
+    "ui.ranking_changes_and_comparison_evidence": {
+      "en": "Ranking changes and comparison evidence",
+      "vi": "Thay đổi thứ hạng và bằng chứng so sánh"
+    },
+    "ui.lines_by_reference_intensity": {
+      "en": "Lines by reference intensity",
+      "vi": "Chuyền theo cường độ tham chiếu"
+    },
+    "ui.defect_types_by_observed_cost": {
+      "en": "Defect types by observed cost",
+      "vi": "Loại lỗi theo chi phí ghi nhận"
+    },
+    "ui.products_by_observed_cost": {
+      "en": "Products by observed cost",
+      "vi": "Sản phẩm theo chi phí ghi nhận"
+    },
+    "ui.order_changed": {
+      "en": "Order changed",
+      "vi": "Thứ tự thay đổi"
+    },
+    "ui.order_unchanged": {
+      "en": "Order unchanged",
+      "vi": "Thứ tự giữ nguyên"
+    },
+    "ui.canonical_evidence": {
+      "en": "Canonical evidence",
+      "vi": "Bằng chứng theo quy tắc chuẩn"
+    },
+    "ui.scenario_evidence": {
+      "en": "Scenario evidence",
+      "vi": "Bằng chứng theo kịch bản"
+    },
+    "ui.workspace_title": {
+      "en": "Quality investigation workspace",
+      "vi": "Không gian điều tra chất lượng"
+    },
+    "ui.scenario_canonical": {
+      "en": "Canonical policy",
+      "vi": "Quy tắc chuẩn"
+    },
+    "ui.scenario_exclude_cost_10": {
+      "en": "Exclude cost 10 from financial analysis",
+      "vi": "Loại chi phí bằng 10 khỏi phân tích tài chính"
+    },
+    "ui.scenario_ambiguous_dm": {
+      "en": "Read ambiguous dates as day/month",
+      "vi": "Đọc ngày mơ hồ theo ngày/tháng"
+    },
+    "ui.scenario_year_2024": {
+      "en": "Treat the 2026 dates as 2024",
+      "vi": "Giả định các ngày năm 2026 thuộc năm 2024"
+    },
+    "ui.analysis_refused": {
+      "en": "This request could not be answered as phrased. Check the note below and adjust your question.",
+      "vi": "Chưa thể trả lời yêu cầu theo cách đặt câu hỏi này. Hãy xem lý do bên dưới và điều chỉnh lại câu hỏi."
+    },
+    "ui.analysis_incomplete": {
+      "en": "Response ended early. Any verified figures are saved; try narrowing your question.",
+      "vi": "Phản hồi bị ngắt giữa chừng. Các số liệu đã kiểm chứng vẫn được lưu; hãy thử thu hẹp câu hỏi."
+    },
+    "ui.analysis_timeout": {
+      "en": "The analysis reached its time limit. Review saved results and narrow the next request.",
+      "vi": "Phân tích đã chạm giới hạn thời gian. Xem kết quả đã lưu và thu hẹp yêu cầu tiếp theo."
+    },
+    "ui.analysis_unavailable": {
+      "en": "AI is unavailable. The Dashboard, evidence and exports remain available.",
+      "vi": "AI chưa khả dụng. Bạn vẫn dùng được Tổng quan, bằng chứng và tệp xuất."
+    },
+    "ui.trace_record": {
+      "en": "Trace",
+      "vi": "Truy vết"
+    },
+    "ui.record_trace_title": {
+      "en": "Trace event #{id}",
+      "vi": "Truy vết sự kiện #{id}"
+    },
+    "ui.close_record_trace": {
+      "en": "Close record trace",
+      "vi": "Đóng truy vết bản ghi"
+    },
+    "ui.record_trace_explanation": {
+      "en": "Compare the raw JSON row fetched over HTTP with the cleaned record and any data-cleaning adjustments applied.",
+      "vi": "Đối chiếu dòng JSON gốc tải từ HTTP API với bản ghi sau khi làm sạch và các bước chuẩn hóa dữ liệu."
+    },
+    "ui.retry_trace": {
+      "en": "Retry trace",
+      "vi": "Thử truy vết lại"
+    },
+    "ui.loading_record_trace": {
+      "en": "Loading the original rows and field decisions…",
+      "vi": "Đang tải dòng gốc và quyết định xử lý trường…"
+    },
+    "ui.original_http_row": {
+      "en": "Raw JSON from HTTP API (row {row})",
+      "vi": "JSON gốc từ HTTP API (dòng {row})"
+    },
+    "ui.canonical_event": {
+      "en": "Cleaned record",
+      "vi": "Bản ghi sau khi làm sạch"
+    },
+    "ui.selected_scenario_event": {
+      "en": "Event in the selected scenario",
+      "vi": "Sự kiện trong kịch bản đang chọn"
+    },
+    "ui.field_decisions": {
+      "en": "Field processing decisions",
+      "vi": "Quyết định xử lý trường"
+    },
+    "ui.field": {
+      "en": "Field",
+      "vi": "Trường"
+    },
+    "ui.original_value": {
+      "en": "Original value",
+      "vi": "Giá trị gốc"
+    },
+    "ui.processed_value": {
+      "en": "Processed value",
+      "vi": "Giá trị sau xử lý"
+    },
+    "ui.policy_decision": {
+      "en": "Policy decision and original audit text",
+      "vi": "Quyết định theo quy tắc và văn bản kiểm tra gốc"
+    },
+    "ui.no_field_changes": {
+      "en": "No field processing decisions are recorded for this event.",
+      "vi": "Chưa ghi nhận quyết định xử lý trường cho sự kiện này."
+    },
+    "ui.trace_truncated": {
+      "en": "The trace reached its result limit. The displayed rows are a partial set.",
+      "vi": "Truy vết đã chạm giới hạn kết quả. Các dòng đang hiện chỉ là một phần."
+    },
+    "ui.check_category_mix": {
+      "en": "Check the category mix before comparing lines",
+      "vi": "Kiểm tra cơ cấu nhóm sản phẩm trước khi so sánh chuyền"
+    },
+    "ui.category_mix_limit": {
+      "en": "Aggregate line rankings combine different product and category mixes. Compare the same category across lines before interpreting performance; actual historical exposure remains unavailable.",
+      "vi": "Thứ hạng chung gộp các cơ cấu sản phẩm và nhóm khác nhau. So sánh cùng nhóm giữa các chuyền trước khi đánh giá hiệu quả; vẫn chưa có sản lượng và quy mô kiểm tra thực tế trong kỳ."
+    },
+    "ui.compare_within_category": {
+      "en": "Compare within a category",
+      "vi": "So sánh trong cùng nhóm sản phẩm"
+    },
+    "ui.line_category_table": {
+      "en": "Line and category reference intensities",
+      "vi": "Cường độ tham chiếu theo chuyền và nhóm sản phẩm"
+    },
+    "ui.reference_output": {
+      "en": "Reference output",
+      "vi": "Sản lượng tham chiếu"
+    },
+    "ui.events_per_1000": {
+      "en": "Events / 1,000 units",
+      "vi": "Sự kiện / 1.000 đơn vị"
+    },
+    "ui.all_categories": {
+      "en": "All categories",
+      "vi": "Tất cả nhóm sản phẩm"
+    },
+    "ui.investigation_draft_notice": {
+      "en": "This investigation is a draft. Its wording has not passed report review; inspect the evidence before using its conclusions.",
+      "vi": "Hồ sơ điều tra này là bản nháp. Nội dung chưa qua bước rà soát báo cáo; kiểm tra bằng chứng trước khi dùng kết luận."
+    },
+    "ui.no_events_for_share": {
+      "en": "No events available for a severity share",
+      "vi": "Không có sự kiện để tính tỷ trọng mức độ"
+    },
+    "ui.no_eligible_output": {
+      "en": "No eligible product output denominator in this scope",
+      "vi": "Không có mẫu số sản lượng sản phẩm phù hợp trong phạm vi này"
+    },
+    "ui.incomplete_output": {
+      "en": "The output denominator is incomplete for this cohort",
+      "vi": "Mẫu số sản lượng chưa đầy đủ cho nhóm sản phẩm này"
+    },
+    "ui.no_events_for_cost_coverage": {
+      "en": "No events available for cost coverage",
+      "vi": "Không có sự kiện để tính độ phủ chi phí"
+    },
+    "ui.filter_from_month": {
+      "en": "From month",
+      "vi": "Từ tháng"
+    },
+    "ui.filter_through_month": {
+      "en": "Through month",
+      "vi": "Đến hết tháng"
+    },
+    "ui.filter_production_line": {
+      "en": "Production line",
+      "vi": "Chuyền sản xuất"
+    },
+    "ui.filter_category": {
+      "en": "Category",
+      "vi": "Nhóm sản phẩm"
+    },
+    "ui.filter_product": {
+      "en": "Product",
+      "vi": "Sản phẩm"
+    },
+    "ui.filter_severity": {
+      "en": "Severity",
+      "vi": "Mức độ"
+    },
+    "ui.filter_defect_type": {
+      "en": "Defect type",
+      "vi": "Loại lỗi"
+    },
+    "ui.filter_defect_location": {
+      "en": "Defect location",
+      "vi": "Vị trí lỗi"
+    },
+    "ui.filter_inspection_method": {
+      "en": "Inspection method",
+      "vi": "Phương pháp kiểm tra"
+    },
+    "ui.filter_all_production_lines": {
+      "en": "All production lines",
+      "vi": "Tất cả chuyền"
+    },
+    "ui.filter_all_categories": {
+      "en": "All categories",
+      "vi": "Tất cả nhóm"
+    },
+    "ui.filter_all_products": {
+      "en": "All products",
+      "vi": "Tất cả sản phẩm"
+    },
+    "ui.filter_all_severity_levels": {
+      "en": "All severity levels",
+      "vi": "Tất cả mức độ"
+    },
+    "ui.filter_all_defect_types": {
+      "en": "All defect types",
+      "vi": "Tất cả loại lỗi"
+    },
+    "ui.filter_all_defect_locations": {
+      "en": "All defect locations",
+      "vi": "Tất cả vị trí"
+    },
+    "ui.filter_all_inspection_methods": {
+      "en": "All inspection methods",
+      "vi": "Tất cả phương pháp"
+    },
+    "ui.record_sort_defect_date": {
+      "en": "Defect date",
+      "vi": "Ngày lỗi"
+    },
+    "ui.record_sort_defect_id": {
+      "en": "Defect id",
+      "vi": "Mã lỗi"
+    },
+    "ui.record_sort_product_name": {
+      "en": "Product name",
+      "vi": "Tên sản phẩm"
+    },
+    "ui.record_sort_production_line": {
+      "en": "Production line",
+      "vi": "Chuyền sản xuất"
+    },
+    "ui.record_sort_severity": {
+      "en": "Severity",
+      "vi": "Mức độ"
+    },
+    "ui.record_sort_repair_cost": {
+      "en": "Repair cost",
+      "vi": "Chi phí sửa chữa"
+    },
+    "ui.no_priorities_to_compare": {
+      "en": "Neither scope has enough recorded events to produce priorities for comparison.",
+      "vi": "Cả hai phạm vi đều chưa có đủ sự kiện ghi nhận để tạo ưu tiên cho phép so sánh."
+    },
+    "ui.apply_priority_focus": {
+      "en": "Filter all charts by this issue",
+      "vi": "Lọc toàn bộ biểu đồ theo vấn đề này"
+    },
+    "ui.captured_scope_unavailable": {
+      "en": "The saved data selection could not be loaded.",
+      "vi": "Chưa tải được phạm vi dữ liệu đã lưu."
+    },
+    "ui.export_saved_investigation": {
+      "en": "Export saved version {version} (JSON)",
+      "vi": "Tải phiên bản đã lưu {version} (JSON)"
+    },
+    "ui.save_before_export": {
+      "en": "Save your edits to export the updated investigation.",
+      "vi": "Lưu nội dung đã sửa để xuất hồ sơ điều tra mới."
+    },
+    "ui.artifact_versions_notice": {
+      "en": "These files keep the scope and content captured when they were created. Later investigation edits are in the saved-version export above.",
+      "vi": "Các tệp này giữ phạm vi và nội dung tại lúc tạo. Nội dung hồ sơ chỉnh sửa sau đó nằm trong bản xuất theo phiên bản ở trên."
+    },
+    "ui.half_period_comparison": {
+      "en": "Half-period comparison",
+      "vi": "So sánh hai nửa giai đoạn"
+    },
+    "ui.half_period_changes": {
+      "en": "Defects {value0} · Critical {value1} · Known repair cost {value2}",
+      "vi": "Lỗi {value0} · Nghiêm trọng {value1} · Chi phí sửa đã biết {value2}"
+    },
+    "ui.half_period_changes_without_cost": {
+      "en": "Defects {value0} · Critical {value1}",
+      "vi": "Lỗi {value0} · Nghiêm trọng {value1}"
+    },
+    "ui.mix_check": {
+      "en": "CATEGORY × LINE MATRIX",
+      "vi": "MA TRẬN NHÓM SẢN PHẨM × CHUYỀN"
+    },
+    "ui.category_line_matrix_title": {
+      "en": "Defect rate (/1,000 reference units) and average repair cost by category and line",
+      "vi": "Tỷ lệ lỗi (/1.000 SP định mức) và chi phí sửa trung bình theo nhóm sản phẩm & chuyền"
+    },
+    "ui.category_line_matrix_caption": {
+      "en": "Each cell shows defects per 1,000 reference units, total defects, and average repair cost. Compare the same category across lines to separate product-mix effects from line-specific issues.",
+      "vi": "Mỗi ô hiển thị số lỗi trên 1.000 đơn vị định mức, tổng số lỗi và chi phí sửa trung bình. Đối chiếu cùng một nhóm sản phẩm giữa các chuyền để tách biệt ảnh hưởng của cơ cấu sản phẩm với vấn đề riêng của từng chuyền."
+    },
+    "ui.category_versus_rest_of_line": {
+      "en": "{value0} has a higher defect rate than other categories on {value1} of {value2} lines ({value3}–{value4}×).",
+      "vi": "{value0} có tỷ lệ lỗi cao hơn các nhóm khác trên {value1}/{value2} chuyền (gấp {value3}–{value4} lần)."
+    },
+    "ui.line_cost_versus_other_lines": {
+      "en": "{value0} averages {value1} per repair against {value2} on other lines ({value3}×).",
+      "vi": "{value0} tốn trung bình {value1} mỗi lần sửa, so với {value2} ở các chuyền khác (gấp {value3} lần)."
+    },
+    "ui.events_per_product": {
+      "en": "{value0} defects per product",
+      "vi": "{value0} lỗi/sản phẩm"
+    },
+    "ui.avg_cost_short": {
+      "en": "avg cost {value0}",
+      "vi": "chi phí TB {value0}"
+    },
+    "ui.cost_per_known_cost_event": {
+      "en": "Average cost per repair",
+      "vi": "Chi phí TB mỗi lần sửa"
+    },
+    "ui.ratio_to_other_lines": {
+      "en": "{value0}× other lines",
+      "vi": "gấp {value0} lần chuyền khác"
+    },
+    "ui.all_lines_column": {
+      "en": "All lines",
+      "vi": "Tất cả chuyền"
+    },
+    "ui.not_carried_on_line": {
+      "en": "Not made on this line",
+      "vi": "Chuyền này không sản xuất nhóm này"
+    },
+    "ui.category_line_matrix_footnote": {
+      "en": "Darker orange indicates more events per 1,000 reference units. A dash means the master data has no product in that category on that line.",
+      "vi": "Ô màu cam càng đậm thì tỷ lệ lỗi (/1.000 SP định mức) càng cao. Dấu gạch ngang nghĩa là danh mục gốc không có sản phẩm thuộc nhóm đó trên chuyền này."
+    },
+    "ui.download_quality_brief": {
+      "en": "Download quality brief",
+      "vi": "Tải bản tin chất lượng"
+    },
+    "ui.dashboard_eyebrow": {
+      "en": "PRODUCTION QUALITY",
+      "vi": "CHẤT LƯỢNG SẢN XUẤT"
+    },
+    "ui.dashboard_title": {
+      "en": "Production defects",
+      "vi": "Lỗi sản xuất"
+    },
+    "ui.dashboard_subtitle": {
+      "en": "Track defect trends, pinpoint Critical hotspots and repair costs, and inspect the underlying records.",
+      "vi": "Theo dõi xu hướng lỗi, xác định điểm nóng Nghiêm trọng, chi phí sửa chữa và tra cứu bản ghi gốc."
+    },
+    "ui.dashboard_ask_agent": {
+      "en": "Ask the analyst",
+      "vi": "Hỏi trợ lý phân tích"
+    },
+    "ui.dashboard_updating": {
+      "en": "Updating the view…",
+      "vi": "Đang cập nhật…"
+    },
+    "ui.dashboard_nav_label": {
+      "en": "Dashboard sections",
+      "vi": "Các phần của Tổng quan"
+    },
+    "ui.dashboard_nav_overview": {
+      "en": "Overview and priorities",
+      "vi": "Tổng quan và ưu tiên"
+    },
+    "ui.dashboard_nav_trend": {
+      "en": "Trends and unusual days",
+      "vi": "Xu hướng và ngày bất thường"
+    },
+    "ui.dashboard_nav_location": {
+      "en": "Location and severity",
+      "vi": "Vị trí và mức độ lỗi"
+    },
+    "ui.dashboard_nav_hotspots": {
+      "en": "Lines and products",
+      "vi": "Chuyền và sản phẩm"
+    },
+    "ui.dashboard_nav_cost": {
+      "en": "Repair costs",
+      "vi": "Chi phí sửa chữa"
+    },
+    "ui.dashboard_nav_warning": {
+      "en": "Unusual days",
+      "vi": "Ngày bất thường"
+    },
+    "ui.dashboard_nav_records": {
+      "en": "Defect records",
+      "vi": "Bản ghi lỗi"
+    },
+    "ui.dashboard_nav_share": {
+      "en": "Export & share",
+      "vi": "Xuất & chia sẻ"
+    },
+    "ui.dashboard_nav_quality": {
+      "en": "Data quality",
+      "vi": "Chất lượng dữ liệu"
+    },
+    "ui.dashboard_nav_tools": {
+      "en": "What-if & follow-up",
+      "vi": "Giả định & theo dõi"
+    },
+    "ui.dashboard_overview_kicker": {
+      "en": "OVERVIEW",
+      "vi": "TỔNG QUAN"
+    },
+    "ui.dashboard_overview_title": {
+      "en": "{value0} – {value1} at a glance",
+      "vi": "Toàn cảnh {value0} – {value1}"
+    },
+    "ui.dashboard_overview_caption": {
+      "en": "Key metrics for the current filters. Trend badges compare the second half of the period against the first.",
+      "vi": "Các chỉ số chính theo bộ lọc đang chọn. Nhãn xu hướng so sánh nửa cuối kỳ với nửa đầu kỳ."
+    },
+    "ui.dashboard_kpi_defects": {
+      "en": "Recorded defect events",
+      "vi": "Số sự kiện lỗi ghi nhận"
+    },
+    "ui.dashboard_kpi_defects_detail": {
+      "en": "cleaned defect events (one unit can have multiple events)",
+      "vi": "sự kiện lỗi sau làm sạch (một sản phẩm có thể có nhiều lỗi)"
+    },
+    "ui.dashboard_kpi_critical": {
+      "en": "Critical events",
+      "vi": "Sự kiện lỗi nghiêm trọng"
+    },
+    "ui.dashboard_kpi_critical_detail": {
+      "en": "{value0} of all recorded events",
+      "vi": "{value0} tổng số sự kiện ghi nhận"
+    },
+    "ui.dashboard_kpi_rate": {
+      "en": "Events / 1,000 reference units",
+      "vi": "Sự kiện / 1.000 đơn vị tham chiếu"
+    },
+    "ui.dashboard_kpi_rate_detail": {
+      "en": "across {value0} reference output units",
+      "vi": "trên {value0} đơn vị sản lượng tham chiếu"
+    },
+    "ui.dashboard_kpi_rate_help": {
+      "en": "Linked defect events ÷ reference output × 1,000. Reference output repeats each product’s fixed monthly output for every selected full month; actual production is unverified.",
+      "vi": "Số lỗi khớp mã sản phẩm ÷ sản lượng tham chiếu × 1.000. Sản lượng tham chiếu tính bằng định mức tháng cố định của từng sản phẩm nhân với số tháng đang chọn; chưa có số liệu sản lượng thực tế."
+    },
+    "ui.dashboard_kpi_cost": {
+      "en": "Recorded repair cost",
+      "vi": "Chi phí sửa chữa ghi nhận"
+    },
+    "ui.dashboard_kpi_cost_detail": {
+      "en": "cost recorded for {value0} of events · currency unspecified",
+      "vi": "có chi phí ở {value0} sự kiện · chưa rõ loại tiền"
+    },
+    "ui.dashboard_kpi_cost_help": {
+      "en": "Total valid repair cost in local currency (currency unit not specified in source). Missing or negative values are excluded rather than counted as zero.",
+      "vi": "Tổng chi phí sửa chữa hợp lệ theo nội tệ (nguồn không ghi rõ đơn vị tiền). Các bản ghi thiếu hoặc âm được loại trừ chứ không tính là 0."
+    },
+    "ui.dashboard_kpi_avg": {
+      "en": "Average recorded cost per event",
+      "vi": "Chi phí ghi nhận TB mỗi sự kiện"
+    },
+    "ui.dashboard_kpi_avg_detail": {
+      "en": "{value0} in {value2} → {value1} in {value3}",
+      "vi": "{value0} ({value2}) → {value1} ({value3})"
+    },
+    "ui.dashboard_kpi_avg_detail_simple": {
+      "en": "per event with a valid recorded cost",
+      "vi": "trên mỗi sự kiện có chi phí hợp lệ"
+    },
+    "ui.dashboard_vs_first_half": {
+      "en": "{value0} vs {value1}",
+      "vi": "{value0} so với {value1}"
+    },
+    "ui.dashboard_more_info": {
+      "en": "More information",
+      "vi": "Thông tin thêm"
+    },
+    "ui.dashboard_spark_label": {
+      "en": "Defects by month",
+      "vi": "Số lỗi theo tháng"
+    },
+    "ui.dashboard_priorities_kicker": {
+      "en": "RECOMMENDED PRIORITIES",
+      "vi": "KHUYẾN NGHỊ · 3 ƯU TIÊN HÀNG ĐẦU"
+    },
+    "ui.dashboard_priorities_title": {
+      "en": "Top 3 issues for Production to address first",
+      "vi": "3 vấn đề ưu tiên cần xử lý trước"
+    },
+    "ui.dashboard_priorities_caption": {
+      "en": "Ranked by Critical defect share, defect rate per 1,000 reference units, and average repair cost per defect. Updates automatically with your filters.",
+      "vi": "Xếp hạng dựa trên tỷ lệ lỗi Nghiêm trọng, tỷ lệ lỗi / 1.000 đơn vị tham chiếu và chi phí sửa trung bình mỗi lỗi. Tự động cập nhật theo bộ lọc."
+    },
+    "ui.dashboard_tag_severity": {
+      "en": "Severity",
+      "vi": "Mức độ"
+    },
+    "ui.dashboard_tag_rate": {
+      "en": "Reference intensity",
+      "vi": "Tỷ lệ lỗi tham chiếu"
+    },
+    "ui.dashboard_tag_cost": {
+      "en": "Repair cost",
+      "vi": "Chi phí sửa chữa"
+    },
+    "ui.dashboard_p_critical_title": {
+      "en": "Critical defects at {value0}",
+      "vi": "Lỗi nghiêm trọng tại {value0}"
+    },
+    "ui.dashboard_p_critical_value": {
+      "en": "of defects here are Critical",
+      "vi": "số lỗi ở đây thuộc mức nghiêm trọng"
+    },
+    "ui.dashboard_p_critical_detail": {
+      "en": "{value0} of {value1} defects here · {value2} Critical at other locations",
+      "vi": "{value0}/{value1} lỗi tại đây · các vị trí khác: {value2} nghiêm trọng"
+    },
+    "ui.dashboard_p_category_title": {
+      "en": "High defect rate in {value0}",
+      "vi": "Tỷ lệ lỗi cao ở {value0}"
+    },
+    "ui.dashboard_p_rate_value": {
+      "en": "events per 1,000 reference units",
+      "vi": "sự kiện / 1.000 đơn vị tham chiếu"
+    },
+    "ui.dashboard_p_category_detail": {
+      "en": "vs {value0} for other products · higher on {value1} of {value2} lines",
+      "vi": "so với {value0} ở nhóm khác · cao hơn ở {value1}/{value2} chuyền"
+    },
+    "ui.dashboard_p_category_detail_simple": {
+      "en": "vs {value0} for other products",
+      "vi": "so với {value0} ở nhóm khác"
+    },
+    "ui.dashboard_p_line_title": {
+      "en": "High defect rate on {value0}",
+      "vi": "Tỷ lệ lỗi cao tại {value0}"
+    },
+    "ui.dashboard_p_line_detail": {
+      "en": "{value0} defects in this view",
+      "vi": "{value0} lỗi trong phạm vi này"
+    },
+    "ui.dashboard_p_cost_title": {
+      "en": "High unit repair cost on {value0}",
+      "vi": "Chi phí sửa mỗi lỗi cao tại {value0}"
+    },
+    "ui.dashboard_p_cost_value": {
+      "en": "average recorded cost per event",
+      "vi": "chi phí ghi nhận TB mỗi sự kiện"
+    },
+    "ui.dashboard_p_cost_detail": {
+      "en": "vs {value0} on other lines ({value1}×) · {value2} of recorded repair cost",
+      "vi": "so với {value0} ở chuyền khác (gấp {value1} lần) · chiếm {value2} chi phí sửa ghi nhận"
+    },
+    "ui.dashboard_p_type_title": {
+      "en": "Repair cost of {value0} defects",
+      "vi": "Chi phí sửa lỗi {value0}"
+    },
+    "ui.dashboard_p_type_value": {
+      "en": "recorded repair cost",
+      "vi": "chi phí sửa đã ghi nhận"
+    },
+    "ui.dashboard_p_type_detail": {
+      "en": "{value0} of all recorded repair cost",
+      "vi": "{value0} tổng chi phí sửa đã ghi nhận"
+    },
+    "ui.dashboard_owner": {
+      "en": "Suggested owner",
+      "vi": "Người phụ trách đề xuất"
+    },
+    "ui.dashboard_plan": {
+      "en": "Action and success measure",
+      "vi": "Hành động và thước đo"
+    },
+    "ui.dashboard_action": {
+      "en": "Action",
+      "vi": "Hành động"
+    },
+    "ui.dashboard_success": {
+      "en": "Target metric",
+      "vi": "Chỉ số đánh giá & mục tiêu"
+    },
+    "ui.dashboard_trend_kicker": {
+      "en": "QUALITY TREND OVER TIME",
+      "vi": "XU HƯỚNG CHẤT LƯỢNG THEO THỜI GIAN"
+    },
+    "ui.dashboard_trend_up": {
+      "en": "Defects rose {value0} from {value1} to {value2}",
+      "vi": "Số lỗi tăng {value0} từ {value1} đến {value2}"
+    },
+    "ui.dashboard_trend_down": {
+      "en": "Defects fell {value0} from {value1} to {value2}",
+      "vi": "Số lỗi giảm {value0} từ {value1} đến {value2}"
+    },
+    "ui.dashboard_trend_flat": {
+      "en": "Defects by month",
+      "vi": "Số lỗi theo tháng"
+    },
+    "ui.dashboard_trend_caption": {
+      "en": "Each bar shows total monthly defects; the red segment at the bottom shows Critical defects.",
+      "vi": "Mỗi cột thể hiện tổng số lỗi trong tháng; phần màu đỏ bên dưới là số lỗi ở mức Nghiêm trọng (Critical)."
+    },
+    "ui.dashboard_location_kicker": {
+      "en": "WHERE DEFECTS OCCUR",
+      "vi": "LỖI XẢY RA Ở ĐÂU"
+    },
+    "ui.dashboard_location_title": {
+      "en": "{value0} has the highest Critical share: {value1}",
+      "vi": "{value0} có tỷ trọng lỗi nghiêm trọng cao nhất: {value1}"
+    },
+    "ui.dashboard_location_flat": {
+      "en": "Defects by location and severity",
+      "vi": "Lỗi theo vị trí và mức độ"
+    },
+    "ui.dashboard_location_caption": {
+      "en": "Each bar splits one location's defects into Minor, Moderate and Critical severity.",
+      "vi": "Mỗi thanh chia tổng số lỗi tại vị trí đó theo 3 mức độ: Nhẹ, Trung bình và Nghiêm trọng."
+    },
+    "ui.dashboard_hotspots_kicker": {
+      "en": "COMPARE LINES AND PRODUCTS",
+      "vi": "SO SÁNH CHUYỀN VÀ SẢN PHẨM"
+    },
+    "ui.dashboard_hotspots_every": {
+      "en": "{value0} has a higher defect rate than other categories on every line",
+      "vi": "{value0} có tỷ lệ lỗi (/1.000 SP) cao hơn các nhóm khác trên mọi chuyền"
+    },
+    "ui.dashboard_hotspots_some": {
+      "en": "{value0} exceeds the rest of the line on {value1} of {value2} lines",
+      "vi": "{value0} có tỷ lệ lỗi cao hơn các nhóm khác ở {value1}/{value2} chuyền"
+    },
+    "ui.dashboard_hotspots_leader": {
+      "en": "{value0} has the highest reference intensity: {value1} events per 1,000 reference units",
+      "vi": "{value0} có tỷ lệ lỗi cao nhất: {value1} lỗi / 1.000 sản phẩm"
+    },
+    "ui.dashboard_hotspots_flat": {
+      "en": "Defect rate by line and product",
+      "vi": "Tỷ lệ lỗi theo chuyền và sản phẩm"
+    },
+    "ui.dashboard_hotspots_caption": {
+      "en": "Compare lines and products by defect rate (events per 1,000 reference units) and total defect count. Reference output uses fixed monthly master figures, as actual production volume is unverified.",
+      "vi": "So sánh các chuyền và mã sản phẩm theo tỷ lệ lỗi (trên 1.000 đơn vị định mức) và tổng số lỗi ghi nhận. Sản lượng tham chiếu lấy từ định mức tháng cố định do chưa có sản lượng thực tế."
+    },
+    "ui.dashboard_lines_title": {
+      "en": "Defect rate by production line",
+      "vi": "Tỷ lệ lỗi theo chuyền sản xuất"
+    },
+    "ui.dashboard_lines_caption": {
+      "en": "Defects per 1,000 reference output units, highest first.",
+      "vi": "Số lỗi trên 1.000 sản phẩm định mức, xếp từ cao xuống thấp."
+    },
+    "ui.dashboard_products_title": {
+      "en": "Top high-defect products",
+      "vi": "Xếp hạng sản phẩm có nhiều lỗi nhất"
+    },
+    "ui.dashboard_cost_kicker": {
+      "en": "HOW REPAIR COSTS ARE DISTRIBUTED",
+      "vi": "CHI PHÍ SỬA CHỮA PHÂN BỐ THẾ NÀO"
+    },
+    "ui.dashboard_cost_line_title": {
+      "en": "{value0} has {value1}× the average recorded cost per event of other lines",
+      "vi": "{value0} có chi phí sửa trung bình mỗi lỗi gấp {value1} lần các chuyền khác"
+    },
+    "ui.dashboard_cost_type_title": {
+      "en": "{value0} defects carry {value1} of repair cost",
+      "vi": "Lỗi {value0} chiếm {value1} chi phí sửa"
+    },
+    "ui.dashboard_cost_flat": {
+      "en": "Repair cost by line and defect type",
+      "vi": "Chi phí sửa theo chuyền và loại lỗi"
+    },
+    "ui.dashboard_cost_caption": {
+      "en": "Sums valid recorded repair costs (missing or negative costs remain unknown rather than counted as zero; currency is unspecified in the source).",
+      "vi": "Tổng hợp các bản ghi có chi phí hợp lệ (chi phí thiếu hoặc âm được để trống chứ không tính là 0; nguồn dữ liệu không ghi rõ đơn vị tiền tệ)."
+    },
+    "ui.dashboard_cost_by_line": {
+      "en": "Average repair cost per defect by line",
+      "vi": "Chi phí sửa chữa trung bình mỗi lỗi theo chuyền"
+    },
+    "ui.dashboard_cost_by_line_caption": {
+      "en": "Total recorded repair cost ÷ number of defects with valid cost on each line.",
+      "vi": "Tổng chi phí sửa chữa ÷ số lỗi có ghi nhận chi phí hợp lệ trên từng chuyền."
+    },
+    "ui.dashboard_cost_share_line": {
+      "en": "{value0} of repair cost",
+      "vi": "{value0} tổng chi phí sửa"
+    },
+    "ui.dashboard_cost_by_type": {
+      "en": "Repair cost by defect type",
+      "vi": "Chi phí sửa theo loại lỗi"
+    },
+    "ui.dashboard_cost_unknown": {
+      "en": "{value0} defects without a valid cost",
+      "vi": "{value0} lỗi chưa có chi phí hợp lệ"
+    },
+    "ui.dashboard_cost_coverage_bar": {
+      "en": "Defects with a recorded cost",
+      "vi": "Lỗi có ghi nhận chi phí"
+    },
+    "ui.dashboard_warning_kicker": {
+      "en": "EARLY ANOMALY DETECTION",
+      "vi": "PHÁT HIỆN SỚM NGÀY CÓ LỖI ĐỘT BIẾN"
+    },
+    "ui.dashboard_warning_some": {
+      "en": "{value0} days exceeded the January-based limit, first on {value1}",
+      "vi": "{value0} ngày vượt ngưỡng cảnh báo tháng 1, bắt đầu từ {value1}"
+    },
+    "ui.dashboard_warning_none": {
+      "en": "No day exceeded the January-based limit",
+      "vi": "Không ngày nào vượt ngưỡng cảnh báo tháng 1"
+    },
+    "ui.dashboard_warning_disabled": {
+      "en": "Reviewing unusual days requires January events in this view",
+      "vi": "Cần có dữ liệu tháng 1 trong phạm vi lọc để tính ngưỡng cảnh báo ngày"
+    },
+    "ui.dashboard_warning_caption": {
+      "en": "Each day is compared with January's average of {value0} defects a day. Days above {value1} are flagged in red for early review instead of waiting for weekly reports.",
+      "vi": "So sánh số lỗi mỗi ngày với mức trung bình tháng 1 ({value0} lỗi/ngày). Những ngày vượt ngưỡng cảnh báo {value1} lỗi/ngày được đánh dấu đỏ để kiểm tra sớm thay vì chờ báo cáo tuần."
+    },
+    "ui.dashboard_days_to_review": {
+      "en": "Days exceeding the alert threshold",
+      "vi": "Các ngày vượt ngưỡng cảnh báo"
+    },
+    "ui.dashboard_limit_label": {
+      "en": "limit {value0}",
+      "vi": "ngưỡng {value0}"
+    },
+    "ui.dashboard_records_kicker": {
+      "en": "UNDERLYING DATA",
+      "vi": "DỮ LIỆU GỐC"
+    },
+    "ui.dashboard_records_title": {
+      "en": "Defect records behind every number",
+      "vi": "Bản ghi lỗi phía sau mọi con số"
+    },
+    "ui.dashboard_records_caption": {
+      "en": "Open the records for the applied filters, sort them and trace any record back to its source row.",
+      "vi": "Mở bản ghi theo bộ lọc đang áp dụng, sắp xếp và truy một bản ghi về dòng nguồn gốc."
+    },
+    "ui.dashboard_share_kicker": {
+      "en": "EXPORT AND SHARE",
+      "vi": "XUẤT VÀ CHIA SẺ"
+    },
+    "ui.dashboard_share_title": {
+      "en": "Download files for this view",
+      "vi": "Tải tệp cho phạm vi này"
+    },
+    "ui.dashboard_share_caption": {
+      "en": "Export the filtered defect records (CSV) to share with other departments, or download the completed Part 1 data-quality workbook (DATA_QUALITY.xlsx).",
+      "vi": "Xuất danh sách bản ghi lỗi theo bộ lọc đang xem (CSV) để chia sẻ với các phòng ban, hoặc tải báo cáo kiểm tra chất lượng dữ liệu Part 1 (DATA_QUALITY.xlsx)."
+    },
+    "ui.dashboard_share_brief": {
+      "en": "Quality brief",
+      "vi": "Bản tin chất lượng"
+    },
+    "ui.dashboard_share_brief_desc": {
+      "en": "One-page Markdown summary: headline numbers, priorities and days to check.",
+      "vi": "Tóm tắt một trang dạng Markdown: chỉ số chính, ưu tiên và ngày cần kiểm tra."
+    },
+    "ui.dashboard_share_csv": {
+      "en": "Filtered defect records (CSV)",
+      "vi": "Dữ liệu lỗi theo bộ lọc (CSV)"
+    },
+    "ui.dashboard_share_csv_desc": {
+      "en": "Cleaned defect records matching the current filters, ready to open in Excel or share with other departments.",
+      "vi": "Các bản ghi lỗi đã làm sạch khớp đúng bộ lọc đang xem, mở trực tiếp bằng Excel để chia sẻ với các bộ phận liên quan."
+    },
+    "ui.dashboard_share_zip": {
+      "en": "Evidence package (ZIP)",
+      "vi": "Gói bằng chứng (ZIP)"
+    },
+    "ui.dashboard_share_zip_desc": {
+      "en": "The CSV plus definitions, filters and source hashes, so anyone can re-check the numbers.",
+      "vi": "CSV kèm định nghĩa, bộ lọc và mã băm nguồn để người khác kiểm lại số liệu."
+    },
+    "ui.dashboard_share_workbook": {
+      "en": "Data quality workbook (DATA_QUALITY.xlsx)",
+      "vi": "Báo cáo chất lượng dữ liệu (DATA_QUALITY.xlsx)"
+    },
+    "ui.dashboard_share_workbook_desc": {
+      "en": "Part 1 deliverable: documents all 12 data quality issues found, detection rules, cleaning actions and impact on results.",
+      "vi": "Deliverable Part 1 của đề bài: tổng hợp 12 vấn đề chất lượng dữ liệu, cách phát hiện, hướng xử lý và tác động lên kết quả."
+    },
+    "ui.dashboard_download": {
+      "en": "Download",
+      "vi": "Tải về"
+    },
+    "ui.dashboard_quality_kicker": {
+      "en": "DATA PREPARATION",
+      "vi": "CHUẨN BỊ DỮ LIỆU"
+    },
+    "ui.dashboard_quality_title": {
+      "en": "Data quality and assumptions",
+      "vi": "Chất lượng dữ liệu và giả định"
+    },
+    "ui.dashboard_quality_caption": {
+      "en": "How the raw data was cleaned, and what the numbers can and cannot tell you.",
+      "vi": "Dữ liệu thô đã được làm sạch thế nào, và các con số nói được gì, chưa nói được gì."
+    },
+    "ui.dashboard_quality_rows": {
+      "en": "{value0} rows received → {value1} defects analysed",
+      "vi": "{value0} dòng nhận về → {value1} lỗi được phân tích"
+    },
+    "ui.dashboard_quality_rows_detail": {
+      "en": "{value0} duplicate copies removed, {value1} contradictory rows set aside and {value2} dated outside the study period. Every step is in the workbook.",
+      "vi": "Đã bỏ {value0} bản trùng, tách riêng {value1} dòng mâu thuẫn và {value2} dòng ngoài kỳ nghiên cứu. Mọi bước đều có trong sổ chất lượng."
+    },
+    "ui.dashboard_quality_cost": {
+      "en": "{value0} defects without a valid cost",
+      "vi": "{value0} lỗi chưa có chi phí hợp lệ"
+    },
+    "ui.dashboard_quality_cost_detail": {
+      "en": "Missing or negative costs stay unknown and are left out of cost totals.",
+      "vi": "Chi phí thiếu hoặc âm được để trống và không cộng vào tổng chi phí."
+    },
+    "ui.dashboard_quality_unmatched": {
+      "en": "{value0} defects without a product match",
+      "vi": "{value0} lỗi không khớp danh mục sản phẩm"
+    },
+    "ui.dashboard_quality_unmatched_detail": {
+      "en": "Counted in plant totals but left out of line, category and product rates.",
+      "vi": "Vẫn tính vào tổng nhà máy nhưng không vào tỷ lệ theo chuyền, nhóm và sản phẩm."
+    },
+    "ui.dashboard_quality_rate": {
+      "en": "Reference intensity uses fixed monthly output",
+      "vi": "Tỷ lệ lỗi tham chiếu dùng sản lượng định mức tháng cố định"
+    },
+    "ui.dashboard_quality_rate_detail": {
+      "en": "Reference output multiplies each product’s fixed monthly master output by the number of full months in view. Because one unit can log multiple defects and actual production is unverified, this is a relative rate rather than true factory yield.",
+      "vi": "Sản lượng tham chiếu lấy định mức tháng cố định của từng sản phẩm nhân với số tháng đang xem. Do một sản phẩm có thể phát sinh nhiều lỗi và chưa có sản lượng thực tế, đây là chỉ số so sánh tương đối chứ không phải tỷ lệ đạt (yield) thực tế."
+    },
+    "ui.dashboard_tools_kicker": {
+      "en": "WHAT-IF AND FOLLOW-UP",
+      "vi": "GIẢ ĐỊNH VÀ THEO DÕI"
+    },
+    "ui.dashboard_tools_title": {
+      "en": "Test assumptions and track the next steps",
+      "vi": "Thử giả định và theo dõi bước tiếp theo"
+    },
+    "ui.dashboard_tools_caption": {
+      "en": "Check whether the priorities hold under other data assumptions, then record who follows up.",
+      "vi": "Kiểm tra các ưu tiên có còn đúng khi đổi giả định dữ liệu, rồi ghi lại ai theo dõi."
+    },
+    "ui.dashboard_defects_n": {
+      "en": "{value0} defects",
+      "vi": "{value0} lỗi"
+    },
+    "ui.dashboard_avg_short": {
+      "en": "avg {value0}",
+      "vi": "TB {value0}"
+    },
+    "ui.dashboard_line_unlinked": {
+      "en": "{value0} defects whose product is not in the product master, so no rate",
+      "vi": "{value0} lỗi có sản phẩm không nằm trong danh mục nên không tính được tỷ lệ"
+    },
+    "ui.dashboard_download_workbook": {
+      "en": "Download DATA_QUALITY.xlsx",
+      "vi": "Tải DATA_QUALITY.xlsx"
+    },
+    "ui.dashboard_overview_title_single": {
+      "en": "{value0} at a glance",
+      "vi": "Toàn cảnh {value0}"
+    },
+    "ui.dashboard_utilities": {
+      "en": "Report tools",
+      "vi": "Công cụ báo cáo"
+    },
+    "ui.dashboard_exports": {
+      "en": "Export data & DATA_QUALITY.xlsx",
+      "vi": "Xuất dữ liệu (CSV & DATA_QUALITY.xlsx)"
+    },
+    "ui.dashboard_data_assumptions": {
+      "en": "Data and assumptions",
+      "vi": "Dữ liệu và giả định"
+    },
+    "ui.dashboard_alternative_assumptions": {
+      "en": "Explore alternative assumptions",
+      "vi": "Thử giả định khác"
+    },
+    "ui.dashboard_followups": {
+      "en": "Follow-up work",
+      "vi": "Công việc theo dõi"
+    },
+    "ui.dashboard_discard_changes": {
+      "en": "Discard changes",
+      "vi": "Bỏ thay đổi"
+    },
+    "ui.dashboard_reset_selections": {
+      "en": "Reset selections",
+      "vi": "Đặt lại lựa chọn"
+    },
+    "ui.dashboard_return_scope": {
+      "en": "Return to previous scope",
+      "vi": "Trở về phạm vi trước"
+    },
+    "ui.dashboard_focus_applied": {
+      "en": "Priority focus changes all dashboard charts.",
+      "vi": "Phạm vi ưu tiên áp dụng cho toàn bộ biểu đồ."
+    },
+    "ui.dashboard_review_day": {
+      "en": "Review records",
+      "vi": "Xem bản ghi"
+    },
+    "ui.dashboard_create_followup": {
+      "en": "Prepare follow-up",
+      "vi": "Chuẩn bị theo dõi"
+    },
+    "ui.dashboard_measurement_plan": {
+      "en": "How to measure success (KPI target)",
+      "vi": "Cách đo lường hiệu quả sau khắc phục"
+    },
+    "ui.agent_context_details": {
+      "en": "Question options",
+      "vi": "Tùy chọn câu hỏi"
+    },
+    "ui.back_to_dashboard": {
+      "en": "Return to dashboard",
+      "vi": "Về tổng quan"
+    },
+    "ui.agent_draft_unavailable": {
+      "en": "You can prepare a question here. Sending is unavailable in this environment.",
+      "vi": "Bạn có thể soạn câu hỏi tại đây. Môi trường này chưa hỗ trợ gửi câu hỏi."
+    },
+    "ui.agent_suggestions": {
+      "en": "Suggested questions from the case study",
+      "vi": "Câu hỏi gợi ý theo đề bài"
+    },
+    "ui.apply_scenario": {
+      "en": "Apply assumption",
+      "vi": "Áp dụng giả định"
+    },
+    "ui.scenario_not_applied": {
+      "en": "Selection not applied. The charts still use the current assumption.",
+      "vi": "Lựa chọn chưa áp dụng. Biểu đồ vẫn dùng giả định hiện tại."
+    },
+    "ui.records_exact_date": {
+      "en": "Record date",
+      "vi": "Ngày ghi nhận"
+    },
+    "ui.clear_record_date": {
+      "en": "Show all records in applied scope",
+      "vi": "Xem mọi bản ghi trong phạm vi đã áp dụng"
+    },
+    "ui.records_date_scope_note": {
+      "en": "This date narrows only this record view. CSV downloads still contain the full applied scope.",
+      "vi": "Ngày này chỉ giới hạn danh sách bản ghi đang xem. Tệp CSV vẫn chứa toàn bộ phạm vi đã áp dụng."
+    },
+    "ui.records_in_inspected_date": {
+      "en": "recorded events on this date within the applied scope",
+      "vi": "sự kiện lỗi ghi nhận trong ngày này thuộc phạm vi đã áp dụng"
+    },
+    "ui.trend_drivers_kicker": {
+      "en": "WHAT DROVE THE CHANGE",
+      "vi": "NGUYÊN NHÂN KÉO SỐ LỖI TĂNG"
+    },
+    "ui.trend_drivers_title": {
+      "en": "Drivers of the change from {value0} to {value1} ({value2} defects)",
+      "vi": "Đóng góp vào mức thay đổi từ {value0} đến {value1} ({value2} lỗi)"
+    },
+    "ui.trend_drivers_caption": {
+      "en": "Compares the last month in view against the first month to show which defect types and production lines contributed most to the change.",
+      "vi": "So sánh tháng cuối với tháng đầu trong phạm vi đang xem để xác định loại lỗi và chuyền sản xuất nào đóng góp lớn nhất vào mức biến động."
+    },
+    "ui.trend_drivers_by_type": {
+      "en": "By defect type",
+      "vi": "Theo loại lỗi"
+    },
+    "ui.trend_drivers_by_line": {
+      "en": "By production line",
+      "vi": "Theo chuyền sản xuất"
+    },
+    "ui.trend_drivers_share": {
+      "en": "{value0} of net change",
+      "vi": "đóng góp {value0} mức tăng"
+    },
+    "ui.monthly_table_summary": {
+      "en": "Monthly breakdown table (Defects, Critical, Rate & Repair Cost)",
+      "vi": "Bảng số liệu chi tiết từng tháng (Số lỗi, Nghiêm trọng, Tỷ lệ & Chi phí sửa)"
+    },
+    "ui.month_col": {
+      "en": "Month",
+      "vi": "Tháng"
+    },
+    "ui.critical_share_col": {
+      "en": "Critical (%)",
+      "vi": "Nghiêm trọng (%)"
+    },
+    "ui.avg_cost_col": {
+      "en": "Avg cost / defect",
+      "vi": "Chi phí sửa TB / lỗi"
+    },
+    "ui.calendar_gap_badge": {
+      "en": "Data note: No events logged after day {value0} in any month ({value1} of {value2} calendar days have 0 records)",
+      "vi": "Lưu ý dữ liệu: Không tháng nào có bản ghi sau ngày {value0} ({value1}/{value2} ngày trong kỳ không có bản ghi lỗi)"
+    },
+    "ui.inspection_kicker": {
+      "en": "DETECTION METHOD",
+      "vi": "PHƯƠNG PHÁP PHÁT HIỆN LỖI"
+    },
+    "ui.inspection_title": {
+      "en": "Defects by inspection method",
+      "vi": "Phân bổ lỗi theo phương pháp kiểm tra"
+    },
+    "ui.inspection_caption": {
+      "en": "Shows how recorded defects are split across Manual Testing, Visual Inspection and Automated Testing, along with each method's Critical share and average repair cost.",
+      "vi": "Thể hiện số lượng lỗi phát hiện qua Kiểm tra thủ công, Kiểm tra trực quan và Kiểm tra tự động, kèm tỷ lệ Nghiêm trọng và chi phí sửa TB."
+    },
+    "ui.inspection_share_detail": {
+      "en": "{value0} of defects · {value1} Critical ({value2}) · avg cost {value3}",
+      "vi": "chiếm {value0} tổng số lỗi · {value1} nghiêm trọng ({value2}) · chi phí TB {value3}"
+    },
+    "ui.cost_by_severity_title": {
+      "en": "Average repair cost by severity level",
+      "vi": "Chi phí sửa trung bình theo mức độ nghiêm trọng"
+    },
+    "ui.cost_by_severity_note": {
+      "en": "Average unit repair cost is similar across Minor, Moderate, and Critical defects (~201–205). Evaluate Critical defects separately for safety and reliability risk rather than repair cost alone.",
+      "vi": "Chi phí sửa trung bình mỗi lỗi khá tương đồng giữa Nhẹ, Trung bình và Nghiêm trọng (~201–205). Vì vậy cần đánh giá lỗi Nghiêm trọng theo rủi ro an toàn và độ tin cậy sản phẩm thay vì chỉ nhìn vào chi phí sửa."
+    },
+    "ui.line_products_meta": {
+      "en": "{value0} products · avg cost {value1}",
+      "vi": "{value0} mã SP · chi phí sửa TB {value1}"
+    },
+    "ui.filter_by_priority": {
+      "en": "Filter charts",
+      "vi": "Lọc theo mục này"
+    },
+    "ui.filtered_by_priority": {
+      "en": "Filtered",
+      "vi": "Đang lọc"
+    },
+    "ui.remove_filter": {
+      "en": "Remove filter {value0}",
+      "vi": "Bỏ bộ lọc {value0}"
+    },
+    "ui.agent_scope_kpis_label": {
+      "en": "Headline numbers in this scope",
+      "vi": "Chỉ số chính của phạm vi này"
+    },
+    "ui.agent_priority_starters_label": {
+      "en": "Investigate a top priority in this scope",
+      "vi": "Đi sâu vào một ưu tiên trong phạm vi này"
+    },
+    "ui.agent_followup_halves_label": {
+      "en": "Compare H1 vs H2 & monthly drivers",
+      "vi": "So sánh 2 nửa kỳ & động lực tăng"
+    },
+    "ui.agent_followup_halves_prompt": {
+      "en": "Compare the first half vs. second half of this period, and break down the first-to-last-month change by defect type and production line.",
+      "vi": "So sánh nửa đầu kỳ với nửa cuối kỳ trong phạm vi này, đồng thời bóc tách mức thay đổi từ tháng đầu đến tháng cuối theo loại lỗi và chuyền sản xuất."
+    },
+    "ui.agent_followup_mix_label": {
+      "en": "Compare Category 4 & Line-3 cost gap",
+      "vi": "Đối chiếu Nhóm 4 & chi phí Chuyền 3"
+    },
+    "ui.agent_followup_mix_prompt": {
+      "en": "Compare Category 4 defect rate (per 1,000 reference units) against other categories on each line, and compare Line-3 average repair cost per event against other lines. How much is driven by product mix vs. the line itself?",
+      "vi": "So sánh tỷ lệ lỗi (/1.000 SP tham chiếu) của Nhóm 4 với các nhóm khác trên từng chuyền, và đối chiếu chi phí sửa trung bình mỗi lỗi của Chuyền 3 với các chuyền còn lại. Chênh lệch này do cơ cấu sản phẩm hay do bản thân chuyền?"
+    },
+    "ui.agent_flow_unconfirmed": {
+      "en": "completion unconfirmed",
+      "vi": "chưa xác nhận hoàn tất"
+    },
+    "ui.agent_flow_answer_below": {
+      "en": "The report appears below this flow.",
+      "vi": "Báo cáo hiển thị bên dưới luồng xử lý."
+    },
+    "ui.agent_flow_draft": {
+      "en": "Draft response",
+      "vi": "Bản nháp phản hồi"
+    },
+    "ui.agent_flow_draft_unverified": {
+      "en": "not yet verified",
+      "vi": "chưa được kiểm chứng"
+    },
+    "ui.agent_flow_note_knowledge": {
+      "en": "Preparing analysis guidance",
+      "vi": "Chuẩn bị hướng dẫn phân tích"
+    },
+    "ui.agent_flow_note_memory": {
+      "en": "Analysis notes",
+      "vi": "Ghi nhớ phân tích"
+    },
+    "ui.agent_flow_note_memory_recall": {
+      "en": "Reading saved analysis notes",
+      "vi": "Đọc ghi nhớ phân tích"
+    },
+    "ui.agent_flow_note_memory_store": {
+      "en": "Saving analysis notes",
+      "vi": "Lưu ghi nhớ phân tích"
+    },
+    "ui.agent_flow_note_memory_update": {
+      "en": "Updating analysis notes",
+      "vi": "Cập nhật ghi nhớ phân tích"
+    },
+    "ui.agent_flow_note_update": {
+      "en": "Agent update",
+      "vi": "Cập nhật tiến trình"
+    },
+    "ui.agent_flow_review_verified": {
+      "en": "Numbers verified against source",
+      "vi": "Đã đối chiếu khớp số liệu nguồn"
+    },
+    "ui.agent_flow_review_unverified": {
+      "en": "Some figures still need checking",
+      "vi": "Một số số liệu cần kiểm tra thêm"
+    },
+    "ui.agent_flow_review_retrying": {
+      "en": "Re-checking figures",
+      "vi": "Đang đối chiếu lại số liệu"
+    },
+    "ui.agent_flow_note_steering_received": {
+      "en": "Instructions received for this analysis",
+      "vi": "Đã nhận hướng dẫn cho phân tích này"
+    },
+    "ui.agent_flow_note_steering_submitted": {
+      "en": "Instructions sent to the active analysis",
+      "vi": "Đã gửi hướng dẫn vào phân tích đang chạy"
+    },
+    "ui.agent_flow_note_steering_failed": {
+      "en": "Instruction delivery could not be confirmed",
+      "vi": "Chưa thể xác nhận hướng dẫn đã được gửi"
+    },
+    "ui.preparing_the_report": {
+      "en": "Preparing the report",
+      "vi": "Chuẩn bị báo cáo"
+    }
+  },
+  "sourceTranslations": {
+    "to": "đến",
+    "Filtered defect records": "Bản ghi lỗi theo bộ lọc",
+    "ID": "Mã lỗi",
+    "linked": "đã ghép",
+    "unmatched": "chưa ghép",
+    "Critical events · Unknowns included": "sự kiện nghiêm trọng · Mẫu số gồm mức độ chưa rõ",
+    "cost coverage · currency unspecified": "có dữ liệu chi phí · chưa rõ loại tiền",
+    "of selected events have known repair costs": "sự kiện được chọn có chi phí sửa chữa đã ghi nhận",
+    "selected events have unknown cost": "sự kiện được chọn chưa xác định chi phí",
+    "coverage": "có dữ liệu",
+    "events": "sự kiện",
+    "logged events": "sự kiện đã ghi nhận",
+    "of location": "tại vị trí này",
+    "master products": "sản phẩm danh mục",
+    ". January stays fixed when selected months change.": ". Đường cơ sở tháng 1 được giữ cố định khi thay đổi khoảng tháng.",
+    "Candidate dates (": "Ngày cần xem xét (",
+    "· p-value:": "· Giá trị p:",
+    "View evidence for": "Xem bằng chứng cho",
+    "master products reach 80% of linked logged events in this scope.": "sản phẩm danh mục chiếm 80% số sự kiện đã ghép trong phạm vi này.",
+    "exploratory candidate dates exceed the frozen January reference.": "ngày gợi ý vượt ngưỡng tham chiếu tháng 1 cố định.",
+    "retained events in this applied scope": "sự kiện được giữ trong phạm vi đã áp dụng",
+    "Page": "Trang",
+    "of": "trên",
+    "THE QUALITY REVIEW": "GÓC NHÌN CHẤT LƯỢNG",
+    "Understand the pattern.": "Hiểu rõ xu hướng.",
+    "Choose the next investigation.": "Chọn vấn đề cần tìm hiểu tiếp.",
+    "Logged defects, repair burden, and the evidence behind each view.": "Lỗi được ghi nhận, chi phí sửa chữa và bằng chứng của từng góc nhìn.",
+    "Analyze this view": "Phân tích góc nhìn này",
+    "Open this scope in your analyst": "Chuyển phạm vi này sang trợ lý phân tích",
+    "Historical case study · January to June 2024": "Dữ liệu tình huống lịch sử · Tháng 1 đến tháng 6/2024",
+    "One record is a logged defect event. Actual production and inspection exposure are unavailable.": "Mỗi dòng là một sự kiện lỗi được ghi nhận. Chưa có sản lượng thực tế và quy mô kiểm tra.",
+    "Dashboard filters": "Bộ lọc bảng tổng quan",
+    "YOUR SCOPE": "PHẠM VI PHÂN TÍCH",
+    "Start with a clear view": "Xác định phạm vi cần xem",
+    "Unapplied changes": "Có thay đổi chưa áp dụng",
+    "Applied filters": "Bộ lọc đã áp dụng",
+    "Filters": "Bộ lọc",
+    "From month": "Từ tháng",
+    "Through month": "Đến hết tháng",
+    "Production line": "Chuyền sản xuất",
+    "Category": "Nhóm sản phẩm",
+    "Product": "Sản phẩm",
+    "Severity": "Mức độ",
+    "Defect type": "Loại lỗi",
+    "Defect location": "Vị trí lỗi",
+    "Inspection method": "Phương pháp kiểm tra",
+    "All production lines": "Tất cả chuyền",
+    "All categories": "Tất cả nhóm",
+    "All products": "Tất cả sản phẩm",
+    "All severity levels": "Tất cả mức độ",
+    "All defect types": "Tất cả loại lỗi",
+    "All defect locations": "Tất cả vị trí",
+    "All inspection methods": "Tất cả phương pháp",
+    "All lines": "Tất cả chuyền",
+    "All severities": "Tất cả mức độ",
+    "Choose the full-month scope and dimensions for this review.": "Chọn khoảng tháng trọn vẹn và các chiều phân tích cần xem.",
+    "The start month must be on or before the end month.": "Tháng bắt đầu phải trước hoặc trùng tháng kết thúc.",
+    "Full months. Event filters change the intensity numerator only.": "Dùng tháng trọn vẹn. Bộ lọc sự kiện chỉ thay đổi tử số của chỉ số cường độ.",
+    "Reset draft": "Đặt lại bộ lọc nháp",
+    "Applying…": "Đang áp dụng…",
+    "Apply filters": "Áp dụng bộ lọc",
+    "Could not update this view.": "Chưa thể cập nhật góc nhìn này.",
+    "The last successful view remains below.": "Bên dưới vẫn là kết quả cập nhật thành công gần nhất.",
+    "Retry": "Thử lại",
+    "Source refresh failed. Showing the retained snapshot.": "Làm mới nguồn thất bại. Đang hiển thị bản dữ liệu đã lưu.",
+    "Last attempt:": "Lần thử gần nhất:",
+    "Source checked successfully. This view uses the latest retained source snapshot.": "Đã kiểm tra nguồn thành công. Góc nhìn này dùng bản dữ liệu nguồn mới nhất được lưu.",
+    "Updating the applied view…": "Đang cập nhật góc nhìn đã áp dụng…",
+    "Loading the source snapshot and calculating evidence…": "Đang tải bản dữ liệu nguồn và tính toán bằng chứng…",
+    "Key performance indicators": "Các chỉ số chính",
+    "Logged defect events": "Sự kiện lỗi đã ghi nhận",
+    "Critical share": "Tỷ trọng sự kiện nghiêm trọng",
+    "Events / 1,000 reference output": "Sự kiện / 1.000 đơn vị tham chiếu",
+    "Static master output; not a defect probability": "Sản lượng danh mục tĩnh; không phải xác suất lỗi",
+    "Known repair cost": "Chi phí sửa chữa đã biết",
+    "Unavailable": "Chưa có dữ liệu",
+    "No logged events in this scope": "Không có sự kiện lỗi được ghi nhận trong phạm vi này",
+    "Try another filter combination. Master products may still appear with zero logged events; missing events do not establish zero defects or zero production.": "Thử kết hợp bộ lọc khác. Sản phẩm trong danh mục vẫn có thể hiện với 0 sự kiện; thiếu bản ghi không chứng minh không có lỗi hoặc không có sản xuất.",
+    "OVER THE SELECTED MONTHS": "THEO CÁC THÁNG ĐÃ CHỌN",
+    "The logged-event trend": "Xu hướng sự kiện lỗi",
+    "PATTERNS TO QUESTION": "NHỮNG MỐI LIÊN HỆ CẦN XEM XÉT",
+    "Where severity appears": "Mức độ lỗi theo vị trí",
+    "STATIC REFERENCE EXPOSURE": "SẢN LƯỢNG THAM CHIẾU TĨNH",
+    "Production lines": "Các chuyền sản xuất",
+    "Ranked by events per 1,000 reference output units. Confirm actual exposure before comparing performance.": "Xếp theo số sự kiện trên 1.000 đơn vị sản lượng tham chiếu. Cần xác nhận sản lượng và quy mô kiểm tra thực tế trước khi so sánh hiệu quả.",
+    "PRODUCT CONCENTRATION": "MỨC TẬP TRUNG THEO SẢN PHẨM",
+    "Products with the most events": "Sản phẩm có nhiều sự kiện lỗi nhất",
+    "Master cohort includes products with zero events. Unmatched events stay in plant totals.": "Nhóm danh mục bao gồm cả sản phẩm có 0 sự kiện. Sự kiện không ghép được sản phẩm vẫn được tính trong tổng nhà máy.",
+    "KNOWN COSTS ONLY": "CHỈ TÍNH CHI PHÍ ĐÃ BIẾT",
+    "Repair burden & capture": "Chi phí sửa chữa và độ đầy đủ",
+    "Observed repair cost": "Chi phí sửa chữa ghi nhận",
+    "Local currency, unspecified": "Nội tệ, chưa rõ loại tiền",
+    "Cost coverage": "Tỷ lệ có dữ liệu chi phí",
+    "Known repair cost by defect type": "Chi phí sửa chữa đã biết theo loại lỗi",
+    "Unknown costs are excluded without imputation. Read cost totals together with coverage; they do not estimate the full repair burden.": "Chi phí chưa biết được loại khỏi tổng, không điền ước tính. Cần đọc tổng chi phí cùng tỷ lệ có dữ liệu; tổng này không đại diện toàn bộ chi phí sửa chữa.",
+    "Product repair-cost concentration": "Mức tập trung chi phí sửa chữa theo sản phẩm",
+    "Known cost": "Chi phí đã biết",
+    "Coverage": "Độ đầy đủ",
+    "HISTORICAL SCREEN · EXPLORATORY": "SÀNG LỌC LỊCH SỬ · THĂM DÒ",
+    "Daily candidates for investigation": "Ngày cần xem xét thêm",
+    "January daily mean": "Trung bình ngày tháng 1",
+    "Upper reference": "Ngưỡng tham chiếu trên",
+    "No January baseline events for this scope. The screen is unavailable.": "Không có sự kiện tháng 1 làm đường cơ sở trong phạm vi này. Chưa thể sàng lọc.",
+    "Candidate dates": "Các ngày cần xem xét",
+    "No dates exceed the reference in this view.": "Không có ngày nào vượt ngưỡng tham chiếu trong góc nhìn này.",
+    "Exploratory candidates, not confirmed process alarms or validated statistical process control. No actual daily exposure is available.": "Đây là các ngày gợi ý để tìm hiểu, chưa phải cảnh báo quy trình đã xác nhận hay kiểm soát quá trình bằng thống kê đã được thẩm định. Chưa có sản lượng và quy mô kiểm tra theo ngày.",
+    "Screen assumptions and limitations": "Giả định và giới hạn của sàng lọc",
+    "FROM PATTERNS TO ACTION": "TỪ QUAN SÁT ĐẾN HÀNH ĐỘNG",
+    "Investigation priorities": "Ưu tiên tìm hiểu",
+    "Evidence first. Validate causes with the team.": "Bắt đầu từ bằng chứng. Xác minh nguyên nhân cùng nhóm phụ trách.",
+    "Owner & success measure": "Phụ trách và cách đánh giá",
+    "This view has no evidence-backed investigation priorities.": "Chưa có ưu tiên tìm hiểu đủ bằng chứng trong góc nhìn này.",
+    "BEFORE DRAWING CONCLUSIONS": "TRƯỚC KHI KẾT LUẬN",
+    "Data quality & analytical assumptions": "Chất lượng dữ liệu và giả định phân tích",
+    "Source event rows": "Dòng sự kiện nguồn",
+    "Retained study events": "Sự kiện trong kỳ được giữ",
+    "Quarantined rows": "Dòng bị cách ly",
+    "Unmatched events": "Sự kiện không ghép được",
+    "Unknown repair costs": "Sự kiện chưa rõ chi phí",
+    "Dates with no logged events": "Ngày không có bản ghi lỗi",
+    "Cleaning reconciliation": "Đối soát sau làm sạch",
+    "Verified": "Đã đối soát",
+    "Not reconciled": "Chưa khớp đối soát",
+    "Definitions, boundaries & assumptions": "Định nghĩa, phạm vi và giả định",
+    "raw rows": "Dòng nguồn",
+    "duplicate copies removed": "Bản sao trùng đã loại",
+    "quarantined rows": "Dòng bị cách ly",
+    "retained clean events": "Sự kiện sạch được giữ",
+    "out of scope events": "Sự kiện ngoài kỳ",
+    "analysis events": "Sự kiện trong kỳ phân tích",
+    "raw equals removed plus quarantined plus clean": "Dòng nguồn bằng tổng dòng loại, cách ly và giữ lại",
+    "event count": "Số sự kiện lỗi",
+    "known repair cost": "Chi phí sửa chữa đã biết",
+    "cost coverage pct": "Tỷ lệ có dữ liệu chi phí",
+    "reference intensity per 1000": "Cường độ trên 1.000 sản lượng tham chiếu",
+    "critical share pct": "Tỷ trọng lỗi nghiêm trọng",
+    "anomalies": "Sàng lọc ngày cần xem xét",
+    "Evidence & provenance": "Bằng chứng và nguồn gốc",
+    "Immutable calculation receipt for this applied view": "Biên nhận tính toán bất biến cho góc nhìn đã áp dụng",
+    "Selected numeric path": "Đường dẫn số liệu đã chọn",
+    "in the receipt result.": "trong kết quả của biên nhận.",
+    "Context": "Ngữ cảnh",
+    "Snapshot": "Bản dữ liệu",
+    "KPI version": "Phiên bản KPI",
+    "Fetched at": "Thời điểm lấy nguồn",
+    "Source SHA-256": "SHA-256 nguồn sự kiện",
+    "Master SHA-256": "SHA-256 danh mục",
+    "Code SHA-256": "SHA-256 mã tính toán",
+    "Result SHA-256": "SHA-256 kết quả",
+    "Execution receipt": "Biên nhận thực thi",
+    "Open complete JSON receipt": "Mở biên nhận JSON đầy đủ",
+    "The receipt includes executed code, numeric paths, source hashes and the result. KPI cards point to their recorded numeric path.": "Biên nhận chứa mã đã chạy, đường dẫn số liệu, mã băm nguồn và kết quả. Mỗi thẻ KPI liên kết tới đường dẫn số liệu được ghi trong biên nhận.",
+    "SOURCE SNAPSHOT": "BẢN DỮ LIỆU NGUỒN",
+    "Snapshot fetched": "Lấy bản dữ liệu lúc",
+    "Last source check": "Kiểm tra nguồn gần nhất",
+    "Refresh checks the source. It does not make 2024 events current.": "Làm mới chỉ kiểm tra lại nguồn. Các sự kiện năm 2024 vẫn là dữ liệu lịch sử.",
+    "Filtered CSV": "CSV theo bộ lọc",
+    "Evidence ZIP": "ZIP bằng chứng",
+    "Refreshing…": "Đang làm mới…",
+    "Refresh source": "Làm mới nguồn",
+    "Logged events": "Sự kiện được ghi nhận",
+    "Critical events within total": "Lỗi nghiêm trọng trong tổng số",
+    "Scrollable data table": "Bảng dữ liệu có thể cuộn",
+    "Logged events by defect location and severity": "Sự kiện lỗi theo vị trí và mức độ",
+    "Location": "Vị trí",
+    "No location records in this view.": "Không có bản ghi vị trí trong góc nhìn này.",
+    "Darker cells mean more logged events, not a higher defect probability.": "Ô đậm hơn biểu thị nhiều sự kiện được ghi nhận hơn, không phải xác suất lỗi cao hơn.",
+    "Exploratory association test": "Kiểm định liên hệ thăm dò",
+    "Cramér's V:": "Cramér's V:",
+    "p-value:": "Giá trị p:",
+    "· Approximation": "· Phép xấp xỉ",
+    "meets expected-cell checks": "đạt kiểm tra tần số kỳ vọng",
+    "unreliable": "không đáng tin cậy",
+    "No eligible lines in this cohort.": "Không có chuyền phù hợp trong nhóm này.",
+    "Top products ranked by logged event count": "Sản phẩm dẫn đầu theo số sự kiện lỗi",
+    "Events": "Sự kiện",
+    "Critical": "Nghiêm trọng",
+    "Cumulative": "Lũy kế",
+    "No positive linked-event burden for a Pareto threshold.": "Không có sự kiện đã ghép để xác định ngưỡng Pareto.",
+    "Daily logged events": "Sự kiện ghi nhận theo ngày",
+    "January reference": "Tham chiếu tháng 1",
+    "Candidate": "Ngày cần xem xét",
+    "THE RECORDS BEHIND THIS VIEW": "BẢN GHI CỦA GÓC NHÌN NÀY",
+    "Explore the filtered defect log": "Xem nhật ký lỗi theo bộ lọc",
+    "Loading filtered records…": "Đang tải bản ghi theo bộ lọc…",
+    "Sort by": "Sắp xếp theo",
+    "Sort direction": "Chiều sắp xếp",
+    "Descending": "Giảm dần",
+    "Ascending": "Tăng dần",
+    "Retry records": "Tải lại bản ghi",
+    "Scrollable filtered defect records": "Bản ghi lỗi theo bộ lọc có thể cuộn",
+    "Filtered cleaned defect records, with original source row and cost status": "Bản ghi lỗi đã làm sạch theo bộ lọc, kèm dòng nguồn và trạng thái chi phí",
+    "ID / source row": "ID / dòng nguồn",
+    "Date": "Ngày",
+    "Product / line": "Sản phẩm / chuyền",
+    "Defect / location": "Lỗi / vị trí",
+    "Inspection": "Kiểm tra",
+    "Repair cost": "Chi phí sửa chữa",
+    "Source row": "Dòng nguồn",
+    "Unknown": "Không rõ",
+    "No records match this scope.": "Không có bản ghi phù hợp phạm vi này.",
+    "Loading records…": "Đang tải bản ghi…",
+    "Previous records page": "Trang bản ghi trước",
+    "Next records page": "Trang bản ghi sau",
+    "defect date": "Ngày lỗi",
+    "defect id": "ID lỗi",
+    "product name": "Tên sản phẩm",
+    "production line": "Chuyền sản xuất",
+    "severity": "Mức độ",
+    "repair cost": "Chi phí sửa chữa",
+    "Source audit across the full snapshot. Dashboard filters do not recalculate these quality counts.": "Kiểm tra chất lượng trên toàn bộ bản dữ liệu. Bộ lọc không tính lại các số lượng kiểm tra này.",
+    "Quality describes the complete source snapshot, including removed and out-of-period rows. Dashboard filters do not change this audit; linkage and cost-availability counts cover January to June 2024.": "Chất lượng dữ liệu mô tả toàn bộ nguồn, gồm cả dòng đã loại và ngoài kỳ. Bộ lọc không thay đổi phần kiểm tra này; số lượng ghép sản phẩm và độ đầy đủ chi phí áp dụng cho tháng 1 đến tháng 6/2024.",
+    "Issue counts can overlap and include removed/out-of-scope source rows; do not add issue counts to reconcile rows.": "Các nhóm vấn đề có thể chồng lặp và gồm dòng đã loại hoặc ngoài kỳ; không cộng số lượng vấn đề để đối soát tổng dòng.",
+    "Field checks run after exact-copy removal; raw profile separately counts all received rows. Post-join and date-scope checks run after ID resolution.": "Kiểm tra trường dữ liệu diễn ra sau khi loại bản sao trùng khớp; hồ sơ dữ liệu thô đếm riêng mọi dòng nhận được. Kiểm tra sau ghép và theo kỳ được thực hiện sau khi xử lý ID.",
+    "One month is selected; there is no between-month trend comparison.": "Chỉ chọn một tháng nên chưa thể so sánh xu hướng giữa các tháng.",
+    "At least two nonempty locations and severity levels are required for an association test.": "Cần ít nhất hai vị trí và hai mức độ có bản ghi để kiểm định mối liên hệ.",
+    "Exploratory association, not causation. Cramer's V describes the magnitude; repeated units and inspection mix are unobserved.": "Kiểm định Chi-square (p < 0,0001) xác nhận mức độ nghiêm trọng phụ thuộc rõ rệt vào vị trí lỗi chứ không phải ngẫu nhiên (lỗi ở Linh kiện dễ rơi vào mức Nghiêm trọng hơn hẳn Bề mặt và Bên trong). Hệ số Cramér's V = 0,121 cho thấy mức độ liên hệ ở ngưỡng nhẹ – vừa.",
+    "Sparse expected cells make the chi-square approximation unreliable; do not use this p-value as evidence of association.": "Số lượng mẫu ở một số ô quá ít nên kiểm định Chi-square chưa đủ độ tin cậy trong phạm vi lọc hẹp này.",
+    "Frozen January daily logged-count screen (mean + 3√mean)": "Công thức ngưỡng cảnh báo ngày = Trung bình lỗi/ngày của tháng 1 + 3×√(trung bình tháng 1)",
+    "Exploratory candidates for investigation, not confirmed defects, process alarms or validated SPC limits.": "Các ngày vượt ngưỡng là tín hiệu cảnh báo sớm để kỹ sư kiểm tra thực tế tại chuyền, chưa phải kết luận sự cố dây chuyền.",
+    "The baseline uses the same non-date filters; the January baseline remains fixed when month filters change.": "Mức nền tháng 1 được tính theo đúng chuyền/sản phẩm đang lọc và giữ cố định khi đổi khoảng tháng.",
+    "Calendar days with no records contribute zero logged events; actual reporting completeness and operating days are unknown.": "Những ngày không phát sinh bản ghi được tính là 0 lỗi (trong kỳ có 16/182 ngày không có bản ghi lỗi).",
+    "A Poisson-like equal-exposure assumption is unverified. No actual daily output, inspected units, or adjustment for multiple screening comparisons is available.": "Ngưỡng cảnh báo này giả định sản lượng sản xuất mỗi ngày tương đương nhau (do dữ liệu nguồn chỉ cung cấp sản lượng định mức theo tháng).",
+    "In this snapshot, no study month has source events after day 28. Unverified month-end reporting can distort the baseline and candidate count.": "Lưu ý chất lượng dữ liệu: Không tháng nào có bản ghi lỗi sau ngày 28. Cần kiểm tra lại việc nhập liệu cuối tháng trước khi tự động hóa cảnh báo.",
+    "The supplied records are a historical January-June 2024 case study; refresh time is not event freshness.": "Các bản ghi thuộc tình huống lịch sử từ tháng 1 đến tháng 6/2024; thời điểm làm mới không phản ánh độ mới của sự kiện.",
+    "One row represents a logged defect event; multiple events may concern one unit, and no unit identifier is available.": "Mỗi dòng là một sự kiện lỗi; nhiều sự kiện có thể thuộc cùng một đơn vị sản phẩm và chưa có mã định danh đơn vị.",
+    "Actual monthly/daily production, inspected units, inspection coverage and operating days are unavailable.": "Chưa có sản lượng thực tế theo tháng hoặc ngày, số đơn vị đã kiểm tra, độ bao phủ kiểm tra và ngày vận hành.",
+    "Absent calendar dates mean zero logged events, not verified zero defects or zero production; calendar coverage is described for the current snapshot below.": "Ngày không xuất hiện chỉ có nghĩa là 0 sự kiện được ghi nhận, chưa xác nhận không có lỗi hoặc không sản xuất; độ bao phủ ngày được mô tả cho bản dữ liệu hiện tại bên dưới.",
+    "Ambiguous slash dates use M/D/YYYY inferred from the predominant unambiguous source rows. Daily candidate dates depend on this convention; confirm ambiguous dates with the source owner before operational prioritization.": "Ngày dùng dấu gạch chéo bị mơ hồ được đọc theo M/D/YYYY, suy ra từ phần lớn dòng nguồn có ngày rõ nghĩa. Các ngày gợi ý phụ thuộc quy ước này; cần xác nhận với chủ nguồn trước khi ưu tiên xử lý vận hành.",
+    "Unknown repair costs are excluded from financial sums and reported through explicit coverage; currency name is unspecified.": "Chi phí sửa chữa chưa biết được loại khỏi tổng tài chính và thể hiện bằng tỷ lệ có dữ liệu; chưa xác định loại tiền.",
+    "Product-to-line mapping and reference output are static; historical reassignment and production mix cannot be verified.": "Ánh xạ sản phẩm với chuyền và sản lượng tham chiếu là dữ liệu tĩnh; chưa xác minh được việc đổi chuyền trong quá khứ và cơ cấu sản xuất.",
+    "Unique retained logged defect events in the selected full-month scope, including unmatched products at plant level.": "Các sự kiện lỗi duy nhất được giữ trong khoảng tháng trọn vẹn đã chọn, bao gồm sản phẩm không ghép được khi tính tổng nhà máy.",
+    "Sum of observed nonnegative repair costs only, in unspecified local currency; not a full cost estimate.": "Chỉ cộng chi phí sửa chữa không âm đã quan sát, theo nội tệ chưa xác định; không ước tính toàn bộ chi phí.",
+    "Events with known valid repair cost / all selected events × 100.": "Sự kiện có chi phí sửa chữa hợp lệ đã biết / toàn bộ sự kiện được chọn × 100.",
+    "Reference-output intensity = linked logged defect events / (sum of monthly_output for all eligible master products × selected full months) × 1,000. Static reference output is not verified actual production; this is not a defect probability. Event filters change the numerator only.": "Cường độ trên sản lượng tham chiếu = sự kiện lỗi đã ghép / (tổng monthly_output của mọi sản phẩm danh mục phù hợp × số tháng trọn vẹn đã chọn) × 1.000. Sản lượng tham chiếu tĩnh chưa phải sản lượng thực tế đã xác minh; đây không phải xác suất lỗi. Bộ lọc sự kiện chỉ thay đổi tử số.",
+    "Critical events / all selected events × 100; Unknown severity remains in the denominator.": "Sự kiện nghiêm trọng / toàn bộ sự kiện được chọn × 100; mức độ chưa rõ vẫn nằm trong mẫu số.",
+    "Exploratory daily logged-count candidates exceeding a fixed January mean + 3√mean reference. No actual daily exposure or reporting completeness is available; this is not validated statistical process control.": "Các ngày thăm dò có số sự kiện vượt ngưỡng tháng 1 cố định: trung bình + 3√trung bình. Chưa có quy mô sản xuất, kiểm tra theo ngày hoặc độ đầy đủ báo cáo; đây chưa phải kiểm soát quá trình bằng thống kê đã được thẩm định.",
+    "Review these defect records with operators, inspect representative failures and verify causes before choosing corrective actions.": "Cùng kỹ thuật viên và công nhân đứng máy kiểm tra các bản ghi lỗi này, rà soát mẫu lỗi thực tế và xác định nguyên nhân gốc trước khi chọn biện pháp khắc phục.",
+    "Quality Engineer and relevant Production Team Leader": "Kỹ sư chất lượng và trưởng nhóm sản xuất liên quan",
+    "Track Critical events and their share at this location with actual inspected/produced units and comparable inspection coverage; set a target after baseline validation.": "Theo dõi số lượng và tỷ lệ lỗi Nghiêm trọng tại vị trí này trên số sản phẩm kiểm tra thực tế; đặt mục tiêu giảm lỗi sau khi xác nhận đường cơ sở.",
+    "Compare product and defect mix, confirm actual output and inspection coverage, then investigate recurring failures with the line team.": "Đối chiếu cơ cấu sản phẩm và loại lỗi, xác nhận sản lượng thực tế cùng phạm vi kiểm tra, sau đó cùng nhóm phụ trách chuyền kiểm tra các lỗi lặp lại.",
+    "Recalculate events per actual produced/inspected units and repeat Critical-event counts at matched exposure; no reduction target is inferred from this case.": "Tính lại tỷ lệ lỗi trên sản lượng sản xuất/kiểm tra thực tế và theo dõi số lỗi Nghiêm trọng lặp lại trong cùng điều kiện kiểm tra.",
+    "Review costly recurring repairs with Maintenance, reconcile missing/invalid costs with Finance, and verify corrective-action economics.": "Cùng bộ phận Bảo trì kiểm tra các lỗi tốn chi phí sửa chữa cao lặp lại, đồng thời đối soát các bản ghi thiếu chi phí với bộ phận Tài chính.",
+    "Maintenance Lead, Quality Engineer and Finance": "Trưởng bộ phận bảo trì, kỹ sư chất lượng và tài chính",
+    "Track known repair cost, cost per repaired event and cost coverage together; compare verified repair costs at comparable exposure before setting a savings target.": "Theo dõi tổng chi phí sửa chữa, chi phí trung bình mỗi lần sửa và tỷ lệ bản ghi có đầy đủ dữ liệu chi phí.",
+    "Track known repair cost, mean observed cost per event with known cost, and cost coverage together; compare verified repair costs at comparable exposure before setting a savings target.": "Theo dõi tổng chi phí sửa chữa, chi phí trung bình mỗi lần sửa và tỷ lệ bản ghi có đầy đủ dữ liệu chi phí.",
+    "Minor": "Nhẹ",
+    "Moderate": "Trung bình",
+    "Cosmetic": "Ngoại quan",
+    "Functional": "Chức năng",
+    "Structural": "Kết cấu",
+    "Component": "Linh kiện",
+    "Internal": "Bên trong",
+    "Surface": "Bề mặt",
+    "Automated Testing": "Kiểm tra tự động",
+    "Manual Testing": "Kiểm tra thủ công",
+    "Visual Inspection": "Kiểm tra trực quan",
+    "Unmatched product": "Sản phẩm chưa khớp",
+    "Unmatched products": "Sản phẩm chưa khớp",
+    "known": "Đã biết",
+    "unknown": "Chưa biết",
+    "missing": "Thiếu",
+    "invalid": "Không hợp lệ",
+    "valid": "Hợp lệ",
+    "invalid_negative": "Âm, không hợp lệ",
+    "invalid_numeric": "Không phải số hợp lệ",
+    "negative": "Giá trị âm",
+    "observed": "Đã ghi nhận",
+    "unavailable": "Chưa khả dụng",
+    "Lead Analyst": "Trợ lý phân tích chính",
+    "Data Engineer": "Kỹ sư dữ liệu",
+    "QA Verifier": "Bộ kiểm chứng QA",
+    "Analyst working": "Trợ lý đang phân tích",
+    "local_python_repl": "Thực thi Python",
+    "local_sql_engine": "Truy vấn SQL",
+    "dataset_profiler": "Khảo sát dữ liệu",
+    "dashboard_context": "Đọc phạm vi tổng quan",
+    "dashboard_compare_scope": "So sánh phạm vi",
+    "run_case_study": "Phân tích toàn bộ bài tập",
+    "todo_planner": "Kế hoạch phân tích",
+    "memory_recall": "Tra cứu ghi nhớ",
+    "memory_store": "Lưu ghi nhớ",
+    "knowledge_prepare": "Chuẩn bị kiến thức",
+    "connecting": "Đang kết nối",
+    "connected": "Đã kết nối",
+    "reconnecting": "Đang kết nối lại",
+    "idle": "Sẵn sàng",
+    "queued": "Đang chờ",
+    "running": "Đang chạy",
+    "started": "Đã bắt đầu",
+    "executed": "Đã thực thi",
+    "completed": "Đã hoàn tất",
+    "complete": "Đã hoàn tất",
+    "done": "Đã xong",
+    "failed": "Thất bại",
+    "error": "Lỗi",
+    "cancelled": "Đã hủy",
+    "interrupted": "Đã gián đoạn",
+    "unverified": "Chưa được xác minh",
+    "verifying": "Đang xác minh",
+    "qa": "Kiểm chứng QA",
+    "passed": "Đạt",
+    "verified": "Đã xác minh",
+    "success": "Thành công",
+    "budget_exceeded": "Vượt ngân sách",
+    "budget_exhausted": "Hết ngân sách",
+    "provider_stopped": "Nhà cung cấp đã dừng",
+    "updated": "Đã cập nhật",
+    "read": "Đã đọc",
+    "written": "Đã ghi",
+    "Lead Analyst is preparing the run": "Trợ lý đang chuẩn bị lượt phân tích",
+    "Applying your updated instruction": "Đang áp dụng yêu cầu mới của bạn",
+    "Analysis completed and evidence checked": "Đã hoàn tất phân tích và kiểm tra bằng chứng",
+    "The app is stopping; saved evidence is retained": "Ứng dụng đang dừng; bằng chứng đã lưu được giữ lại",
+    "Run stopped. Correct the reported issue and send another prompt.": "Lượt phân tích đã dừng. Hãy xử lý lỗi được báo rồi gửi lại yêu cầu.",
+    "Some claims remain unverified; inspect the QA result": "Một số phát biểu chưa được xác minh; hãy xem kết quả QA",
+    "Run stopped at its configured cost limit; pending instructions are retained": "Lượt phân tích đã dừng ở giới hạn chi phí; các yêu cầu đang chờ được giữ lại",
+    "Your new dashboard scope is queued for a separate run after the current analysis.": "Phạm vi mới đã được xếp vào lượt riêng sau khi phân tích hiện tại kết thúc.",
+    "Your instruction is queued for the next safe agent boundary.": "Yêu cầu của bạn đang chờ được áp dụng ở bước tiếp theo phù hợp.",
+    "Your new response language is queued for a separate run after the current analysis.": "Ngôn ngữ trả lời mới được xếp vào lượt riêng sau khi phân tích hiện tại kết thúc.",
+    "analysis_context": "Ngữ cảnh phân tích",
+    "analysis context": "Ngữ cảnh phân tích",
+    "run started": "Đã bắt đầu lượt phân tích",
+    "memory updated": "Đã cập nhật ghi nhớ",
+    "memory read": "Đã đọc ghi nhớ",
+    "memory written": "Đã lưu ghi nhớ",
+    "Failed to fetch": "Không tải được dữ liệu",
+    "Network request failed": "Yêu cầu kết nối thất bại",
+    "open": "Đang mở",
+    "rejected": "Đã bác bỏ",
+    "supported": "Có bằng chứng hỗ trợ",
+    "unresolved": "Chưa phân định",
+    "stale": "Thuộc phạm vi cũ",
+    "user_edited": "Người dùng đã sửa",
+    "refused": "Đã từ chối",
+    "incomplete": "Chưa hoàn tất",
+    "timeout": "Quá thời gian",
+    "reviewed": "Đã rà soát",
+    "Compare design, materials and process steps of the highest-intensity products in this category with lower-intensity products on the same line; review representative failures before changing the process.": "Đối chiếu thiết kế, vật tư và quy trình giữa các mã sản phẩm có tỷ lệ lỗi cao nhất trong nhóm này với các mã ít lỗi hơn trên cùng chuyền; kiểm tra mẫu lỗi thực tế trước khi điều chỉnh quy trình.",
+    "Process Engineering with Quality Engineer and Production Team Leaders": "Kỹ thuật quy trình cùng Kỹ sư chất lượng và các Trưởng nhóm sản xuất",
+    "Break down repair cost by repair route, labour, parts and rework with Maintenance; confirm cost-recording rules with Finance; compare the same category on other lines before attributing the gap to the line.": "Phối hợp với Bảo trì bóc tách chi phí sửa chữa theo phương án xử lý, nhân công, vật tư thay thế và làm lại; rà soát quy tắc hạch toán với Tài chính và đối chiếu cùng nhóm sản phẩm giữa các chuyền.",
+    "Track average known repair cost per event on this line against other lines for the same category, with cost coverage; set a savings target only after repair-cost records are verified.": "Theo dõi chi phí sửa trung bình mỗi lỗi của chuyền này so với các chuyền khác trong cùng nhóm sản phẩm, kết hợp tỷ lệ bản ghi có chi phí; đặt mục tiêu tiết kiệm sau khi chuẩn hóa dữ liệu chi phí.",
+    "Track this category's reference intensity on each line and its ratio to the rest of the line, with Critical share; set a reduction target after actual output is confirmed.": "Theo dõi tỷ lệ lỗi của nhóm sản phẩm này trên từng chuyền so với mặt bằng chung của chuyền và tỷ lệ lỗi Nghiêm trọng; đặt mục tiêu giảm lỗi sau khi xác nhận sản lượng thực tế."
+  }
+}

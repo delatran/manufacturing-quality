@@ -1,0 +1,262 @@
+/* Codex-style processing flow. Variables come from .agent-workspace. */
+.agent-workspace .agent-flow {
+  border: 1px solid var(--agent-line);
+  border-radius: 6px;
+  background: var(--surface-raised);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+  overflow: hidden;
+}
+
+.agent-workspace .agent-flow.is-active {
+  border-color: var(--accent-signal);
+}
+
+.agent-workspace .agent-flow.is-stopped {
+  border-color: var(--agent-warning-line);
+}
+
+.agent-workspace .agent-flow-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 13px;
+  border-bottom: 1px solid var(--agent-line);
+  background: var(--surface-subtle);
+}
+
+.agent-workspace .agent-flow-title {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--agent-ink);
+}
+
+.agent-workspace .agent-flow.is-stopped .agent-flow-title {
+  color: var(--agent-warning);
+}
+
+.agent-workspace .agent-flow-meta {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--agent-muted);
+  font-size: 11.5px;
+}
+
+.agent-workspace .agent-flow-empty {
+  margin: 0;
+  padding: 11px 13px;
+}
+
+.agent-workspace .agent-flow-steps {
+  margin: 0;
+  padding: 7px 0;
+  list-style: none;
+}
+
+.agent-workspace .flow-step {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  align-items: start;
+  padding: 5px 13px 5px 7px;
+}
+
+.agent-workspace .flow-bullet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 20px;
+  color: var(--agent-muted);
+}
+
+.agent-workspace .flow-step.is-answer > .flow-bullet,
+.agent-workspace .flow-step.is-call.status-completed > .flow-bullet {
+  color: var(--agent-accent);
+}
+
+.agent-workspace .flow-step.is-call.status-failed > .flow-bullet,
+.agent-workspace .flow-step.is-failure > .flow-bullet,
+.agent-workspace .flow-step.is-note.tone-warn > .flow-bullet {
+  color: var(--agent-danger);
+}
+
+.agent-workspace .flow-body {
+  min-width: 0;
+}
+
+.agent-workspace .flow-headline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 9px;
+  align-items: baseline;
+  margin: 0;
+  cursor: default;
+  list-style: none;
+}
+
+.agent-workspace .flow-kind {
+  font-weight: 700;
+  color: var(--agent-ink);
+}
+
+.agent-workspace .flow-name {
+  padding: 1px 5px;
+  border: 1px solid var(--agent-line);
+  border-radius: 4px;
+  background: var(--surface-canvas);
+  font-weight: 700;
+  color: var(--agent-accent);
+  word-break: break-all;
+}
+
+.agent-workspace .flow-state {
+  font-size: 11px;
+  text-transform: lowercase;
+  color: var(--agent-muted);
+}
+
+.agent-workspace .flow-step.status-completed .flow-state {
+  color: var(--agent-accent);
+}
+
+.agent-workspace .flow-step.status-failed .flow-state {
+  color: var(--agent-danger);
+}
+
+.agent-workspace .flow-headline small {
+  font-size: 11px;
+  color: var(--agent-muted);
+}
+
+.agent-workspace .flow-chevron {
+  margin-inline-start: auto;
+  color: var(--agent-muted);
+  transition: transform var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.agent-workspace details[open] > summary .flow-chevron {
+  transform: rotate(180deg);
+}
+
+.agent-workspace .flow-dim {
+  margin: 2px 0 0;
+  color: var(--agent-muted);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.agent-workspace .flow-thoughts {
+  display: grid;
+  gap: 8px;
+  margin-top: 5px;
+  padding-inline-start: 10px;
+  border-inline-start: 2px solid var(--agent-line);
+}
+
+.agent-workspace .flow-thought strong {
+  display: block;
+  color: var(--agent-ink);
+  overflow-wrap: anywhere;
+}
+
+.agent-workspace .flow-thought p {
+  margin: 1px 0 0;
+  color: var(--agent-muted);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.agent-workspace .flow-command {
+  margin: 5px 0 0;
+  padding: 7px 9px;
+  max-height: 220px;
+  border: 1px solid var(--agent-line);
+  border-radius: 5px;
+  background: var(--surface-canvas);
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 11.5px;
+  color: var(--agent-ink);
+}
+
+.agent-workspace .flow-command.is-streaming::after {
+  content: '▌';
+  color: var(--accent-signal);
+}
+
+.agent-workspace .flow-outcome {
+  display: flex;
+  gap: 6px;
+  margin: 4px 0 0;
+  color: var(--agent-muted);
+  word-break: break-word;
+}
+
+.agent-workspace .flow-outcome > span:first-child {
+  color: var(--accent-signal);
+}
+
+.agent-workspace .flow-receipt > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 11.5px;
+  color: var(--agent-muted);
+  cursor: pointer;
+  list-style: none;
+}
+
+.agent-workspace .flow-receipt > summary::-webkit-details-marker {
+  display: none;
+}
+
+.agent-workspace .flow-receipt > summary:focus-visible {
+  outline: 2px solid var(--accent-signal);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+.agent-workspace .flow-receipt pre {
+  margin: 5px 0 0;
+  padding: 7px 9px;
+  max-height: 260px;
+  border: 1px solid var(--agent-line);
+  border-radius: 5px;
+  background: var(--surface-canvas);
+  overflow: auto;
+  font-size: 11px;
+  color: var(--agent-muted);
+}
+
+.agent-workspace .flow-identity {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 11px;
+  margin: 4px 0 0;
+  font-size: 10.5px;
+  color: var(--text-disabled);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-workspace .flow-chevron {
+    transition: none;
+  }
+
+  .agent-workspace .flow-command.is-streaming::after {
+    content: '';
+  }
+}
+
+.agent-workspace .agent-header-controls {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  align-items: center;
+}

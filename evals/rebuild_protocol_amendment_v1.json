@@ -1,0 +1,8 @@
+{
+  "amended_at_utc": "2026-10-16T15:21:12.475151+00:00",
+  "before_protocol_sha256": "51e6ded7b130d67aa5ecba9cc13aaf284305b53013cce10f8717c3734cade931",
+  "after_protocol_sha256": "f1b7109bcb07b11ee6aaa9a013c18ef3bf0b96a761f4361b397ae6a7e9078a76",
+  "previous_oracle_sha256": "e14e9b55217acb3fa0368522d48e3248b56571a0def9313d1eb44c1628c7683f",
+  "corrected_oracle_sha256": "c6cce85ed7be987f1d797ef8e08438810fc8d855b82e896ac9940b50f0f1006c",
+  "reason": "Pre-dispatch harness correction: Windows text write used CRLF while expected byte digest used LF. No paid request or scored outcome occurred before this correction. Cases, thresholds and rubric are unchanged."
+}

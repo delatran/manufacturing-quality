@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "status": "Passed",
+  "scope": "Offline addendum preparation only; actual VH01 task remains Not run",
+  "observed_at_utc": "2026-10-16T19:21:22.789851+00:00",
+  "protocol_path": "evals/rebuild_bilingual_handover_protocol_v1.json",
+  "protocol_sha256": "e63fb2cb48483ea720ab45988be92457cf1f678a564cd841a08434e17075ef24",
+  "entrypoint_path": "evals/rebuild_bilingual_handover.py",
+  "entrypoint_sha256": "74c9d9f9116d233548d3bdf676486310e1fc869e75d3dbdec54fb4a8f88e5882",
+  "shared_evaluator_manifest": {
+    "scripts/run_rebuild_eval.py": "0bac7c4a6f70d1222feebba4f9b778e90b0d927d272007bf029ea1d8df444f26",
+    "scripts/eval_browser_observer.py": "292d8165bf83253c182a88654d81242f7712e05844537c538fc1ae065d09f836",
+    "evals/rebuild_bilingual_handover.py": "74c9d9f9116d233548d3bdf676486310e1fc869e75d3dbdec54fb4a8f88e5882"
+  },
+  "main_seal_path": "evals/rebuild_post_v5_seal.json",
+  "main_seal_sha256": "4dd2e728cc43481e2bb837e4ac651633dd3c3281096434fe9eef116e316b0325",
+  "main_status": "Failed",
+  "offline_checks": {
+    "frozen_protocol_source_oracle_and_shared_evaluator": "Passed",
+    "sealed_main_original_hash": "Passed",
+    "run_without_live_denied_before_app_import": "Passed",
+    "openai_and_app_not_imported": "Passed",
+    "no_suite_created": "Passed",
+    "task_ledger_unchanged": "Passed",
+    "normal_full_import_mypy_one_module": "Passed",
+    "ruff_lint_and_format": "Passed"
+  },
+  "ledger_sha256_before": "3e0a61da9ede61d7b8bd93b18c63af375bbc61555a0f7924034300c2209fa147",
+  "ledger_sha256_after": "3e0a61da9ede61d7b8bd93b18c63af375bbc61555a0f7924034300c2209fa147",
+  "model_dispatches": 0,
+  "spend_usd": 0,
+  "paid_release_status": "Not run",
+  "command_after_separate_release": ".venv/Scripts/python.exe evals/rebuild_bilingual_handover.py run --live --suite-id bilingual-vi-v1 --main-suite post-v5",
+  "source_binding_note": "The source is bound by the separate actual dispatch receipt after fresh source gates and explicit coordinator release. This preparation is not a current product-quality or same-source bilingual parity claim. The main Failed outcomes remain unchanged."
+}

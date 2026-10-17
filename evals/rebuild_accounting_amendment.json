@@ -1,0 +1,14 @@
+{
+  "phase": "before_any_paid_dispatch",
+  "protocol_sha256_unchanged": "a45c5b720da94f7f2cf4c9c6a0e4d5a46a97e71aa1a731dcfe8f57aa9ed4a4d5",
+  "change": "Distinguish exact provider-usage token pricing from conservative accounting when cache detail fields are unavailable.",
+  "reason": "The repaired transport preserves missing cache fields as null and supplies an upper bound from observed total input/output tokens. Missing cache detail does not mean the entire generation's usage is unresolved.",
+  "rules": [
+    "Exact token price remains null when cache-read or cache-write details are unavailable.",
+    "Per-response conservative upper bounds count toward the suite and task limits.",
+    "A turn can release its reservation only when every started generation has terminal observed total usage and a safe cost bound.",
+    "A generation with missing total usage keeps its reservation and stops further dispatch, including a later suite invocation.",
+    "Cached tokens remain a subset of input tokens and reasoning tokens a subset of output tokens; unavailable telemetry is never replaced with zero."
+  ],
+  "effect": "Accounting implementation only. Frozen task wording, expected outcomes, rubric, Luna medium configuration and USD 5/USD 20 limits remain unchanged."
+}

@@ -1,0 +1,1 @@
+"""Prompt-driven analyst workspace."""

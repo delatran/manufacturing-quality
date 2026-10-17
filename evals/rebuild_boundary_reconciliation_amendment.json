@@ -1,0 +1,36 @@
+{
+  "recorded_at_utc": "2026-10-16T17:06:05.449355+00:00",
+  "change_kind": "evaluator_read_only_accounting_instrumentation_before_post_v3",
+  "harness_sha256": "b051ef520feb3597a0f16912f62b768ca662f66d9b98d25f5af70128b97a40d1",
+  "protocol_sha256": "a45c5b720da94f7f2cf4c9c6a0e4d5a46a97e71aa1a731dcfe8f57aa9ed4a4d5",
+  "oracle_sha256": "c6cce85ed7be987f1d797ef8e08438810fc8d855b82e896ac9940b50f0f1006c",
+  "purpose": "Resolve late terminal usage at the completed application-turn boundary without resubmitting the failed turn. Ordinary scored failures remain failed, with dependent follow-ups Not run; fully accounted independent later cases may run on fresh sessions.",
+  "bounds": {
+    "same_known_response_ids_only": true,
+    "method": "responses.retrieve only",
+    "new_generation_requests": 0,
+    "max_reconciliation_seconds": 30,
+    "must_fit_remaining_frozen_outer_wait_seconds": 480,
+    "api_request_timeout_seconds": 8,
+    "api_retries": 0,
+    "poll_interval_seconds": 5
+  },
+  "stop_rule": "Unresolved usage, provider stop in error or incomplete_details, source drift, and budget holds still stop subsequent generation. Missing cache details stay null and use conservative bounds.",
+  "unchanged": [
+    "Frozen prompts and requirements",
+    "Independent expected values",
+    "Scoring rubric",
+    "Application240second deadline",
+    "Outer480second deadline",
+    "Luna medium",
+    "Budget task20/suite5/perturn0.30",
+    "V1 and v2 recorded outcomes"
+  ],
+  "offline_probe": {
+    "path": ".runtime/rebuild-20261016/reconciliation-probe/receipt.json",
+    "sha256": "559028fc81ebd9a3b2f999bbbd8ea88599406dfa1d51bbd817331ddf4eaf6ce5",
+    "checks_passed": 18,
+    "model_generations": 0,
+    "network_requests": 0
+  }
+}

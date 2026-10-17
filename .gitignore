@@ -1,0 +1,49 @@
+# Local environments and dependencies
+.venv/
+venv/
+backend/.venv/
+frontend/node_modules/
+frontend/dist/
+*.tsbuildinfo
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Runtime and local browser artifacts
+.env
+.env.*
+!.env.example
+*.log
+*.pid
+test-results/
+playwright-report/
+artifacts/
+.runtime/
+/work/
+
+# Historical local evaluation output; retain protocols, oracles and fixtures.
+/evals/rebuild_results_*.json
+/evals/rebuild_independent_api*.json
+/evals/rebuild_independent_*freeze_run.json
+/evals/rebuild_independent_run.json
+/evals/rebuild_post_v*.json
+/evals/rebuild_preflight.json
+/evals/rebuild_deterministic_results.json
+/evals/reviewed_results.json
+
+# Local documentation, verification receipts and screenshots
+/docs/
+
+# The source API must never become a local application input
+defect_records.json
+mock-api/
+
+# OS/editor state
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

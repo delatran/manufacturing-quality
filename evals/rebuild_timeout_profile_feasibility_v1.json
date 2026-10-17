@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-16T23:48:15.557197+00:00",
+  "scope": "Prospective configuration feasibility and sealed R05 timing diagnosis only; no app/provider construction, provider GET or generation.",
+  "historical_attempt": {
+    "suite_id": "post-v8",
+    "application_seconds": 240,
+    "seal": "evals/rebuild_post_v8_seal.json",
+    "seal_sha256": "507b547d43723de69795fe1270d582f8b336064f35f645dfffd57b7d56df2ecb",
+    "status": "Failed",
+    "unchanged": true
+  },
+  "prospective_decision": {
+    "coordinator_selected_application_seconds": 360,
+    "selection_origin": "Root explicit prospective decision after read-only feasibility; future post-v9/V10 and later separate VI handover only.",
+    "paid_generation_released": false,
+    "source_integration_and_gates": "Pending",
+    "same_frozen_cases": 8,
+    "same_frozen_prompts": 12,
+    "same_frozen_criteria": 39,
+    "protocol_sha256": "a45c5b720da94f7f2cf4c9c6a0e4d5a46a97e71aa1a731dcfe8f57aa9ed4a4d5",
+    "oracle_sha256": "c6cce85ed7be987f1d797ef8e08438810fc8d855b82e896ac9940b50f0f1006c",
+    "model": "gpt-6-luna",
+    "effort": "medium",
+    "max_output_tokens": 12000,
+    "qa_max_retries": 2,
+    "max_sdk_turns": 30,
+    "max_tool_calls": 32,
+    "outer_harness_seconds": 480,
+    "per_turn_usd": 0.3,
+    "suite_usd": 5,
+    "task_usd": 20
+  },
+  "observed_settings_probe": {
+    "method": "Settings.from_env(root,environ=dict(os.environ)|{AGENT_RUN_TIMEOUT_SECONDS: value}) followed by the existing shared runner overrides and validate(). Only selected nonsecret fields were printed. No persistent process environment or file was changed.",
+    "configuration_source_at_probe_sha256": "975785b8034ce58a98830a2a95a7e669b788acead15692950951815eada25fd3",
+    "configuration_source_archived": ".runtime/rebuild-20261016/suites/post-v8/executed-source/analyst/config.py",
+    "requested_and_observed_application_seconds": [
+      {
+        "requested": 240,
+        "observed": 240.0
+      },
+      {
+        "requested": 360,
+        "observed": 360.0
+      }
+    ],
+    "both_preserved_model_and_caps": true,
+    "app_or_provider_modules_imported": [],
+    "app_constructed": false,
+    "provider_constructed": false,
+    "provider_generation_requests": 0,
+    "network_probe": "Not run; no app/provider was constructed.",
+    "process_environment_unchanged": true
+  },
+  "unchanged_shared_runner_support": {
+    "settings_path": "analyst/config.py:125-214 accepts explicit environ mapping and AGENT_RUN_TIMEOUT_SECONDS, validated finite/positive at250.",
+    "inheritance": "scripts/run_rebuild_eval.py:962 Settings.from_env then replace() never overwrites run_timeout_seconds.",
+    "actual_recording": "scripts/run_rebuild_eval.py:1056 records actual resolved application_run_timeout_seconds; protocol outer wait480 is separate at1221.",
+    "existing_expected_timeout_assertion": false,
+    "required_new_predispatch_guard": "Assert resolved Settings.run_timeout_seconds==360 and protocol.resource_limits.task_timeout_seconds==480 before any app/provider generation. Explicitly set AGENT_RUN_TIMEOUT_SECONDS=360 in the released child process environment, because .env/environment values override a changed default.",
+    "configuration_files_to_align_by_root_only": [
+      "analyst/config.py default",
+      "sample environment timeout"
+    ],
+    "owner_env_to_change": false
+  },
+  "prospective_declarations": {
+    "fresh_main_preparation": "$.planned_profile_and_limits.application_seconds = 360",
+    "fresh_main_dispatch": "$.planned_profile_and_limits.application_seconds = 360 plus explicit new-latency-condition disclosure",
+    "actual_main_result": "$.runtime.application_run_timeout_seconds == 360 and $.runtime.harness_wait_timeout_seconds == 480",
+    "actual_started_event": "run_started.data.limits.seconds == 360",
+    "new_VI_schema1_preparation": "Bind current wrapper/helper, final main seal/source, explicit selected application360 profile; preserve all historical preparations.",
+    "actual_VI_result": "$.runtime.application_run_timeout_seconds == 360",
+    "final_delivery_manifest": "$.runtime.run_timeout_seconds = 360, matching the actual sealed VH01 result.",
+    "protocol_or_oracle_modification_needed": false,
+    "shared_harness_or_wrapper_modification_needed": false,
+    "historical_240_results_to_reclassify": false
+  },
+  "normal_delivery_helper_compatibility": {
+    "basis": "Current helper source inspection only; no real360 delivery launch or acceptance occurred in this investigation.",
+    "delivery_bindings": "delivery_bindings.py425 compares actual sealed VH01 application_run_timeout_seconds with explicit manifest.runtime.run_timeout_seconds (default240 only when omitted).",
+    "stage_delivery": "stage_delivery.py278 validates finite positive explicit timeout; stage proof and launch/env/readback preserve and compare the same value.",
+    "existing_parameterized_synthetic_source": "verify_helpers.py731-742 contains a positive480-timeout synthetic staging example; that source example was inspected, not executed by this probe.",
+    "helper_code_change_required_for360": false,
+    "future_actual_checks_required": [
+      "Fresh final-source no-model profile/config preflight360 before any released model run.",
+      "Actual main and separately released VH01 raw runtime profile and event values.",
+      "Final delivery manifest bound to actual VH01 profile; actual normal launch/config readback360."
+    ]
+  },
+  "tradeoffs": [
+    "A 360-second application deadline adds up to120seconds of allowed waiting per turn versus historical240. It is an explicit new latency condition, not a waived success requirement.",
+    "Outer480 gives nominal120seconds for existing cancellation and bounded same-ID accounting/readback. This arithmetic does not prove a worst-case delivery guarantee.",
+    "Output12000, SDK30, tools32, QA2, per-turn0.30/suite5/task20 caps remain unchanged; more elapsed allowance does not authorize unbounded retries or new cases.",
+    "Late final QA in sealed R05 would have had time to finish in this observed trajectory, but successful delivery still requires unchanged state/hash/CAS/provenance and verified artifact finalization. A new stochastic run may fail differently.",
+    "No controlled latency or model-quality improvement can be claimed from this development change."
+  ],
+  "R05_elapsed_diagnostics": {
+    "path": "evals/rebuild_post_v8_R05_timing_diagnostics.json",
+    "sha256": "f2979ee6d994c91bda373783da6b32252d910978e5177a5bdc948a3e5e4d7fd1",
+    "runtime_event_span_seconds": 240.643154,
+    "host_model_windows_seconds": 206.416449,
+    "host_tool_windows_seconds": 13.900245,
+    "unpartitioned_event_gaps_seconds": 20.32646,
+    "known_transport_elapsed_sum_seconds": 189.628,
+    "last_transport_elapsed_seconds": null,
+    "last_QA_provider_completed_after_nominal_deadline_seconds": 1.699141025543213,
+    "late_QA_verified": true,
+    "late_QA_applied": false,
+    "max_observed_output_tokens": 1770,
+    "max_observed_input_tokens": 48039,
+    "queue_or_network_cause": "Unknown"
+  },
+  "observed_source_files": {
+    "scripts/run_rebuild_eval.py": "0bac7c4a6f70d1222feebba4f9b778e90b0d927d272007bf029ea1d8df444f26",
+    "evals/rebuild_bilingual_handover.py": "c0d5bf8b9479798ba47ea1511cfd7813c4074e7c4fedfdb7866c6b23adb64461",
+    ".runtime/rebuild-20261016/final-delivery/delivery_bindings.py": "b9da6add636824622fcd132c6ee79e6eccea5a2f76f5d250001ce9292b3e12fa",
+    ".runtime/rebuild-20261016/final-delivery/stage_delivery.py": "99661a614635033249a92bcf3de210f381b289c1122d3e7c7ed7e011e7e61358",
+    ".runtime/rebuild-20261016/final-delivery/verify_helpers.py": "f1c782a87951927ee3b3c3afb1a3370814464e193bc33ce2b2832e4f68ee2461"
+  },
+  "task_ledger_at_read_only_inspection": {
+    "sha256": "5719ed64482cdb7f641874cba3490d6542a41528abe1de4663e1f0be48d7608d",
+    "unique_responses": 347,
+    "exact_token_price_estimate_usd": "0.600309880",
+    "unresolved_reserved_usd": 0
+  }
+}

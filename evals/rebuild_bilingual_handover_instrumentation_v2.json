@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "evaluator_revision": "bilingual-handover-instrumentation-v2",
+  "prepared_at_utc": "2026-10-16T21:11:35.055434+00:00",
+  "status": "Passed",
+  "scope": "Authorized identity-only EXPECTED_SHARED observer digest amendment. No task, rubric, model, budget, deadline or execution-flow change.",
+  "authorization": "Coordinator explicitly authorized only the pinned instrumentation hash amendment after exact reviewed observer integration; no paid generation release.",
+  "entrypoint": "evals/rebuild_bilingual_handover.py",
+  "entrypoint_before": {
+    "sha256": "74c9d9f9116d233548d3bdf676486310e1fc869e75d3dbdec54fb4a8f88e5882",
+    "immutable_copy": ".runtime/rebuild-20261016/instrumentation-before-v8/rebuild_bilingual_handover.py",
+    "prereview": ".runtime/rebuild-20261016/instrumentation-before-v8/post-v5-vh01-entrypoint-review.json",
+    "prereview_sha256": "6092db5b57873e1dbe2723defd586b6786d1a9325e2f4e34824f4edb47544e06",
+    "original_prereview_applies_only_to_old_bytes": true
+  },
+  "entrypoint_after": {
+    "sha256": "c0d5bf8b9479798ba47ea1511cfd7813c4074e7c4fedfdb7866c6b23adb64461",
+    "immutable_copy": ".runtime/rebuild-20261016/instrumentation-v2/rebuild_bilingual_handover.py",
+    "new_independent_prereview_status": "Not run"
+  },
+  "byte_diff_proof": {
+    "status": "Passed",
+    "replacement_count": 1,
+    "old_file_size_bytes": 6136,
+    "new_file_size_bytes": 6136,
+    "reverse_replacement_exactly_reproduces_old_bytes": true,
+    "only_field": "EXPECTED_SHARED[scripts/eval_browser_observer.py]",
+    "old_value": "292d8165bf83253c182a88654d81242f7712e05844537c538fc1ae065d09f836",
+    "new_value": "b3bf400da081c39502dce68e670f8d9475b9b0c8fdb4fe683ffce5bfc57b0e39"
+  },
+  "unchanged_shared_harness": {
+    "path": "scripts/run_rebuild_eval.py",
+    "sha256": "0bac7c4a6f70d1222feebba4f9b778e90b0d927d272007bf029ea1d8df444f26"
+  },
+  "reviewed_observer_identity": {
+    "path": "scripts/eval_browser_observer.py",
+    "sha256": "b3bf400da081c39502dce68e670f8d9475b9b0c8fdb4fe683ffce5bfc57b0e39",
+    "root_integrated": true,
+    "live_v8_binding_status": "Not run; pending exact integrated runtime and combined gates"
+  },
+  "unchanged_addendum_protocol": {
+    "path": "evals/rebuild_bilingual_handover_protocol_v1.json",
+    "sha256": "e63fb2cb48483ea720ab45988be92457cf1f678a564cd841a08434e17075ef24",
+    "question_criteria_runtime_caps_unchanged": true
+  },
+  "static_checks": {
+    "status": "Passed",
+    "path": ".runtime/rebuild-20261016/instrumentation-v2/static-observed-results.json",
+    "sha256": "0ec1d58cf5dc0450513066dc279700adc67eebb43865b20a1c4b4909f2e499f8",
+    "commands": [
+      ".venv/Scripts/python.exe -m mypy evals/rebuild_bilingual_handover.py",
+      ".venv/Scripts/python.exe -m ruff check evals/rebuild_bilingual_handover.py",
+      ".venv/Scripts/python.exe -m ruff format --check evals/rebuild_bilingual_handover.py",
+      ".venv/Scripts/python.exe evals/rebuild_bilingual_handover.py validate"
+    ]
+  },
+  "offline_guard": {
+    "status": "Passed",
+    "command": ".venv/Scripts/python.exe .runtime/rebuild-20261016/instrumentation-v2/offline_guard.py",
+    "source": ".runtime/rebuild-20261016/instrumentation-v2/offline_guard.py",
+    "source_sha256": "eda56f8eff7fca99c0a9279d9a711bf2dd56428d195671d4451bdf4f5932a547",
+    "receipt": ".runtime/rebuild-20261016/instrumentation-v2/offline-guard.receipt.json",
+    "receipt_sha256": "428f80fd342786e8d92ce6ca37e7688103a5f35d5a91b5fdd3eae8262ee6c2f4",
+    "missing_live_denied_before_application_or_provider_import": true,
+    "unfinished_postmortem_main_refused": true,
+    "application_provider_import_attempts": 0,
+    "provider_requests": 0,
+    "external_network_attempts": 0,
+    "allowed_windows_asyncio_selfpipe_connections": 1,
+    "new_suite_created": false,
+    "ledger_unchanged": true
+  },
+  "first_offline_probe": {
+    "status": "Failed",
+    "reason": "Offline guard blocked the Windows asyncio standard-library loopback self-pipe before the no-live guard could run. This was evaluator instrumentation, not an application/provider failure.",
+    "source": ".runtime/rebuild-20261016/instrumentation-v2/offline_guard-v1-overblocked-selfpipe.py",
+    "source_sha256": "6592e1ea96558b286eefa30e2d55c0834b097921cf4a4cafa9cefa49a6def927",
+    "tool_chunk_id": "06f3d3",
+    "exit_code": 1,
+    "repair": "Guard permits only loopback socket.connect with an actual standard-library socketpair stack; application/provider imports and all external network attempts remain denied."
+  },
+  "task_accounting": {
+    "unique_terminal_responses": 223,
+    "token_price_estimate_usd": 0.420201705,
+    "unresolved_reserved_usd": 0,
+    "ledger_sha256": "db76b6750eefd431a2cba27b4a899dc8afba2e9c9f605aa434ade7e2088f3266"
+  },
+  "main_post_v7_source_and_gate_binding": {
+    "status": "Not run",
+    "pending": true
+  },
+  "actual_VH01_status": "Not run",
+  "paid_generation_released": false,
+  "limitations": [
+    "Method-only validation does not establish actual Vietnamese brief/export quality.",
+    "Old74c9 bytes and6092 prereview remain historical evidence; they are not silently relabeled.",
+    "Main8case/12turn protocol and all previous raw outcomes are unchanged.",
+    "Future paid main/VH01 invocations require separate explicit coordinator release after exact source gates."
+  ]
+}

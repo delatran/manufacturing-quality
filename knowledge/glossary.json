@@ -1,0 +1,25 @@
+{
+  "version": "glossary-v1",
+  "terms": {
+    "defect_event": {"en": "defect event", "vi": "sự kiện lỗi"},
+    "repair_cost": {"en": "repair cost", "vi": "chi phí sửa chữa"},
+    "known_repair_cost": {"en": "observed valid repair cost", "vi": "chi phí sửa chữa hợp lệ đã ghi nhận"},
+    "coverage": {"en": "data coverage", "vi": "độ phủ dữ liệu"},
+    "cost_coverage": {"en": "cost coverage", "vi": "độ phủ chi phí"},
+    "denominator": {"en": "denominator", "vi": "mẫu số"},
+    "scenario": {"en": "scenario", "vi": "kịch bản giả định"},
+    "canonical_policy": {"en": "canonical policy", "vi": "quy tắc chuẩn"},
+    "evidence": {"en": "evidence", "vi": "bằng chứng"},
+    "reference_output": {"en": "reference output", "vi": "sản lượng tham chiếu"},
+    "reference_intensity": {"en": "defect events per 1,000 output units", "vi": "sự kiện lỗi trên 1.000 đơn vị sản lượng"},
+    "local_currency": {"en": "local currency", "vi": "đơn vị tiền địa phương"},
+    "proposed_owner": {"en": "proposed owner role", "vi": "vai trò phụ trách đề xuất"},
+    "investigation": {"en": "investigation", "vi": "hồ sơ điều tra"},
+    "handoff_brief": {"en": "handoff brief", "vi": "brief bàn giao"},
+    "action_card": {"en": "action card", "vi": "phiếu hành động"},
+    "hypothesis": {"en": "hypothesis", "vi": "giả thuyết"},
+    "historical_candidate": {"en": "historical anomaly candidate", "vi": "dấu hiệu bất thường trong dữ liệu lịch sử"},
+    "dataset_version": {"en": "dataset version", "vi": "phiên bản dữ liệu"},
+    "policy_version": {"en": "policy version", "vi": "phiên bản quy tắc"}
+  }
+}

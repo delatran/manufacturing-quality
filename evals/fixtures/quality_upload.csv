@@ -1,0 +1,8 @@
+event_id,event_date,production_line,severity,repair_cost
+A1,2024-01-05,Line-X,Critical,120
+A2,2024-01-12,Line-X,Minor,30
+A3,2024-02-02,Line-Y,Moderate,50
+A3,2024-02-02,Line-Y,Moderate,50
+A4,2024-02-08,Line-Y,Critical,
+A5,2024-02-11,Line-X,Critical,200
+A6,2024-02-20,Line-Y,Minor,0

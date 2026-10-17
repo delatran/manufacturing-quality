@@ -1,0 +1,91 @@
+{
+  "schema": "evaluation-phase-order-amendment-v1",
+  "candidate_arm": "final_v8",
+  "recorded_at_utc": "2026-10-16T08:17:17.487487+00:00",
+  "status": "frozen_before_candidate_dispatch",
+  "authorized_by": "Root integration owner approved this exact phase order and gate after V7 A review and before any V8 model outcome.",
+  "protocol_file": "evals/quality_operations_cases.json",
+  "protocol_sha256": "14778ae30bb4f138247f2db9c0208314e4a369b19cec4427f69c72d307a6b40d",
+  "questions_criteria_fixtures_expected_values_unchanged": true,
+  "reason": "Prioritize the two V7 A strict failures Q05 and Q06. Execute the remaining fifteen cases only if both pass the predeclared independent strict and application gate. The selection is informed by V7 outcomes and is not a representative or unseen holdout.",
+  "phases": [
+    {
+      "phase": "final_v8_a",
+      "case_ids": [
+        "Q05",
+        "Q06"
+      ],
+      "planned_case_count": 2,
+      "planned_turn_count": 2,
+      "case_order": "Original protocol relative order"
+    },
+    {
+      "phase": "final_v8_b",
+      "case_ids": [
+        "Q01",
+        "Q02",
+        "Q03",
+        "Q04",
+        "Q07",
+        "Q08",
+        "Q09",
+        "Q10",
+        "Q11",
+        "Q12",
+        "Q13",
+        "Q14",
+        "Q15",
+        "Q16",
+        "Q17"
+      ],
+      "planned_case_count": 15,
+      "planned_turn_count": 16,
+      "case_order": "Original protocol relative order"
+    }
+  ],
+  "dispatch_gate": {
+    "phase_a": "A fresh V8 source freeze, executor hash, configuration manifest, required table/scenario implementation checks and reviews, frontend build and explicit root execution gate must exist before any V8 model request.",
+    "phase_b": "Both phase-A cases Q05 and Q06 must have independent strict_pass=true and application_complete=true, then the root integration owner gives phase-B dispatch GO.",
+    "phase_a_failure": "Preserve every failed/incomplete case, actual turn, retry and observed usage. Do not dispatch phase B under this gate. Mark its fifteen cases unrun. A failed case is not silently replayed.",
+    "source_change_after_phase_a": "Any application, prompt, executor or configuration change requires a new candidate revision. Results from different identities cannot be combined into final_v8.",
+    "interruption": "Provider, budget or owner stops preserve actual attempts and planned/observed/unrun turns. An undispatched turn is not an actual run."
+  },
+  "identity_requirements": [
+    "Both phases must reference the same frozen application source inventory, executor, protocol, model, reasoning effort and evaluation configuration.",
+    "Each input object must equal the corresponding frozen protocol input exactly; no expected answers, evaluator labels or grading rubric enter model input.",
+    "Use fresh isolated sessions per case; Q09 keeps its own session across both turns. Record isolated Operations state and per-case source-status restoration.",
+    "Request and verify only gpt-6-luna at medium effort. Keep hosted file search disabled and async tools disabled for this fixed evaluation.",
+    "Continue the existing central USD 5 per-run and USD 10 development budget without resetting holds or creating a parallel budget. Only luna_engine dispatches model requests."
+  ],
+  "reporting": {
+    "phase_a_only": "Report two attempted cases and two planned turns with actual observed counts. Do not call phase A a completed seventeen-case suite. Q01 original-baseline comparison is absent from phase A.",
+    "complete_candidate": "A seventeen-case result requires all seventeen reviewed cases across both phases, eighteen observed planned turns and matching identities. Otherwise list unrun or incomplete cases explicitly.",
+    "metrics": "Keep strict task success, application completion and end-to-end completion separate. Count Q09 once as a case and its distinct runs once in telemetry. Do not pool success rates across source revisions.",
+    "comparison_limit": "This is a disclosed development regression suite. Only Q01 has an observed original baseline; no general model improvement or unseen-question performance claim is supported."
+  },
+  "source_identity_binding": "Pending the not-yet-dispatched V8 source freeze. This plan authorizes no model request by itself. Its SHA-256 must be recorded in the V8 source freeze and execution manifests; source/executor/configuration remain identical across both phases.",
+  "preserved_prior_revision": {
+    "candidate_arm": "final_v7",
+    "observed_cases": 6,
+    "observed_runs": 7,
+    "strict_pass_cases": 4,
+    "application_complete_cases": 5,
+    "end_to_end_complete_cases": 4,
+    "phase_b_unrun_case_ids": [
+      "Q01",
+      "Q02",
+      "Q03",
+      "Q07",
+      "Q08",
+      "Q10",
+      "Q12",
+      "Q13",
+      "Q15",
+      "Q16",
+      "Q17"
+    ],
+    "execution_plan_sha256": "46a863193b58c4b3f9f18ab75814767a648959dbced9d179686e6c3b3a9067ad",
+    "terminal_archive_sha256": "4f6a0645483d78cf676834250020abc1e4d4a93bf52c9b604a13ec3ff3c23c26",
+    "note": "V7 phase B remains unrun. V8 observations do not replace V7 attempts or fill its unrun cases."
+  }
+}
