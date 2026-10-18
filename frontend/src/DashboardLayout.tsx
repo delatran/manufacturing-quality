@@ -66,9 +66,6 @@ export function SectionNav({
             setActive(id);
             const section = document.getElementById(id);
             section?.scrollIntoView({ block: 'start' });
-            const heading = document.getElementById(`${id}-title`);
-            heading?.setAttribute('tabindex', '-1');
-            heading?.focus({ preventScroll: true });
           }}
         >
           {items.map((item) => (

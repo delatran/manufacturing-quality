@@ -969,8 +969,8 @@
       "vi": "Không có ngày nào vượt ngưỡng tham chiếu trong góc nhìn này."
     },
     "ui.how_to_read_this_signal": {
-      "en": "How the alert threshold (11.27) is calculated & data notes",
-      "vi": "Cách tính ngưỡng cảnh báo (11,27) & lưu ý dữ liệu"
+      "en": "How the warning threshold is calculated and data notes",
+      "vi": "Cách tính ngưỡng cảnh báo và lưu ý dữ liệu"
     },
     "ui.january_stays_fixed_when_selected_months_change": {
       "en": ". The January baseline stays fixed when you change the month filter.",
@@ -1355,6 +1355,10 @@
     "ui.loading_records": {
       "en": "Loading records…",
       "vi": "Đang tải bản ghi…"
+    },
+    "ui.records_unavailable": {
+      "en": "Records could not be loaded",
+      "vi": "Chưa tải được danh sách bản ghi"
     },
     "ui.page": {
       "en": "Page",
@@ -3214,7 +3218,7 @@
     },
     "ui.trend_drivers_kicker": {
       "en": "WHAT DROVE THE CHANGE",
-      "vi": "NGUYÊN NHÂN KÉO SỐ LỖI TĂNG"
+      "vi": "ĐÓNG GÓP VÀO BIẾN ĐỘNG SỐ LỖI"
     },
     "ui.trend_drivers_title": {
       "en": "Drivers of the change from {value0} to {value1} ({value2} defects)",
@@ -3234,7 +3238,7 @@
     },
     "ui.trend_drivers_share": {
       "en": "{value0} of net change",
-      "vi": "đóng góp {value0} mức tăng"
+      "vi": "đóng góp {value0} vào mức thay đổi"
     },
     "ui.monthly_table_summary": {
       "en": "Monthly breakdown table (Defects, Critical, Rate & Repair Cost)",

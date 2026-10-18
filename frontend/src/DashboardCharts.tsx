@@ -884,7 +884,8 @@ export const AnomalyChart = memo(function AnomalyChart({ data }: { data: Dashboa
   // Geometry only: the server supplies the daily counts, the limit and the flagged days.
   // The plot stretches to its box (0-100 units on both axes); labels and flags are HTML
   // overlays placed by percentage, so their text size stays fixed at every screen width.
-  const maximum = Math.max(1, limit ?? 0, ...days.map((day) => day.count));
+  // A whole-count plot ceiling keeps fractional reference limits from duplicating count ticks.
+  const maximum = Math.ceil(Math.max(1, limit ?? 0, ...days.map((day) => day.count)));
   const x = (index: number) => (index / Math.max(1, days.length - 1)) * 100;
   const y = (count: number) => 100 - (count / maximum) * 100;
   const points = days.map((day, index) => `${x(index)},${y(day.count)}`).join(' ');
@@ -940,14 +941,18 @@ export const AnomalyChart = memo(function AnomalyChart({ data }: { data: Dashboa
           <i className="legend-swatch events" />
           {tr('ui.daily_logged_events')}
         </span>
-        <span>
-          <i className="legend-swatch reference" />
-          {tr('ui.january_reference')}
-        </span>
-        <span>
-          <i className="legend-swatch critical" />
-          {tr('ui.candidate')}
-        </span>
+        {limit != null && (
+          <>
+            <span>
+              <i className="legend-swatch reference" />
+              {tr('ui.january_reference')}
+            </span>
+            <span>
+              <i className="legend-swatch critical" />
+              {tr('ui.candidate')}
+            </span>
+          </>
+        )}
       </div>
     </div>
   );

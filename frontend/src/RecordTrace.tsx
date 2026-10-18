@@ -26,6 +26,15 @@ export default function RecordTrace({
   const [error, setError] = useState('');
   const [retry, setRetry] = useState(0);
   const panel = useRef<HTMLElement>(null);
+  const opener = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  }, [defectId]);
+  useEffect(() => {
+    return () => {
+      if (opener.current?.isConnected) opener.current.focus({ preventScroll: true });
+    };
+  }, []);
   useEffect(() => {
     panel.current?.focus();
     setTrace(undefined);

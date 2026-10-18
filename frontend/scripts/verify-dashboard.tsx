@@ -4,7 +4,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import App from '../src/App';
 import Dashboard from '../src/Dashboard';
-import { PeriodHalvesSummary } from '../src/DashboardCharts';
+import { AnomalyChart, PeriodHalvesSummary, TrendDrivers } from '../src/DashboardCharts';
 import { useDashboardLanguage } from '../src/dashboard-language';
 import { I18nProvider } from '../src/i18n';
 import type { Locale } from '../src/i18n';
@@ -487,6 +487,119 @@ assert.match(signalledVietnamese, /Người phụ trách đề xuất/);
 assert.match(signalledVietnamese, /Linh kiện có tỷ trọng lỗi nghiêm trọng cao nhất: 42,8%/);
 assert.equal(JSON.stringify(signalled), beforeSignals, 'Templates must not modify backend values');
 
+// Low-count scopes can have a fractional January limit just above one observed event.
+// Axis labels must stay distinct and readable at the narrow plot's 180px height.
+for (const locale of ['en', 'vi'] as const) {
+  const chart = structuredClone(empty);
+  chart.analysis.anomalies = {
+    ...chart.analysis.anomalies,
+    enabled: true,
+    baseline_count: 3,
+    baseline_daily_mean: 3 / 31,
+    upper_reference_limit: 1.0300307188057698,
+    daily: [0, 1, 0].map((count, index) => ({
+      date: `2024-01-0${index + 1}`,
+      count,
+      candidate: false,
+      phase: 'baseline',
+    })),
+  };
+  const anomalyMarkup = () =>
+    renderToStaticMarkup(
+      <I18nProvider initialLocale={locale} persist={false}>
+        <AnomalyChart data={chart} />
+      </I18nProvider>,
+    );
+  const beforeChart = JSON.stringify(chart);
+  const chartHtml = anomalyMarkup();
+  const axisLabels = [...chartHtml.matchAll(/class="chart-axis" style="top:([\d.]+)%">([^<]+)</g)];
+  assert.ok(axisLabels.length >= 2, 'A low-count plot retains its count axis');
+  assert.equal(
+    new Set(axisLabels.map((match) => match[2])).size,
+    axisLabels.length,
+    'Different count ticks must not round to duplicate labels',
+  );
+  const positions = axisLabels.map((match) => Number(match[1])).sort((a, b) => a - b);
+  for (let index = 1; index < positions.length; index++) {
+    assert.ok(
+      ((positions[index] - positions[index - 1]) / 100) * 180 >= 12,
+      'Count axis labels must have at least one label-height of separation on mobile',
+    );
+  }
+  assert.match(chartHtml, locale === 'vi' ? /ngưỡng 1,03/ : /limit 1\.03/);
+  assert.match(chartHtml, /class="legend-swatch reference"/);
+  assert.match(chartHtml, /class="legend-swatch critical"/);
+  assert.doesNotMatch(render(chart, locale), /threshold \(11\.27\)|ngưỡng cảnh báo \(11,27\)/);
+  assert.equal(JSON.stringify(chart), beforeChart, 'Axis geometry must preserve backend data');
+  chart.analysis.anomalies.enabled = false;
+  chart.analysis.anomalies.upper_reference_limit = null;
+  chart.analysis.anomalies.daily = chart.analysis.anomalies.daily.map((day) => ({
+    ...day,
+    count: 0,
+  }));
+  const disabledHtml = anomalyMarkup();
+  assert.doesNotMatch(
+    disabledHtml,
+    /class="chart-limit|class="legend-swatch (?:reference|critical)"/,
+  );
+  assert.doesNotMatch(disabledHtml, /Limit from January|Ngưỡng từ tháng 1/);
+  assert.doesNotMatch(disabledHtml, /NaN|Infinity|undefined/);
+  assert.doesNotMatch(render(chart, locale), /threshold \(11\.27\)|ngưỡng cảnh báo \(11,27\)/);
+}
+
+// A decline and an unchanged scope need direction-neutral driver copy in both locales.
+for (const change of [-28, 0, 28]) {
+  const movement = structuredClone(empty);
+  movement.analysis.monthly.push({ ...movement.analysis.monthly[0], month: '2024-02' });
+  const decomposition = {
+    dimension: 'defect_type',
+    baseline: {
+      scope: { ...initialFilters, end_month: '2024-01' },
+      kpis: { ...emptyMetrics, event_count: 147 },
+    },
+    comparison: {
+      scope: { ...initialFilters, start_month: '2024-02', end_month: '2024-02' },
+      kpis: { ...emptyMetrics, event_count: 147 + change },
+    },
+    event_count_change: change,
+    known_repair_cost_change: 0,
+    reference_intensity_change: null,
+    rows: [
+      {
+        name: 'Structural',
+        baseline: { ...emptyMetrics, event_count: 147 },
+        comparison: { ...emptyMetrics, event_count: 147 + change },
+        event_count_change: change,
+        critical_count_change: 0,
+        known_repair_cost_change: 0,
+        contribution_pct_of_event_change: change === 0 ? null : 100,
+        reference_intensity_change_contribution: null,
+      },
+    ],
+  };
+  movement.analysis.decomposition = {
+    defect_type: decomposition,
+    production_line: {
+      ...decomposition,
+      dimension: 'production_line',
+      rows: decomposition.rows.map((row) => ({ ...row, name: 'Line-1' })),
+    },
+  };
+  for (const locale of ['en', 'vi'] as const) {
+    const beforeMovement = JSON.stringify(movement);
+    const movementHtml = renderToStaticMarkup(
+      <I18nProvider initialLocale={locale} persist={false}>
+        <TrendDrivers data={movement} />
+      </I18nProvider>,
+    );
+    assert.ok(movementHtml.includes(`${change > 0 ? '+' : ''}${change} `));
+    assert.doesNotMatch(movementHtml, /KÉO SỐ LỖI TĂNG|mức tăng/);
+    if (change !== 0)
+      assert.match(movementHtml, locale === 'vi' ? /vào mức thay đổi/ : /of net change/);
+    assert.equal(JSON.stringify(movement), beforeMovement, 'Driver copy preserves backend data');
+  }
+}
+
 for (const locale of ['en', 'vi'] as const) {
   const half = {
     months: ['2024-01'],
@@ -551,7 +664,7 @@ for (const filename of readdirSync('src').filter((name) => /\.tsx?$/.test(name))
   }
 }
 console.log(
-  'Verified five desktop/mobile destinations, four overview KPIs, removed auxiliary panels, workbook in exports, optional Agent actions, proposed owners, reference output, scope labels, unknown costs, backend ranking and deltas, workbook scope, no technical provenance, localization, escaping and immutable data.',
+  'Verified five desktop/mobile destinations, four overview KPIs, removed auxiliary panels, workbook in exports, optional Agent actions, proposed owners, reference output, scope labels, unknown costs, backend ranking and deltas, workbook scope, no technical provenance, localization, escaping, fractional count axes, disabled screening legends, direction-neutral drivers and immutable data.',
 );
 
 if (process.argv[2]) {

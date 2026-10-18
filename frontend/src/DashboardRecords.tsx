@@ -96,7 +96,9 @@ export const Records = memo(function Records({
         <p>
           {records
             ? `${number(records.total)} ${tr(dateFilter ? 'ui.records_in_inspected_date' : 'ui.retained_events_in_this_applied_scope')}`
-            : tr('ui.loading_filtered_records')}
+            : error
+              ? tr('ui.records_unavailable')
+              : tr('ui.loading_filtered_records')}
         </p>
         <div>
           <label>

@@ -130,6 +130,7 @@ export default function Dashboard({
   const [recordsDate, setRecordsDate] = useState<string>();
   const [previousScope, setPreviousScope] = useState<Filters>();
   const [evidencePriority, setEvidencePriority] = useState<number | null>(null);
+  const filterToggle = useRef<HTMLButtonElement>(null);
   const recordsSection = useRef<HTMLElement>(null);
   const pendingRecordFilters = useRef<Filters | undefined>(undefined);
   const pendingScopeReturn = useRef<Filters | undefined>(undefined);
@@ -391,6 +392,7 @@ export default function Dashboard({
               </button>
             )}
             <button
+              ref={filterToggle}
               className="secondary-button"
               aria-expanded={filtersExpanded}
               aria-controls="dashboard-filter-form"
@@ -430,6 +432,7 @@ export default function Dashboard({
             if (!invalid && !loading && !refreshing) {
               onApply({ ...draft });
               setFiltersExpanded(false);
+              filterToggle.current?.focus({ preventScroll: true });
             }
           }}
         >
