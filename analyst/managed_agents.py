@@ -169,6 +169,7 @@ class ManagedAgentsModel(AgentModel):
         self._current_caller_input: list[dict] = []
         self._steering_lock = asyncio.Lock()
         self._accepts_live_steering = False
+        self._steering_root_turn_id: str | None = None
         self._cancel_requested = False
         self._cancel_task: asyncio.Task[None] | None = None
         self._live_inputs: list[dict] = []
@@ -229,8 +230,76 @@ class ManagedAgentsModel(AgentModel):
                 "session_id": self.session_id,
             }
 
+    def _steering_phase(self, raw: dict[str, Any]) -> dict[str, Any]:
+        """Carry an observed root turn across ordinary tool-result boundaries."""
+        kind = raw.get("type", "")
+        origin = None
+        if (
+            kind != "agent.session.turn.in_progress"
+            and raw.get("turn_id")
+            and raw["turn_id"] != self._steering_root_turn_id
+        ):
+            self._steering_root_turn_id = None
+            self._accepts_live_steering = False
+        if kind == "agent.session.turn.in_progress":
+            turn = raw.get("turn") or {}
+            # Session creation may report in_progress before its turn starts.
+            self._accepts_live_steering = (
+                not self._cancel_requested
+                and bool(self.session_id)
+                and raw.get("session_id") == self.session_id
+                and isinstance(self.turn_id, str)
+                and bool(self.turn_id)
+                and raw.get("turn_id") == self.turn_id
+                and isinstance(turn, dict)
+                and turn.get("id") == raw.get("turn_id")
+                and turn.get("session_id") == self.session_id
+                and turn.get("status") == "in_progress"
+                and turn.get("subagent_id") is None
+            )
+            self._steering_root_turn_id = self.turn_id if self._accepts_live_steering else None
+            origin = "turn_in_progress"
+        elif kind == "agent.session.in_progress":
+            session = raw.get("session") or {}
+            # A tool result resumes the same nonterminal root turn without
+            # emitting another turn.in_progress. Never infer a root at startup.
+            self._accepts_live_steering = (
+                not self._cancel_requested
+                and self._steering_root_turn_id is not None
+                and self.turn_id == self._steering_root_turn_id
+                and session.get("id") == self.session_id
+                and session.get("status") == "in_progress"
+            )
+            if not self._accepts_live_steering:
+                self._steering_root_turn_id = None
+            origin = "session_continuation"
+        elif kind == "agent.session.requires_action":
+            self._accepts_live_steering = False
+        elif kind in {
+            "agent.session.created",
+            "agent.session.idle",
+            "agent.session.failed",
+            "agent.session.turn.created",
+            "agent.session.turn.completed",
+            "agent.session.turn.failed",
+            "agent.session.turn.cancelled",
+            "error",
+        }:
+            self._accepts_live_steering = False
+            self._steering_root_turn_id = None
+        projection: dict[str, Any] = {"steering_ready": self._accepts_live_steering}
+        if self._accepts_live_steering:
+            projection.update(
+                steering_root_turn_id=self._steering_root_turn_id,
+                steering_root_turn_status="in_progress",
+                steering_readiness_source=origin,
+            )
+        return projection
+
     def _verify_session(self, session: Any) -> None:
         if self.session_id is not None and session.id != self.session_id:
+            self._accepts_live_steering = False
+            self._steering_root_turn_id = None
             raise ResponseProtocolError("Managed session identity changed")
         if session.agent.model != self.settings.model:
             raise ResponseProtocolError(
@@ -514,6 +583,8 @@ class ManagedAgentsModel(AgentModel):
                     )
                 self._verify_session(session)
             if raw.get("session_id") and raw["session_id"] != self.session_id:
+                self._accepts_live_steering = False
+                self._steering_root_turn_id = None
                 raise ResponseProtocolError("Managed event belongs to a different session")
             # Reconnected streams can buffer updates while saved items are read.
             # The durable completed item wins over any of its buffered updates.
@@ -523,37 +594,11 @@ class ManagedAgentsModel(AgentModel):
             if raw.get("turn_id"):
                 self.turn_id = raw["turn_id"]
             kind = raw.get("type", "")
-            if kind == "agent.session.turn.in_progress":
-                turn = raw.get("turn") or {}
-                # A newly created session can already report in_progress while
-                # its first turn is still queued. Only an observed running root
-                # turn establishes a native steering window.
-                self._accepts_live_steering = (
-                    not self._cancel_requested
-                    and bool(self.session_id)
-                    and raw.get("session_id") == self.session_id
-                    and isinstance(self.turn_id, str)
-                    and bool(self.turn_id)
-                    and raw.get("turn_id") == self.turn_id
-                    and isinstance(turn, dict)
-                    and turn.get("id") == raw.get("turn_id")
-                    and turn.get("session_id") == self.session_id
-                    and turn.get("status") == "in_progress"
-                    and turn.get("subagent_id") is None
-                )
-            elif kind in {
-                "agent.session.created",
-                "agent.session.requires_action",
-                "agent.session.idle",
-                "agent.session.failed",
-                "agent.session.turn.created",
-                "agent.session.turn.completed",
-                "agent.session.turn.failed",
-                "agent.session.turn.cancelled",
-            }:
-                self._accepts_live_steering = False
+            readiness = self._steering_phase(raw)
             mapped = managed_trace(event)
             if mapped:
+                if mapped[0] == "provider_phase":
+                    mapped = (mapped[0], {**mapped[1], **readiness})
                 self._remember_public_summary(mapped)
                 await self.emit(*mapped)
             if kind in {
@@ -566,6 +611,8 @@ class ManagedAgentsModel(AgentModel):
                 return True
             if kind == "agent.session.idle" and ended:
                 return True
+        self._accepts_live_steering = False
+        self._steering_root_turn_id = None
         return False
 
     @staticmethod
@@ -613,6 +660,7 @@ class ManagedAgentsModel(AgentModel):
         """
         while True:
             self._accepts_live_steering = False
+            self._steering_root_turn_id = None
             stream = await self._read_retry(lambda: self.sessions.events.stream(self.session_id))
             buffered: asyncio.Queue[Any] = asyncio.Queue()
             ended = object()
@@ -654,6 +702,7 @@ class ManagedAgentsModel(AgentModel):
                 if await self._observe(events(), finalized_items=finalized):
                     return
             except Exception as error:
+                self._steering_root_turn_id = None
                 if not self._transient_read_error(error):
                     raise
             finally:
@@ -695,6 +744,9 @@ class ManagedAgentsModel(AgentModel):
         turn = turns[0]
         if turn.session_id != self.session_id:
             raise ResponseProtocolError("Managed turn belongs to a different session")
+        if self._steering_root_turn_id not in {None, turn.id}:
+            self._accepts_live_steering = False
+            self._steering_root_turn_id = None
         self.turn_id = turn.id
         self._turn_status = turn.status
         if session.status == "requires_action":
@@ -890,6 +942,7 @@ class ManagedAgentsModel(AgentModel):
         # turn after the provider was last observed idle.
         self._cancel_requested = True
         self._accepts_live_steering = False
+        self._steering_root_turn_id = None
         if self._cancel_task is None:
             self._cancel_task = asyncio.create_task(self._cancel_after_steering())
         await asyncio.shield(self._cancel_task)
@@ -1021,6 +1074,7 @@ class ManagedAgentsModel(AgentModel):
                 raise
             except Exception as error:
                 self._accepts_live_steering = False
+                self._steering_root_turn_id = None
                 if not self.session_id:
                     raise
                 recovered = True
@@ -1034,6 +1088,7 @@ class ManagedAgentsModel(AgentModel):
                     },
                 )
             if recovered:
+                self._steering_root_turn_id = None
                 close = getattr(stream, "close", None)
                 if callable(close):
                     with suppress(Exception):

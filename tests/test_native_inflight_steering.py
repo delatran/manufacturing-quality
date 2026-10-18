@@ -17,6 +17,7 @@ from test_managed_agents import (
     Sessions,
     Stream,
     event,
+    inspect_scope,
     message,
     model_for,
     request,
@@ -123,6 +124,113 @@ def test_created_and_queued_turn_details_wait_for_same_run_boundary():
         assert len(sessions.creates) == 1
         assert lead.history[1] == {"role": "user", "content": "Detail during generation"}
         assert [kind for kind, _ in events].count("steering_submitted") == 1
+
+    asyncio.run(scenario())
+
+
+def test_native_window_reopens_for_same_root_across_multiple_tool_continuations():
+    async def scenario():
+        first_call = Node(
+            type="function_call",
+            call_id="call_first",
+            turn_id="turn_real",
+            name="inspect_scope",
+            arguments={"limit": 2},
+        )
+        second_call = Node(
+            type="function_call",
+            call_id="call_second",
+            turn_id="turn_real",
+            name="inspect_scope",
+            arguments={"limit": 3},
+        )
+        waiting_first = session(status="requires_action", actions=[first_call])
+        waiting_second = session(status="requires_action", actions=[second_call])
+
+        class ResumedStream(GatedStream):
+            def __init__(self, identity, waiting=None):
+                super().__init__()
+                self.identity, self.waiting = identity, waiting
+
+            async def __aiter__(self):
+                resumed = event("agent.session.in_progress", session=session(status="in_progress"))
+                resumed.event_id = self.identity
+                yield resumed
+                self.ready.set()
+                await self.finish.wait()
+                if self.waiting is not None:
+                    paused = event("agent.session.requires_action", session=self.waiting)
+                    paused.event_id = self.identity + "-waiting"
+                    yield paused
+                else:
+                    yield event(
+                        "agent.session.turn.completed", session_id="sess_real", turn_id="turn_real"
+                    )
+                    yield event("agent.session.idle", session=session())
+
+        resumed = [ResumedStream("resume-first", waiting_second), ResumedStream("resume-second")]
+        sessions = Sessions(
+            [waiting_first, waiting_second, session()],
+            [
+                [Node(id="fc_first", **vars(first_call))],
+                [Node(id="fc_second", **vars(second_call))],
+                [message()],
+            ],
+            [
+                Stream(
+                    [
+                        event("agent.session.created", session=session(status="in_progress")),
+                        event(
+                            "agent.session.turn.in_progress",
+                            session_id="sess_real",
+                            turn_id="turn_real",
+                            turn=Node(id="turn_real", session_id="sess_real", status="in_progress"),
+                        ),
+                        event("agent.session.requires_action", session=waiting_first),
+                    ]
+                ),
+                *resumed,
+            ],
+        )
+        model, events = model_for(sessions)
+        await request(model, tools=[inspect_scope])
+        assert not model._accepts_live_steering
+        for index, stream in enumerate(resumed):
+            call = first_call if index == 0 else second_call
+            history = model._caller_history + [
+                {"type": "function_call_output", "call_id": call.call_id, "output": str(index + 2)}
+            ]
+            running = asyncio.create_task(request(model, input=history, tools=[inspect_scope]))
+            try:
+                await asyncio.wait_for(stream.ready.wait(), 2)
+                detail = f"Detail after tool {index + 1}"
+                receipt = await model.steer(detail, instruction_id=f"resume-{index}")
+                assert receipt["mode"] == "native_inflight" and receipt["accepted"]
+                phase = next(
+                    data
+                    for kind, data in events
+                    if kind == "provider_phase" and data.get("event_id") == stream.identity
+                )
+                assert phase["provider_event"] == "agent.session.in_progress"
+                assert phase["provider_turn_status"] is None
+                assert phase["steering_ready"] is True
+                assert phase["steering_root_turn_id"] == "turn_real"
+                assert phase["steering_root_turn_status"] == "in_progress"
+                assert phase["steering_readiness_source"] == "session_continuation"
+            finally:
+                stream.finish.set()
+                await running
+            assert not model._accepts_live_steering
+        assert len(sessions.creates) == 1
+        assert (
+            sum(
+                item["events"][0]["type"] == "agent.session.input.message"
+                for item in sessions.inputs
+            )
+            == 2
+        )
+        assert sum(item.get("content") == "Detail after tool 1" for item in model.history) == 1
+        assert sum(item.get("content") == "Detail after tool 2" for item in model.history) == 1
 
     asyncio.run(scenario())
 
@@ -294,6 +402,169 @@ def test_native_window_requires_matching_running_root_turn(turn):
             )
         )
         assert await model.steer("Early detail", instruction_id="early") == {
+            "accepted": False,
+            "mode": "same_run_boundary",
+        }
+        assert not sessions.inputs and not model._live_submissions
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize(
+    "phase",
+    [
+        "agent.session.created",
+        "agent.session.idle",
+        "agent.session.failed",
+        "agent.session.turn.created",
+        "agent.session.turn.completed",
+        "agent.session.turn.failed",
+        "agent.session.turn.cancelled",
+        "error",
+        "conflicting_turn",
+        "stream_eof",
+    ],
+)
+def test_generic_progress_cannot_reuse_root_after_invalidating_phase_or_stream_gap(phase):
+    async def scenario():
+        sessions = Sessions([], [], [])
+        model, events = model_for(sessions)
+        model._session_limit_cents = 30
+        running = event(
+            "agent.session.turn.in_progress",
+            session_id="sess_real",
+            turn_id="turn_real",
+            turn=Node(id="turn_real", session_id="sess_real", status="in_progress"),
+        )
+        generic = event("agent.session.in_progress", session=session(status="in_progress"))
+        generic.event_id = "after-invalidation"
+        initial = [event("agent.session.created", session=session(status="in_progress")), running]
+        if phase == "stream_eof":
+            await model._observe(Stream(initial))
+            await model._observe(Stream([generic]))
+        else:
+            invalid = (
+                event("agent.session.turn.item.added", session_id="sess_real", turn_id="other")
+                if phase == "conflicting_turn"
+                else event(phase, session_id="sess_real", turn_id="turn_real")
+            )
+            invalid.event_id = "invalidating-phase"
+            await model._observe(Stream([*initial, invalid, generic]))
+            if not any(data.get("event_id") == generic.event_id for _, data in events):
+                await model._observe(Stream([generic]))
+        projected = next(
+            data
+            for kind, data in events
+            if kind == "provider_phase" and data.get("event_id") == generic.event_id
+        )
+        assert projected["provider_event"] == "agent.session.in_progress"
+        assert projected["steering_ready"] is False
+        assert "steering_root_turn_id" not in projected
+        assert await model.steer("After invalidation", instruction_id="closed") == {
+            "accepted": False,
+            "mode": "same_run_boundary",
+        }
+        assert not sessions.inputs and not model._live_submissions
+
+    asyncio.run(scenario())
+
+
+def test_reconnected_generic_progress_cannot_restore_unobserved_root_readiness():
+    async def scenario():
+        class ReconnectedStream(GatedStream):
+            async def __aiter__(self):
+                yield event("agent.session.in_progress", session=session(status="in_progress"))
+                await self.finish.wait()
+                yield event(
+                    "agent.session.turn.completed", session_id="sess_real", turn_id="turn_real"
+                )
+                yield event("agent.session.idle", session=session())
+
+        reconnected = ReconnectedStream()
+        sessions = Sessions(
+            [session(status="in_progress"), session()],
+            [[], [message()]],
+            [
+                Stream(
+                    [
+                        event("agent.session.created", session=session(status="in_progress")),
+                        event(
+                            "agent.session.turn.in_progress",
+                            session_id="sess_real",
+                            turn_id="turn_real",
+                            turn=Node(id="turn_real", session_id="sess_real", status="in_progress"),
+                        ),
+                        ConnectionError("Lost observer after root started"),
+                    ]
+                ),
+                reconnected,
+            ],
+        )
+        model, events = model_for(sessions)
+        observed = asyncio.Event()
+        original_emit = model.emit
+
+        async def emit(kind, data):
+            await original_emit(kind, data)
+            if (
+                kind == "provider_phase"
+                and data.get("provider_event") == "agent.session.in_progress"
+            ):
+                observed.set()
+
+        model.emit = emit
+        running = asyncio.create_task(request(model))
+        try:
+            await asyncio.wait_for(observed.wait(), 2)
+            receipt = await model.steer("During reconnection", instruction_id="reconnected")
+            assert receipt == {"accepted": False, "mode": "same_run_boundary"}
+            projected = next(
+                data
+                for kind, data in events
+                if kind == "provider_phase"
+                and data.get("provider_event") == "agent.session.in_progress"
+            )
+            assert projected["steering_ready"] is False
+            assert not sessions.inputs and not model._live_submissions
+        finally:
+            reconnected.finish.set()
+            result = await running
+        assert result.output[0].content[0].text == "Verified result"
+        assert len(sessions.creates) == 1
+        assert sum(kind == "transport_recovery" for kind, _ in events) == 1
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("nested_session", [False, True])
+def test_conflicting_session_identity_immediately_closes_native_readiness(nested_session):
+    async def scenario():
+        sessions = Sessions([], [], [])
+        model, _ = model_for(sessions)
+        model._session_limit_cents = 30
+        wrong = session(status="in_progress")
+        wrong.id = "different-session"
+        conflicting = (
+            event("agent.session.in_progress", session=wrong)
+            if nested_session
+            else event("agent.session.turn.output_text.delta", session_id=wrong.id, delta="x")
+        )
+        with pytest.raises(ResponseProtocolError, match="(identity changed|different session)"):
+            await model._observe(
+                Stream(
+                    [
+                        event("agent.session.created", session=session(status="in_progress")),
+                        event(
+                            "agent.session.turn.in_progress",
+                            session_id="sess_real",
+                            turn_id="turn_real",
+                            turn=Node(id="turn_real", session_id="sess_real", status="in_progress"),
+                        ),
+                        conflicting,
+                    ]
+                )
+            )
+        assert await model.steer("After conflict", instruction_id="closed") == {
             "accepted": False,
             "mode": "same_run_boundary",
         }
