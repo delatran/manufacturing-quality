@@ -3277,8 +3277,8 @@
       "vi": "Chi phí sửa trung bình theo mức độ nghiêm trọng"
     },
     "ui.cost_by_severity_note": {
-      "en": "Average unit repair cost is similar across Minor, Moderate, and Critical defects (~201–205). Evaluate Critical defects separately for safety and reliability risk rather than repair cost alone.",
-      "vi": "Chi phí sửa trung bình mỗi lỗi khá tương đồng giữa Nhẹ, Trung bình và Nghiêm trọng (~201–205). Vì vậy cần đánh giá lỗi Nghiêm trọng theo rủi ro an toàn và độ tin cậy sản phẩm thay vì chỉ nhìn vào chi phí sửa."
+      "en": "Assess Critical defects for safety and reliability risk alongside recorded repair cost. Similar recorded costs do not establish similar product risk.",
+      "vi": "Đánh giá lỗi Nghiêm trọng theo rủi ro an toàn và độ tin cậy cùng với chi phí sửa đã ghi nhận. Chi phí ghi nhận tương tự không đồng nghĩa với mức rủi ro sản phẩm tương tự."
     },
     "ui.line_products_meta": {
       "en": "{value0} products · avg cost {value1}",

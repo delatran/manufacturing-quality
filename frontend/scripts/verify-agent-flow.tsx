@@ -1385,7 +1385,7 @@ for (const status of ['failed', 'cancelled']) {
   assert.equal(stoppedCall.command, '{"scope":"Line-3"}');
 }
 
-// Provider transport lifecycle and model configuration stay in opt-in details.
+// Recorded model and effort appear in the header; transport stays in the timeline.
 // Replayed phases update their own turn, without adding generic timeline rows.
 const lifecycleRun = projectAgentFlow([
   event('status', { state: 'running' }),
@@ -1411,14 +1411,48 @@ for (const locale of ['en', 'vi'] as const) {
   );
   const header = markup.match(/<header[^>]*>([\s\S]*?)<\/header>/)?.[1] ?? '';
   const timeline = markup.match(/<ol[^>]*>([\s\S]*?)<\/ol>/)?.[1] ?? '';
-  assert.doesNotMatch(header, /gpt-6-luna|\bmax\b|background|chạy nền/);
+  assert.match(header, /class="agent-flow-head-meta"[\s\S]*gpt-6-luna/);
+  assert.match(header, locale === 'vi' ? /Suy luận: max/ : /Reasoning: max/);
+  assert.doesNotMatch(header, /background|chạy nền/);
   assert.doesNotMatch(timeline, /Processing status|Trạng thái xử lý/);
-  assert.match(markup, /<details class="agent-flow-details">[\s\S]*gpt-6-luna/);
+  assert.doesNotMatch(markup, /agent-flow-details|Chi tiết xử lý|Processing details/);
+  assert.match(markup, /<details class="agent-flow-timeline"[\s\S]*(?:background|chạy nền)/);
   assert.match(
     timeline,
     locale === 'vi' ? /Chuẩn bị hướng dẫn phân tích/ : /Preparing analysis guidance/,
   );
-  assert.match(markup, locale === 'vi' ? /Chi tiết xử lý/ : /Processing details/);
+}
+
+// Header metadata is optional and belongs to the recorded run only.
+for (const locale of ['en', 'vi'] as const) {
+  const renderMetadata = (flow: typeof run) =>
+    renderToStaticMarkup(
+      <I18nProvider initialLocale={locale} persist={false}>
+        <AgentFlow run={flow} />
+      </I18nProvider>,
+    );
+  const withoutMetadata = projectAgentFlow([event('status', { state: 'running' })]).get('run-1')!;
+  assert.doesNotMatch(
+    renderMetadata(withoutMetadata),
+    /agent-flow-head-meta|gpt-6-luna|Reasoning:|Suy luận:/,
+  );
+  const modelOnly = projectAgentFlow([
+    event('status', { state: 'completed' }),
+    event('usage', { model: 'recorded-fixture-model' }),
+  ]).get('run-1')!;
+  const modelOnlyMarkup = renderMetadata(modelOnly);
+  assert.match(modelOnlyMarkup, /agent-flow-head-meta[\s\S]*recorded-fixture-model/);
+  assert.doesNotMatch(modelOnlyMarkup, /gpt-6-luna|Reasoning:|Suy luận:|agent-flow-details/);
+  const effortOnly = projectAgentFlow([
+    event('model_started', { reasoning: { effort: 'medium' } }),
+  ]).get('run-1')!;
+  const effortOnlyMarkup = renderMetadata(effortOnly);
+  assert.match(effortOnlyMarkup, locale === 'vi' ? /Suy luận: medium/ : /Reasoning: medium/);
+  assert.doesNotMatch(effortOnlyMarkup, /gpt-6-luna|recorded-fixture-model/);
+  assert.doesNotMatch(
+    renderMetadata(lifecycleRun),
+    /recorded-fixture-model|Reasoning: medium|Suy luận: medium/,
+  );
 }
 
 // Recorded work stays accessible without competing with the delivered report.

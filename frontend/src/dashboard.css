@@ -2351,6 +2351,9 @@ html:has(.dashboard) {
 .histogram-row > div > span {
   transform-origin: left;
   border-radius: 6px;
+}
+/* Keep the shared investigation styles from replacing the Dashboard palette. */
+.dashboard .cost-histogram .histogram-row > div > span {
   background: var(--series);
 }
 .cost-histogram {

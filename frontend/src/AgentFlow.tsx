@@ -587,8 +587,6 @@ function RunFlow({ run }: { run: FlowRun }) {
       ),
   );
   const meta: string[] = [];
-  if (run.model) meta.push(run.model);
-  if (run.effort) meta.push(t('ui.agent_flow_effort') + ' ' + run.effort);
   if (run.background) meta.push(t('ui.agent_flow_background'));
   if (run.compactions)
     meta.push(t('ui.agent_flow_compaction', { value0: number(run.compactions) }));
@@ -623,19 +621,39 @@ function RunFlow({ run }: { run: FlowRun }) {
       aria-label={t('ui.agent_flow_label')}
     >
       <header className="agent-flow-head">
-        <span className="agent-flow-title">
-          {halted ? (
-            <CircleAlert size={15} aria-hidden="true" />
-          ) : active ? (
-            <LoaderCircle className="spin" size={15} aria-hidden="true" />
-          ) : (
-            <Check size={15} aria-hidden="true" />
-          )}
-          {t('ui.agent_flow_label')}
-        </span>
-        <span className="flow-state" role="status" aria-atomic="true">
-          {analysisStatus(run.state, t)}
-        </span>
+        <div className="agent-flow-heading">
+          <span className="agent-flow-title">
+            {halted ? (
+              <CircleAlert size={15} aria-hidden="true" />
+            ) : active ? (
+              <LoaderCircle className="spin" size={15} aria-hidden="true" />
+            ) : (
+              <Check size={15} aria-hidden="true" />
+            )}
+            {t('ui.agent_flow_label')}
+          </span>
+          <span className="flow-state" role="status" aria-atomic="true">
+            {analysisStatus(run.state, t)}
+          </span>
+        </div>
+        {(run.model || run.effort) && (
+          <div
+            className="agent-flow-head-meta"
+            role="group"
+            aria-label={
+              locale === 'vi'
+                ? 'Mô hình và mức suy luận của lượt này'
+                : 'Model and reasoning effort for this run'
+            }
+          >
+            {run.model && <span className="agent-flow-model">{run.model}</span>}
+            {run.effort && (
+              <span className="agent-flow-effort">
+                {locale === 'vi' ? 'Suy luận' : 'Reasoning'}: {run.effort}
+              </span>
+            )}
+          </div>
+        )}
       </header>
       {active && (
         <div className="agent-flow-current">
@@ -666,7 +684,7 @@ function RunFlow({ run }: { run: FlowRun }) {
           </div>
         </div>
       )}
-      {visibleSteps.length > 0 && (
+      {(visibleSteps.length > 0 || meta.length > 0 || providerStatuses.length > 0) && (
         <details
           className="agent-flow-timeline"
           open={timelineOpen}
@@ -691,17 +709,13 @@ function RunFlow({ run }: { run: FlowRun }) {
               <Step step={step} key={step.id} />
             ))}
           </ol>
-        </details>
-      )}
-      {(meta.length > 0 || providerStatuses.length > 0) && (
-        <details className="agent-flow-details">
-          <summary>
-            {locale === 'vi' ? 'Chi tiết xử lý' : 'Processing details'}
-            <ChevronDown className="flow-chevron" size={13} aria-hidden="true" />
-          </summary>
-          {meta.length > 0 && <p className="agent-flow-meta">{meta.join(' · ')}</p>}
-          {providerStatuses.length > 0 && (
-            <p className="agent-flow-meta">{providerStatuses.join(' · ')}</p>
+          {(meta.length > 0 || providerStatuses.length > 0) && (
+            <div className="agent-flow-context">
+              {meta.length > 0 && <p className="agent-flow-meta">{meta.join(' · ')}</p>}
+              {providerStatuses.length > 0 && (
+                <p className="agent-flow-meta">{providerStatuses.join(' · ')}</p>
+              )}
+            </div>
           )}
         </details>
       )}
