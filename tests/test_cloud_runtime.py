@@ -574,3 +574,48 @@ def test_runtime_header_does_not_skip_durable_mutation_checkpoint(tmp_path):
     assert response.headers["X-Analyst-Runtime"] == cloud._RUNTIME_ID
     with tarfile.open(fileobj=io.BytesIO(server.body), mode="r:gz") as archive:
         assert archive.extractfile("committed.txt").read() == b"durable"
+
+
+def test_mutation_status_waits_for_a_durable_checkpoint():
+    order = []
+    bridge = SimpleNamespace(checkpoint=lambda: order.append("saved"))
+
+    async def endpoint(scope, receive, send):
+        await send({"type": "http.response.start", "status": 200, "headers": []})
+        await send({"type": "http.response.body", "body": b"acknowledged"})
+
+    async def observe(message):
+        order.append(message["type"])
+
+    asyncio.run(
+        cloud.PersistenceMiddleware(endpoint, bridge)(
+            {"type": "http", "method": "POST"}, None, observe
+        )
+    )
+    assert order == ["saved", "http.response.start", "http.response.body"]
+
+
+def test_failed_mutation_checkpoint_returns_retryable_failure_without_success_status(tmp_path):
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    server = BridgeServer()
+    bridge = server.bridge(tmp_path)
+    bridge.restore()
+    server.fail = True
+    app = FastAPI()
+    app.add_middleware(cloud.PersistenceMiddleware, bridge=bridge)
+
+    @app.post("/save")
+    def save():
+        (tmp_path / "unconfirmed.txt").write_text("Retained locally")
+        return {"saved": True}
+
+    with TestClient(app) as client:
+        response = client.post("/save")
+    assert response.status_code == 503
+    assert response.json()["detail"]["code"] == "persistence_unavailable"
+    assert response.headers["X-Analyst-Runtime"] == cloud._RUNTIME_ID
+    assert bridge.failed
+    assert server.body is None
+    assert (tmp_path / "unconfirmed.txt").read_text() == "Retained locally"

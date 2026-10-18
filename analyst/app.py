@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any
 from urllib.parse import quote
 
+import anyio
 from fastapi import (
     FastAPI,
     File,
@@ -29,6 +30,7 @@ from fastapi import (
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
+from pydantic import TypeAdapter
 from starlette.middleware.base import RequestResponseEndpoint
 
 from .case_study.ingestion import SourceError
@@ -113,31 +115,41 @@ class Workspace:
         await self.emit(sid, None, "investigation", saved)
         return saved
 
+    def _require_ui_authority(
+        self, sid: str, rid: str, expected: str, *, undo: bool = False
+    ) -> dict:
+        if not self.ui_authorities.get(rid, {}).get("view"):
+            raise ValueError("This run did not receive direct user authority to change the view")
+        if undo and not self.ui_authorities.get(rid, {}).get("undo"):
+            raise ValueError("This run did not receive a direct request to undo a UI command")
+        current = self.store.investigation(sid)
+        if (
+            current["ui"].get("context_id") != expected
+            or self.ui_bindings.get(rid, expected) != expected
+        ):
+            raise ValueError(
+                "The UI scope changed during this run; this stale command was not applied"
+            )
+        return current
+
     async def execute_ui_command(
         self, sid: str, rid: str, run_context_id: str, arguments: dict
     ) -> dict:
         from .evidence import sha256
 
         async with self.ui_lock:
-            if not self.ui_authorities.get(rid, {}).get("view"):
-                raise ValueError(
-                    "This run did not receive direct user authority to change the view"
-                )
-            current = self.store.investigation(sid)
             expected = self.ui_bindings.get(rid, run_context_id)
             if expected is None:
                 raise ValueError("UI commands require a bound analysis context")
-            if current["ui"].get("context_id") != expected:
-                raise ValueError(
-                    "The UI scope changed during this run; this stale command was not applied"
-                )
             action = arguments["action"]
+            self._require_ui_authority(sid, rid, expected, undo=action == "undo")
             if action == "undo":
-                if not self.ui_authorities.get(rid, {}).get("undo"):
-                    raise ValueError(
-                        "This run did not receive a direct request to undo a UI command"
-                    )
-                command = await self._undo_ui(sid, arguments.get("command_id"), expected)
+                command = await self._undo_ui(
+                    sid,
+                    arguments.get("command_id"),
+                    expected,
+                    before_commit=lambda: self._require_ui_authority(sid, rid, expected, undo=True),
+                )
             else:
                 if arguments.get("command_id") is not None:
                     raise ValueError("command_id is supplied only for undo")
@@ -164,6 +176,15 @@ class Workspace:
                     )
                 elif any(value is not None for value in arguments["filters"].values()):
                     raise ValueError("Opening a panel cannot implicitly change filters")
+                # Preparing a context yields to prompts, which can revoke authority
+                # or bind a different view without acquiring this command's lock.
+                current = self._require_ui_authority(sid, rid, expected)
+                if action == "apply_scope":
+                    validate_scope_change(
+                        self.ui_authorities.get(rid, {}),
+                        payload["context"]["filters"],
+                        arguments["filters"],
+                    )
                 command = {
                     "command_id": sha256(rid + canonical_json(arguments) + str(current["version"]))[
                         :32
@@ -178,8 +199,7 @@ class Workspace:
                     "previous_panel": current["ui"]["panel"],
                     "reversible": True,
                 }
-                self.store.save_ui_command(sid, rid, command)
-                self._save_command_state(sid, command)
+                self.store.commit_ui_command(sid, rid, command, expected_version=current["version"])
             self.ui_bindings[rid] = command["context_id"]
         await self.emit(sid, rid, "ui_command", command)
         # Availability is read-only enrichment after the command has committed.
@@ -349,27 +369,13 @@ class Workspace:
             "scope_note": "Historical report availability only. Its recorded sources do not become the current UI scope; no prior claims or numeric identifiers are imported.",
         }
 
-    def _save_command_state(self, sid: str, command: dict) -> dict:
-        current = self.store.investigation(sid)
-        findings = [
-            {**item, "status": "stale"} if item.get("context_id") != command["context_id"] else item
-            for item in current["findings"]
-        ]
-        return self.store.save_investigation(
-            sid,
-            current["version"],
-            {
-                "findings": findings,
-                "ui": {
-                    "context_id": command["context_id"],
-                    "panel": command["panel"],
-                    "last_command_id": command["command_id"],
-                },
-            },
-        )
-
     async def _undo_ui(
-        self, sid: str, command_id: str | None, expected_context_id: str | None
+        self,
+        sid: str,
+        command_id: str | None,
+        expected_context_id: str | None,
+        *,
+        before_commit: Callable[[], Any] | None = None,
     ) -> dict:
         from .evidence import sha256
 
@@ -382,6 +388,8 @@ class Workspace:
             inverse = self.store.ui_command(sid, inverse_id)
             if inverse["context_id"] != expected_context_id:
                 raise ValueError("This command was already undone and the view changed again")
+            if before_commit is not None:
+                before_commit()
             inverse.pop("undone", None)
             return inverse
         if (
@@ -390,6 +398,9 @@ class Workspace:
         ):
             raise ValueError("Only the latest command in its unchanged UI context can be undone")
         target = await self.analysis.context_by_id(original["previous_context_id"])
+        if before_commit is not None:
+            before_commit()
+        current = self.store.investigation(sid)
         command = {
             "command_id": inverse_id,
             "action": "undo",
@@ -402,9 +413,13 @@ class Workspace:
             "previous_panel": current["ui"]["panel"],
             "reversible": True,
         }
-        self.store.save_ui_command(sid, "undo:" + original["command_id"], command)
-        self._save_command_state(sid, command)
-        self.store.mark_command_undone(sid, original["command_id"])
+        self.store.commit_ui_command(
+            sid,
+            "undo:" + original["command_id"],
+            command,
+            expected_version=current["version"],
+            undo_command_id=original["command_id"],
+        )
         return command
 
     async def undo_ui_command(self, sid: str, command_id: str, expected_context_id: str) -> dict:
@@ -414,13 +429,13 @@ class Workspace:
         return {"command": command, "investigation": self.store.investigation(sid)}
 
     async def cancel(self, sid: str, run_id: str | None = None) -> dict:
-        session = self.store.session(sid)
+        self.store.require_session(sid)
         active = self.tasks.get(sid)
         requested = active is not None and not active.done()
         current_run = self.active_run_ids.get(sid) if requested else None
         if current_run is None:
             current_run = next(
-                (run["id"] for run in reversed(session["runs"]) if run["state"] == "running"),
+                (run["id"] for run in reversed(self.store.runs(sid)) if run["state"] == "running"),
                 None,
             )
         if run_id is not None and current_run != run_id:
@@ -616,7 +631,10 @@ class Workspace:
                     pass
         event = self.store.emit(sid, rid, kind, data)
         for queue in tuple(self.listeners.get(sid, set())):
-            queue.put_nowait(event)
+            # A pending notification is enough: streams replay all durable
+            # events after their cursor instead of retaining a second backlog.
+            with suppress(asyncio.QueueFull):
+                queue.put_nowait(event)
         return event
 
     def _steering_target(self, sid: str, rid: str) -> dict[str, Any]:
@@ -632,7 +650,7 @@ class Workspace:
             or not getattr(runtime, "accepting_steering", True)
         ):
             raise ValueError("This analysis has finished; send a new question instead")
-        run = next((run for run in self.store.session(sid)["runs"] if run["id"] == rid), None)
+        run = next((run for run in self.store.runs(sid) if run["id"] == rid), None)
         if run is None or run["state"] != "running":
             raise ValueError("This analysis has finished; send a new question instead")
         return run
@@ -647,18 +665,10 @@ class Workspace:
             or reply_to["message_id"] <= 0
         ):
             raise ValueError("Invalid answer reference for this follow-up")
-        session = self.store.session(sid)
-        run = next((run for run in session["runs"] if run["id"] == reply_to["run_id"]), None)
-        messages = [
-            event
-            for event in session["events"]
-            if event["run_id"] == reply_to["run_id"]
-            and event["type"] == "message"
-            and event["data"].get("role") == "assistant"
-        ]
-        if run is None or run["state"] != "completed" or not messages:
+        run = next((run for run in self.store.runs(sid) if run["id"] == reply_to["run_id"]), None)
+        message = self.store.latest_run_answer(sid, reply_to["run_id"])
+        if run is None or run["state"] != "completed" or message is None:
             raise ValueError("The referenced answer is unavailable or has not completed")
-        message = messages[-1]
         if (
             message["id"] != reply_to["message_id"]
             or not isinstance(message["data"].get("qa"), dict)
@@ -679,7 +689,8 @@ class Workspace:
         steer_run_id: str | None = None,
         reply_to: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        session = self.store.session(sid)
+        self.store.require_session(sid)
+        previous_language = self.store.latest_user_language(sid)
         if reply_to is not None:
             if steer_run_id is not None:
                 raise ValueError("An answer follow-up cannot also steer an active analysis")
@@ -727,16 +738,7 @@ class Workspace:
             analysis_context_id = payload["context"]["context_id"]
         from .investigation import response_language
 
-        previous_language = next(
-            (
-                event["data"]["language"]
-                for event in reversed(session["events"])
-                if event["type"] == "message"
-                and event["data"].get("role") == "user"
-                and event["data"].get("language") in {"en", "vi"}
-            ),
-            normalize_language(language),
-        )
+        previous_language = previous_language or normalize_language(language)
         if reply_to is not None:
             language = response_language(text, language)
         else:
@@ -903,7 +905,7 @@ class Workspace:
                 result = await steer(text, instruction_id=instruction_id)
                 if not result.get("accepted"):
                     raise ValueError("The active runtime did not accept this detail")
-            except Exception as error:
+            except (Exception, asyncio.CancelledError) as error:
                 self.store.mark_instruction_unconfirmed(instruction_row, active_rid)
                 await self.emit(
                     sid,
@@ -914,6 +916,8 @@ class Workspace:
                         "error_type": type(error).__name__,
                     },
                 )
+                if isinstance(error, asyncio.CancelledError):
+                    raise
                 raise ValueError(
                     "Delivery of this detail could not be confirmed; its saved input is retained"
                 ) from error
@@ -1788,10 +1792,15 @@ def create_app(
     async def new_session() -> dict[str, Any]:
         return workspace.store.create_session()
 
-    @application.get("/api/sessions/{sid}")
-    async def get_session(sid: str) -> dict[str, Any]:
+    session_response = TypeAdapter(dict[str, Any])
+
+    @application.get("/api/sessions/{sid}", response_model=dict[str, Any])
+    def get_session(sid: str) -> Response:
         try:
-            return workspace.store.session(sid)
+            # The synchronous route keeps snapshot hydration and Pydantic's
+            # native JSON serialization together in Starlette's worker pool.
+            payload = session_response.validate_python(workspace.store.session(sid))
+            return Response(session_response.dump_json(payload), media_type="application/json")
         except KeyError as error:
             raise HTTPException(404, "Session not found") from error
 
@@ -1893,7 +1902,7 @@ def create_app(
     @application.post("/api/sessions/{sid}/files")
     async def upload(sid: str, files: Annotated[list[UploadFile], File()]) -> dict[str, Any]:
         try:
-            workspace.store.session(sid)
+            workspace.store.require_session(sid)
         except KeyError as error:
             raise HTTPException(404, "Session not found") from error
         accepted = []
@@ -1957,47 +1966,66 @@ def create_app(
             await websocket.close(code=1008)
             return
         try:
-            workspace.store.session(sid)
+            workspace.store.require_session(sid)
             after = max(0, int(websocket.query_params.get("after", "0")))
         except (KeyError, ValueError):
             await websocket.close(code=1008)
             return
         await websocket.accept()
-        queue: asyncio.Queue = asyncio.Queue()
+        queue: asyncio.Queue = asyncio.Queue(maxsize=1)
         workspace.listeners.setdefault(sid, set()).add(queue)
-        # Subscribe before replay: a duplicate is harmless and is deduplicated by ID.
-        sender: asyncio.Task[None] | None = None
+        # Subscribe before replay; coalesced notifications cannot lose events
+        # because the durable sequence, not the notification, supplies the data.
 
         async def send() -> None:
+            cursor = after
             while True:
-                await websocket.send_json(await queue.get())
+                events = workspace.store.events(sid, cursor, limit=256)
+                for event in events:
+                    await websocket.send_json(event)
+                    cursor = event["id"]
+                if len(events) == 256:
+                    await asyncio.sleep(0)
+                else:
+                    await queue.get()
 
-        try:
-            for event in workspace.store.events(sid, after):
-                await websocket.send_json(event)
-            sender = asyncio.create_task(send())
+        async def receive() -> None:
             while True:
                 message = await websocket.receive_json()
                 if message.get("type") == "prompt":
+                    # A received instruction belongs to its durable run. Losing
+                    # the browser transport must not interrupt provider admission.
+                    with anyio.CancelScope(shield=True):
+                        try:
+                            await workspace.prompt(
+                                sid,
+                                str(message.get("text", "")),
+                                message.get("analysis_context_id"),
+                                request_language(message),
+                                message.get("action_intent", "none"),
+                                message.get("steer_run_id"),
+                                message.get("reply_to"),
+                            )
+                        except ValueError as error:
+                            await workspace.emit(sid, None, "error", {"message": str(error)})
+
+        try:
+            async with anyio.create_task_group() as connection:
+
+                async def run_until_disconnected(operation: Callable[[], Any]) -> None:
                     try:
-                        await workspace.prompt(
-                            sid,
-                            str(message.get("text", "")),
-                            message.get("analysis_context_id"),
-                            request_language(message),
-                            message.get("action_intent", "none"),
-                            message.get("steer_run_id"),
-                            message.get("reply_to"),
-                        )
-                    except ValueError as error:
-                        await workspace.emit(sid, None, "error", {"message": str(error)})
-        except WebSocketDisconnect:
-            pass
+                        await operation()
+                    except WebSocketDisconnect:
+                        pass
+                    finally:
+                        connection.cancel_scope.cancel()
+
+                connection.start_soon(run_until_disconnected, send)
+                await run_until_disconnected(receive)
         finally:
             workspace.listeners[sid].discard(queue)
-            if sender:
-                sender.cancel()
-                await asyncio.gather(sender, return_exceptions=True)
+            if not workspace.listeners[sid]:
+                workspace.listeners.pop(sid)
 
     @application.get("/api/sessions/{sid}/runs/{rid}/artifacts/{filename:path}")
     async def artifact(sid: str, rid: str, filename: str) -> FileResponse:

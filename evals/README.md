@@ -1,14 +1,20 @@
 # Manufacturing quality agent evaluation
 
+This page records historical development evaluations and their frozen execution
+profiles. Those profiles and approvals do not describe or authorize the current
+runtime. See the current [repository contract](../AGENTS.md) and
+[runtime configuration](../README.md#setup-and-run). The recorded results below
+do not establish live model quality for the current managed Agents API runtime.
+
 Historical execution receipts marked local-only are retained on the owner's
 machine and excluded from the public checkout. Protocols, test controls and
 fixtures remain available. See [publication scope and retained path metadata](../docs/PUBLICATION_NOTES.md).
 
-## Current rebuild evaluation: R01 to R08
+## Historical rebuild evaluation: R01 to R08
 
 Lần `post-v9` đã chạy đủ tám ca và mười hai lượt với Luna thật trên source V10, deadline ứng dụng 360 giây và giới hạn chờ 480 giây. Đánh giá độc lập chốt 6/8 tác vụ Passed: R02/R04/R05/R06/R07/R08; R01/R03 Failed. R01 câu đầu đúng nhưng follow-up timeout; R03 so sánh đầu đúng và Undo khôi phục giao diện, nhưng follow-up chưa được xác minh và không giao báo cáo cuối. Cả 39 trạng thái nội dung giữ nguyên bằng chứng, gồm các phần đúng nhưng chưa hoàn tất trong hai ca Failed; không dùng chúng để nhận là đạt 8/8. Ba mươi lỗi tự động do yêu cầu KPI ngoài phần tổng hợp chi phí được giữ nguyên, tách khỏi bốn lỗi thật về hoàn tất và giao tệp. Runtime kết thúc với exit 0, nguồn 45 tệp không đổi và tiến trình/cổng đã đóng; hai thông báo console vẫn được lưu, không nhận là dọn dẹp không lỗi. Phí token lần này là 0,150532575 USD; tổng chín lần thử là 0,750842455 USD qua 433 response, không còn usage chưa rõ hay khoản giữ ngân sách. Đây là các lần thử phát triển không mù, không phải bằng chứng cải thiện có kiểm soát. VH01 bàn giao tiếng Việt vẫn Not run và chưa được cấp lượt chạy.
 
-The current frozen protocol is [rebuild_protocol_v1.json](rebuild_protocol_v1.json),
+The frozen protocol for these attempts is [rebuild_protocol_v1.json](rebuild_protocol_v1.json),
 SHA-256 `a45c5b720da94f7f2cf4c9c6a0e4d5a46a97e71aa1a731dcfe8f57aa9ed4a4d5`.
 It covers the January/June investigation and an alternative explanation, Line-3
 cost followed by Critical, the exclude-cost-10 scenario and undo, unsupported
@@ -28,15 +34,16 @@ Canonical policy is `canonical-v2`. Evaluator-only expected values are never sen
 to the model. [rebuild_independent_detail.json](rebuild_independent_detail.json)
 adds reproducible decomposition arithmetic for evidence review.
 
-The runner is [run_rebuild_eval.py](../scripts/run_rebuild_eval.py). It exercises
-the actual FastAPI HTTP handlers through ASGI, production `Workspace`, official
-Agents SDK runner, real OpenAI Responses API, real backend tools, and artifact
-download/read-back. The application model is `gpt-6-luna`, medium effort. The
-sole paid execution owner for this rebuild is `eval_agent`; other workers and
+The runner is [run_rebuild_eval.py](../scripts/run_rebuild_eval.py). The recorded
+attempts exercised the actual FastAPI HTTP handlers through ASGI, production
+`Workspace`, official Agents SDK runner, real OpenAI Responses API, real backend
+tools, and artifact download/read-back. The evaluated application model was
+`gpt-6-luna`, medium effort. The sole paid execution owner for these attempts was
+`eval_agent`; other workers and
 reviewers must not dispatch paid requests. No hosted tool, trace export, alternate
 credential, publication or external report sending is authorized by this suite.
 
-The owner authorized a new budget of **USD 20 for the rebuild task and at most
+For these historical attempts, the owner authorized **USD 20 for the rebuild task and at most
 USD 5 for each complete live suite**. New state and per-response accounting are
 isolated under `.runtime/rebuild-20261016`; historical `.runtime` charges and old
 outcomes are excluded. The runner preserves missing telemetry as null. Exact

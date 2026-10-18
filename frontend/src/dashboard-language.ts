@@ -19,16 +19,20 @@ export function useDashboardLanguage() {
     const patterns: [RegExp, (...groups: string[]) => string][] = [
       [
         /^Investigate Critical defects at (.+)$/,
-        (location) => `Tìm hiểu lỗi nghiêm trọng tại ${i18n.label(location)}`,
+        (location) => `Điều tra lỗi nghiêm trọng tại ${i18n.label(location)}`,
       ],
-      [/^Validate the burden on (.+)$/, (line) => `Kiểm tra mức lỗi tại ${i18n.label(line)}`],
+      [
+        /^Validate the burden on (.+)$/,
+        (line) => `Xác minh áp lực phát sinh lỗi tại ${i18n.label(line)}`,
+      ],
       [
         /^Investigate high-intensity (.+) products$/,
-        (category) => `Kiểm tra nhóm sản phẩm ${i18n.label(category)} có tỷ lệ lỗi cao`,
+        (category) =>
+          `Điều tra chuyên sâu nhóm sản phẩm ${i18n.label(category)} có cường độ lỗi cao`,
       ],
       [
         /^Investigate repair cost per event on (.+)$/,
-        (line) => `Kiểm tra chi phí sửa trung bình mỗi lỗi tại ${i18n.label(line)}`,
+        (line) => `Điều tra chi phí sửa chữa trung bình mỗi sự cố tại ${i18n.label(line)}`,
       ],
       [
         /^(.+): (\d+) events over ([\d,]+) reference units \(([\d.]+) per 1,000 vs ([\d.]+) elsewhere in scope\)(?:; higher than the rest of the line on (\d+) of (\d+) lines)?\.$/,
@@ -38,7 +42,7 @@ export function useDashboardLanguage() {
       [
         /^(.+) averages ([\d,.]+) known repair cost per event vs ([\d,.]+) on other lines \(([\d.]+)x\); ([\d.]+)% of linked known cost from ([\d.]+)% of linked known-cost events\.$/,
         (line, average, others, factor, costShare, eventShare) =>
-          `${i18n.label(line)} có chi phí sửa đã biết trung bình ${sourceNumber(average, 2)}/lỗi có chi phí, so với ${sourceNumber(others, 2)} ở các chuyền khác (gấp ${sourceNumber(factor, 2)} lần); chiếm ${sourceNumber(costShare, 1)}% tổng chi phí đã biết của các lỗi liên kết được với sản phẩm, trong khi chiếm ${sourceNumber(eventShare, 1)}% số lỗi có chi phí trong cùng nhóm liên kết sản phẩm.`,
+          `${i18n.label(line)} có chi phí sửa chữa ghi nhận trung bình ${sourceNumber(average, 2)}/sự cố, so với ${sourceNumber(others, 2)} ở các chuyền khác (gấp ${sourceNumber(factor, 2)} lần); chiếm ${sourceNumber(costShare, 1)}% tổng chi phí sửa chữa ghi nhận của các lỗi khớp danh mục sản phẩm, trong khi chỉ chiếm ${sourceNumber(eventShare, 1)}% số sự cố có chi phí trong cùng nhóm liên kết sản phẩm.`,
       ],
       [
         /^(.+) Team Leader with Maintenance and Finance$/,
@@ -61,7 +65,7 @@ export function useDashboardLanguage() {
       [
         /^(.+) accounts for ([\d,.]+) known local-currency repair cost \(([\d.]+)% of known costs\); (\d+) selected events have unknown cost\.$/,
         (type, cost, share, unknown) =>
-          `${i18n.label(type)} chiếm ${sourceNumber(cost, 2)} chi phí sửa chữa theo nội tệ (${sourceNumber(share, 1)}% tổng chi phí đã biết); còn ${sourceNumber(unknown)} lỗi chưa có chi phí hợp lệ.`,
+          `${i18n.label(type)} chiếm ${sourceNumber(cost, 2)} chi phí sửa chữa ghi nhận (${sourceNumber(share, 1)}% tổng chi phí đã ghi nhận); còn ${sourceNumber(unknown)} sự cố chưa có chi phí hợp lệ.`,
       ],
       [
         /^(.+) Team Leader with Production Planning$/,
@@ -85,7 +89,7 @@ export function useDashboardLanguage() {
       [
         /^Logged events (increased|decreased|were unchanged) from (\d+) in (.+?) to (\d+) in (.+?)\. (This is an adverse signal: the logged defect workload is rising\. |This is a favourable signal: the logged defect workload is falling\. )?Confirm actual output and inspection coverage before treating it as a defect-rate change\.$/,
         (direction, first, firstMonth, last, lastMonth, signal) =>
-          `Số lỗi ghi nhận ${direction === 'increased' ? 'tăng' : direction === 'decreased' ? 'giảm' : 'giữ nguyên'} từ ${sourceNumber(first)} (${localizedMonth(firstMonth)}) đến ${sourceNumber(last)} (${localizedMonth(lastMonth)}). ${signal ? (direction === 'increased' ? 'Đây là tín hiệu tiêu cực: số lượng lỗi ghi nhận đang tăng. ' : 'Đây là tín hiệu tích cực: số lượng lỗi ghi nhận đang giảm. ') : ''}Cần đối chiếu thêm sản lượng thực tế và phạm vi kiểm tra trước khi kết luận tỷ lệ lỗi thay đổi.`,
+          `Số sự cố lỗi ghi nhận ${direction === 'increased' ? 'tăng' : direction === 'decreased' ? 'giảm' : 'giữ nguyên'} từ ${sourceNumber(first)} (${localizedMonth(firstMonth)}) đến ${sourceNumber(last)} (${localizedMonth(lastMonth)}). ${signal ? (direction === 'increased' ? 'Đây là tín hiệu tiêu cực: số lượng sự cố lỗi ghi nhận đang gia tăng. ' : 'Đây là tín hiệu tích cực: số lượng sự cố lỗi ghi nhận đang giảm dần. ') : ''}Cần đối chiếu thêm sản lượng thực tế và phạm vi kiểm tra trước khi kết luận tỷ lệ lỗi thay đổi.`,
       ],
     ];
     for (const [pattern, translate] of patterns) {

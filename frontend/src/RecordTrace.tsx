@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
+import type { RefObject } from 'react';
 import { X } from 'lucide-react';
 import { request } from './api';
 import { useI18n } from './i18n';
@@ -12,44 +13,88 @@ type Trace = {
   truncated: boolean;
 };
 
-export default function RecordTrace({
+// Source values stay unchanged when only the surrounding interface language changes.
+const TraceJson = memo(function TraceJson({ value }: { value: unknown }) {
+  return <pre>{JSON.stringify(value, null, 2)}</pre>;
+});
+
+const TraceAuditRows = memo(function TraceAuditRows({
+  normalization,
+  scenario,
+}: {
+  normalization: Trace['normalization_audit'];
+  scenario: Trace['scenario_audit'];
+}) {
+  return (
+    <tbody>
+      {[...normalization, ...scenario].map((entry, index) => (
+        <tr key={index}>
+          <td>
+            <code>{String(entry.field || '')}</code>
+          </td>
+          <td>
+            <code>{JSON.stringify(entry.raw_value)}</code>
+          </td>
+          <td>
+            <code>{JSON.stringify(entry.processed_value)}</code>
+          </td>
+          <td>
+            <strong>{String(entry.code || '')}</strong>
+            <small>{String(entry.detail || '')}</small>
+            <small>{String(entry.policy_version || '')}</small>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  );
+});
+
+export default memo(function RecordTrace({
   url,
   defectId,
   onClose,
+  fallbackFocusRef,
 }: {
   url: string;
   defectId: number;
   onClose: () => void;
+  fallbackFocusRef?: RefObject<HTMLElement | null>;
 }) {
   const { t, label, number } = useI18n();
-  const [trace, setTrace] = useState<Trace>();
-  const [error, setError] = useState('');
+  const [result, setResult] = useState<{ key: string; trace?: Trace; error?: string }>();
   const [retry, setRetry] = useState(0);
+  const requestKey = JSON.stringify([url, defectId, retry]);
+  const currentResult = result?.key === requestKey ? result : undefined;
+  const trace = currentResult?.trace;
+  const error = currentResult?.error;
   const panel = useRef<HTMLElement>(null);
   const opener = useRef<HTMLElement | null>(null);
   useEffect(() => {
     opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   }, [defectId]);
   useEffect(() => {
+    const fallbackTarget = fallbackFocusRef?.current;
     return () => {
-      if (opener.current?.isConnected) opener.current.focus({ preventScroll: true });
+      const target = opener.current?.isConnected ? opener.current : fallbackTarget;
+      if (target?.isConnected) target.focus({ preventScroll: true });
     };
-  }, []);
+  }, [fallbackFocusRef]);
   useEffect(() => {
     panel.current?.focus();
-    setTrace(undefined);
-    setError('');
     const abort = new AbortController();
     void request<Trace>(`${url}?defect_id=${defectId}`, { signal: abort.signal })
       .then((value) => {
-        if (!abort.signal.aborted) setTrace(value);
+        if (!abort.signal.aborted) setResult({ key: requestKey, trace: value });
       })
       .catch((failure: unknown) => {
         if (!abort.signal.aborted)
-          setError(failure instanceof Error ? failure.message : String(failure));
+          setResult({
+            key: requestKey,
+            error: failure instanceof Error ? failure.message : String(failure),
+          });
       });
     return () => abort.abort();
-  }, [url, defectId, retry]);
+  }, [url, defectId, requestKey]);
   return (
     <section
       ref={panel}
@@ -88,16 +133,16 @@ export default function RecordTrace({
             {trace.raw_records.map((record) => (
               <div key={record.source_row}>
                 <strong>{t('ui.original_http_row', { row: number(record.source_row) })}</strong>
-                <pre>{JSON.stringify(record.raw, null, 2)}</pre>
+                <TraceJson value={record.raw} />
               </div>
             ))}
             <div>
               <strong>{t('ui.canonical_event')}</strong>
-              <pre>{JSON.stringify(trace.canonical_records, null, 2)}</pre>
+              <TraceJson value={trace.canonical_records} />
             </div>
           </div>
           <h4>{t('ui.field_decisions')}</h4>
-          {[...trace.normalization_audit, ...trace.scenario_audit].length ? (
+          {trace.normalization_audit.length + trace.scenario_audit.length > 0 ? (
             <div
               className="table-scroll"
               tabIndex={0}
@@ -113,26 +158,10 @@ export default function RecordTrace({
                     <th>{t('ui.policy_decision')}</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {[...trace.normalization_audit, ...trace.scenario_audit].map((entry, index) => (
-                    <tr key={index}>
-                      <td>
-                        <code>{String(entry.field || '')}</code>
-                      </td>
-                      <td>
-                        <code>{JSON.stringify(entry.raw_value)}</code>
-                      </td>
-                      <td>
-                        <code>{JSON.stringify(entry.processed_value)}</code>
-                      </td>
-                      <td>
-                        <strong>{String(entry.code || '')}</strong>
-                        <small>{String(entry.detail || '')}</small>
-                        <small>{String(entry.policy_version || '')}</small>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
+                <TraceAuditRows
+                  normalization={trace.normalization_audit}
+                  scenario={trace.scenario_audit}
+                />
               </table>
             </div>
           ) : (
@@ -143,4 +172,4 @@ export default function RecordTrace({
       )}
     </section>
   );
-}
+});

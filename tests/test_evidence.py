@@ -72,3 +72,36 @@ def test_tampering_invalidates_claims_and_artifacts(tmp_path):
         ledger.resolve_artifact(registered["path"])
     with pytest.raises(FileNotFoundError):
         ledger.resolve_artifact("../secret")
+
+
+def test_manifest_verification_rechecks_every_artifact(tmp_path):
+    ledger = EvidenceLedger(tmp_path)
+    artifact_root = tmp_path / "artifacts"
+    artifact_root.mkdir()
+    artifacts = [artifact_root / f"report-{index}.txt" for index in range(3)]
+    for artifact in artifacts:
+        artifact.write_text("verified", encoding="utf-8")
+        ledger.register_artifact(artifact)
+    ledger.verify_artifacts()
+    artifacts[-1].write_text("tampered", encoding="utf-8")
+    with pytest.raises(ValueError, match="hash mismatch"):
+        ledger.verify_artifacts()
+    artifacts[-1].write_text("verified", encoding="utf-8")
+    artifacts[0].unlink()
+    with pytest.raises(FileNotFoundError):
+        ledger.verify_artifacts()
+
+
+def test_manifest_verification_rejects_escaped_and_duplicate_paths(tmp_path):
+    ledger = EvidenceLedger(tmp_path)
+    artifact = tmp_path / "artifacts" / "report.txt"
+    artifact.parent.mkdir()
+    artifact.write_text("verified", encoding="utf-8")
+    entry = ledger.register_artifact(artifact)
+    with pytest.raises(ValueError, match="duplicate path"):
+        ledger.verify_artifacts(manifest=[entry, entry])
+    outside = tmp_path / "outside.txt"
+    outside.write_text("verified", encoding="utf-8")
+    with pytest.raises(FileNotFoundError):
+        ledger.verify_artifacts(manifest=[{**entry, "path": "artifacts/../outside.txt"}])
+    ledger.verify_artifacts(manifest=[entry])

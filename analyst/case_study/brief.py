@@ -16,7 +16,7 @@ FILTER_LABELS = {
     "severity": ("Severity", "Mức độ"),
     "defect_type": ("Defect type", "Loại lỗi"),
     "defect_location": ("Location", "Vị trí"),
-    "inspection_method": ("Inspection method", "Phương pháp kiểm"),
+    "inspection_method": ("Inspection method", "Phương pháp kiểm tra"),
 }
 
 
@@ -48,7 +48,7 @@ def priority_block(
     kind = item.get("kind")
     if kind == "critical_location":
         title = (
-            f"Điều tra lỗi Critical tại {metric['location']}"
+            f"Điều tra lỗi nghiêm trọng (Critical) tại {metric['location']}"
             if vi
             else f"Investigate Critical defects at {metric['location']}"
         )
@@ -150,9 +150,9 @@ def priority_block(
             else f"{n(metric['average_known_repair_cost'], 2)} per known-cost repair against {n(metric['other_lines_average_known_repair_cost'], 2)} on the other lines ({n(metric['ratio_to_other_lines'], 2)}×); {pct(metric['known_cost_share_pct'])} of known cost from {pct(metric['known_cost_event_share_pct'])} of events{within}."
         )
         action = (
-            f"Cùng Bảo trì tách chi phí sửa của {metric['production_line']} theo nhân công, vật tư, làm lại và dịch vụ ngoài; so sánh cách sửa cùng sản phẩm ở chuyền khác; xác nhận với Tài chính rằng các chuyền ghi nhận chi phí theo cùng quy tắc."
+            f"Cùng Bảo trì tách chi phí sửa của {metric['production_line']} theo nhân công, vật tư, làm lại và dịch vụ ngoài; so sánh cách sửa các sản phẩm tương đương trong cùng nhóm ở chuyền khác, kiểm tra chênh lệch cơ cấu sản phẩm còn lại; xác nhận với Tài chính rằng các chuyền ghi nhận chi phí theo cùng quy tắc."
             if vi
-            else f"Break {metric['production_line']} repair cost into labour, parts, rework and external service with Maintenance; compare repair routes for the same products on other lines; confirm with Finance that every line records cost the same way."
+            else f"Break {metric['production_line']} repair cost into labour, parts, rework and external service with Maintenance; compare repair routes for comparable products in the same category on other lines and check remaining product-mix differences; confirm with Finance that every line records cost the same way."
         )
         owner = (
             f"Trưởng nhóm {metric['production_line']} (chủ trì) cùng Trưởng bộ phận Bảo trì và Tài chính."
@@ -314,9 +314,9 @@ def render_brief(payload: dict[str, Any], language: str = "en") -> str:
         "## " + ("Lưu ý dữ liệu" if vi else "Data caveats"),
         "",
         (
-            f"- {n(k['unmatched_event_count'])} sự kiện không ghép được với master product; chúng vẫn nằm trong tổng nhưng không vào cường độ."
+            f"- {n(k['unmatched_event_count'])} sự kiện lỗi chưa khớp với danh mục sản phẩm chuẩn; các sự kiện này vẫn nằm trong tổng số lỗi nhưng không tính vào cường độ tham chiếu."
             if vi
-            else f"- {n(k['unmatched_event_count'])} events lack a master product; they stay in totals but not in intensity."
+            else f"- {n(k['unmatched_event_count'])} events lack a match in the product master; they remain in totals but are excluded from reference intensity."
         ),
         (
             f"- Không tháng nào có sự kiện sau ngày {n(coverage['max_observed_day_of_month'])}; {n(coverage['days_without_events'])}/{n(coverage['calendar_days'])} ngày không có sự kiện. Mức đầy đủ của việc ghi nhận chưa được xác minh."
@@ -330,9 +330,9 @@ def render_brief(payload: dict[str, Any], language: str = "en") -> str:
             )
         ),
         (
-            "- Số đếm là sự kiện lỗi được ghi nhận, không phải số đơn vị hỏng; người phụ trách là vai trò đề xuất và bản tin này không giao việc cho ai."
+            "- Số đếm là sự kiện lỗi được ghi nhận, không phải số sản phẩm hỏng riêng biệt; vai trò phụ trách mang tính đề xuất và bản tin này không thay thế quy trình giao việc chính thức."
             if vi
-            else "- Counts are logged defect events, not defective units. Owners are proposed roles; this brief assigns nothing to anyone."
+            else "- Counts represent logged defect events, not distinct defective units. Proposed owners are recommended roles; this brief does not assign tasks or replace plant workflow."
         ),
         "",
     ]

@@ -870,7 +870,10 @@ export const ProductRanking = memo(function ProductRanking({ data }: { data: Das
           ? t('ui.static_monthly_output_selected_months_event_filters_change_the_ev')
           : products.pareto_product_count_80pct == null
             ? tr('ui.no_positive_linked_event_burden_for_a_pareto_threshold')
-            : `${number(products.pareto_product_count_80pct)} ${tr('ui.master_products_reach_80_of_linked_logged_events_in_this_scope')}`}
+            : t('ui.master_products_reach_80_of_linked_logged_events_in_this_scope', {
+                count: number(products.pareto_product_count_80pct),
+                total: number(data.analysis.kpis.cohort_product_count),
+              })}
       </p>
     </>
   );

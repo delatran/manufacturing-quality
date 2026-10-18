@@ -219,14 +219,14 @@ async def test_real_websocket_lifecycle(context: Context, client_action: str) ->
         assert context.sid in bootstrap.text
     if client_action == "close":
         await client.close()
-        await eventually(lambda: not context.workspace.listeners[context.sid])
+        await eventually(lambda: not context.workspace.listeners.get(context.sid))
     elif client_action == "reset":
         tcp = client.transport.get_extra_info("socket")
         linger = struct.pack("HH" if sys.platform == "win32" else "ii", 1, 0)
         tcp.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, linger)
         client.transport.abort()
         await client.wait_closed()
-        await eventually(lambda: not context.workspace.listeners[context.sid])
+        await eventually(lambda: not context.workspace.listeners.get(context.sid))
     started = time.monotonic()
     await asyncio.wait_for(context.observer.stop(), timeout=7)
     elapsed = time.monotonic() - started
@@ -397,7 +397,7 @@ async def test_replay_failure_or_cancellation_releases_subscription(
     else:
         release.set()
     await asyncio.wait_for(client.wait_closed(), timeout=2)
-    await eventually(lambda: not context.workspace.listeners[context.sid])
+    await eventually(lambda: not context.workspace.listeners.get(context.sid))
     started = time.monotonic()
     await context.observer.stop()
     await assert_released(context, time.monotonic() - started, "replay_" + failure_kind)
@@ -416,7 +416,7 @@ async def test_reconnect_cursor_and_ordinary_stream_preserve_events(context: Con
     live = await context.workspace.emit(context.sid, None, "status", {"state": "synthetic_live"})
     assert json.loads(await asyncio.wait_for(client.recv(), timeout=2)) == live
     await client.close()
-    await eventually(lambda: not context.workspace.listeners[context.sid])
+    await eventually(lambda: not context.workspace.listeners.get(context.sid))
     reconnected = await connect(ws_url + f"?after={retained[2]['id']}", proxy=None)
     assert json.loads(await asyncio.wait_for(reconnected.recv(), timeout=2)) == live
     with pytest.raises(TimeoutError):
@@ -440,7 +440,7 @@ async def test_live_stream_cancellation_releases_sender_and_subscription(context
     assert len(tasks) == 1
     tasks[0].cancel()
     await asyncio.wait_for(client.wait_closed(), timeout=2)
-    await eventually(lambda: not context.workspace.listeners[context.sid])
+    await eventually(lambda: not context.workspace.listeners.get(context.sid))
     pending_senders = []
     for task in asyncio.all_tasks():
         code = getattr(task.get_coro(), "cr_code", None)

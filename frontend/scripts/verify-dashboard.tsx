@@ -368,7 +368,7 @@ for (const [direction, signal, translated] of [
 assert.match(vietnameseHtml, /<h1>Lỗi sản xuất<\/h1>/);
 assert.match(vietnameseHtml, /Sự kiện lỗi nghiêm trọng/);
 assert.match(vietnameseHtml, /Sự kiện \/ 1\.000 đơn vị tham chiếu/);
-assert.match(vietnameseHtml, /có chi phí ở 0,0% sự kiện · chưa rõ loại tiền/);
+assert.match(vietnameseHtml, /Ghi nhận chi phí cho 0,0% sự kiện · Chưa xác định đơn vị tiền tệ/);
 
 assert.match(vietnameseHtml, /2 lỗi chưa có chi phí hợp lệ/);
 assert.match(vietnameseHtml, /Chưa có dữ liệu/);
@@ -380,6 +380,70 @@ assert.equal(
   beforeVietnamese,
   'Localization must not mutate canonical data',
 );
+
+const selectedScope = structuredClone(empty);
+selectedScope.context.filters = {
+  ...initialFilters,
+  start_month: '2024-02',
+  end_month: '2024-02',
+  product_id: '1',
+};
+selectedScope.analysis.anomalies.limitations = [
+  'Calendar days with no records contribute zero logged events; actual reporting completeness and operating days are unknown.',
+  'In the selected scope, 28 of 29 calendar dates have no logged events. Operational/reporting completeness remains unverified.',
+  'A Poisson-like equal-exposure assumption is unverified. No actual daily output, inspected units, or adjustment for multiple screening comparisons is available.',
+];
+for (const [count, total] of [
+  [1, 1],
+  [2, 7],
+]) {
+  selectedScope.analysis.kpis.cohort_product_count = total;
+  selectedScope.analysis.products.cost_pareto_product_count_80pct = count;
+  for (const locale of ['en', 'vi'] as const) {
+    const before = JSON.stringify(selectedScope);
+    const scopedHtml = render(selectedScope, locale, selectedScope.context.filters);
+    assert.ok(
+      scopedHtml.includes(
+        locale === 'en'
+          ? `${count} of ${total} products in this scope account for at least 80%`
+          : `${count} trên ${total} mã sản phẩm trong phạm vi này chiếm ít nhất 80%`,
+      ),
+      'Cost Pareto describes the selected backend cohort without assuming concentration',
+    );
+    assert.doesNotMatch(
+      scopedHtml,
+      /of 100 products|trên 100|spread across many|chi phí trải rộng/,
+    );
+    assert.equal(JSON.stringify(selectedScope), before);
+  }
+}
+const selectedVietnamese = render(selectedScope, 'vi', selectedScope.context.filters);
+assert.match(selectedVietnamese, /28\/29 ngày không phát sinh bản ghi lỗi/);
+assert.match(selectedVietnamese, /0 sự kiện lỗi đã ghi nhận/);
+assert.match(selectedVietnamese, /chưa xác định độ đầy đủ của báo cáo và ngày vận hành thực tế/);
+assert.match(selectedVietnamese, /chưa được kiểm chứng/);
+assert.match(
+  selectedVietnamese,
+  /số đơn vị đã kiểm tra hoặc hiệu chỉnh cho việc sàng lọc nhiều lần/,
+);
+assert.doesNotMatch(selectedVietnamese, /16\/182|được tính là 0 lỗi/);
+selectedScope.analysis.products.cost_pareto_product_count_80pct = null;
+selectedScope.analysis.kpis = {
+  ...selectedScope.analysis.kpis,
+  event_count: 1,
+  unmatched_event_count: 1,
+  known_repair_cost: 20,
+  cost_known_count: 1,
+  cost_available: true,
+};
+const costConcentration = [
+  ...render(selectedScope).matchAll(/<details class="nested-details">([\s\S]*?)<\/details>/g),
+]
+  .map((match) => match[1])
+  .find((detail) => detail.includes('aria-label="Product repair costs"'));
+assert.ok(costConcentration);
+assert.match(costConcentration, /No positive known repair cost is linked to products/);
+assert.doesNotMatch(costConcentration, /No recorded repair costs in this view/);
 
 const ranked = structuredClone(empty);
 const product = {

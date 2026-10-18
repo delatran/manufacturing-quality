@@ -29,16 +29,16 @@
       "vi": "đang chờ kết quả công cụ"
     },
     "ui.agent_flow_phase_idle": {
-      "en": "turn idle",
-      "vi": "lượt đang chờ"
+      "en": "idle",
+      "vi": "Đang chờ"
     },
     "ui.agent_flow_phase_completed": {
-      "en": "turn completed",
-      "vi": "lượt đã hoàn tất"
+      "en": "completed",
+      "vi": "Đã hoàn tất"
     },
     "ui.agent_flow_phase_failed": {
-      "en": "turn failed",
-      "vi": "lượt gặp lỗi"
+      "en": "encountered an issue",
+      "vi": "Gặp sự cố"
     },
     "ui.agent_flow_phase_cancelled": {
       "en": "turn cancelled",
@@ -65,8 +65,8 @@
       "vi": "Gọi công cụ"
     },
     "ui.agent_flow_receipt": {
-      "en": "Receipt",
-      "vi": "Biên nhận"
+      "en": "Execution proof",
+      "vi": "Chứng thực tính toán"
     },
     "ui.agent_flow_pending": {
       "en": "preparing",
@@ -205,32 +205,32 @@
       "vi": "Hiểu xu hướng lỗi"
     },
     "ui.how_are_recorded_defects_changing": {
-      "en": "Q1: How did defect counts and repair costs change from Jan to Jun 2024?",
-      "vi": "Câu 1: Số lỗi và chi phí sửa chữa biến động thế nào từ tháng 1 đến tháng 6/2024?"
+      "en": "Monthly Trend: How did defect volume and repair costs evolve across the period?",
+      "vi": "Xu hướng theo tháng: Số lỗi và chi phí sửa chữa biến động thế nào qua các tháng?"
     },
     "ui.analyze_how_recorded_defect_counts_change_over_the_selected_perio": {
-      "en": "How did recorded defects, Critical events, and repair costs change over the selected period? Highlight the main monthly shifts and key data limits.",
-      "vi": "Số lỗi ghi nhận, lỗi Nghiêm trọng và chi phí sửa chữa thay đổi thế nào trong kỳ đã chọn? Chỉ rõ biến động chính giữa các tháng và giới hạn dữ liệu cần lưu ý."
+      "en": "Analyze defect trends, Critical events, and repair costs across this period. Highlight key month-over-month shifts and important data coverage limits.",
+      "vi": "Phân tích biến động số lỗi, sự cố Nghiêm trọng (Critical) và chi phí sửa chữa trong kỳ. Nêu bật các chuyển dịch lớn giữa các tháng cùng lưu ý về độ bao phủ dữ liệu."
     },
     "ui.find_the_critical_concentration": {
       "en": "Pinpoint Critical hotspots",
       "vi": "Xác định điểm nóng lỗi Nghiêm trọng"
     },
     "ui.which_locations_need_closer_attention": {
-      "en": "Q2: Which location has the most defects vs. the highest Critical rate?",
-      "vi": "Câu 2: Vị trí nào có tổng lỗi cao nhất và vị trí nào có tỷ lệ Nghiêm trọng cao nhất?"
+      "en": "Critical Hotspots: Which locations have the most defects vs. the highest Critical rate?",
+      "vi": "Điểm nóng lỗi: Vị trí nào có nhiều lỗi nhất và nơi nào có tỷ lệ Nghiêm trọng cao nhất?"
     },
     "ui.compare_defect_location_and_severity_in_the_selected_data_where_a": {
-      "en": "Break down defects by location and severity. Which location has the highest total volume vs. the highest Critical share, is the difference statistically significant, and where should we inspect first?",
-      "vi": "Phân tích lỗi theo vị trí và mức độ nghiêm trọng: vị trí nào nhiều lỗi nhất, vị trí nào có tỷ lệ Nghiêm trọng cao nhất, sự khác biệt có ý nghĩa thống kê không và nên kiểm tra đâu trước?"
+      "en": "Break down defects by location and severity. Which locations drive total volume vs. Critical share, are these differences statistically significant, and where should engineering inspect first?",
+      "vi": "Bóc tách lỗi theo vị trí và mức độ nghiêm trọng: vị trí nào có tổng lượng lỗi cao nhất, vị trí nào có tỷ lệ Nghiêm trọng cao nhất, chênh lệch có ý nghĩa thống kê không và kỹ thuật nên kiểm tra khu vực nào trước?"
     },
     "ui.investigate_a_pattern": {
       "en": "Compare lines, products & costs",
       "vi": "So sánh chuyền, sản phẩm & chi phí"
     },
     "ui.compare_lines_products_and_repair_costs": {
-      "en": "Q3: Which lines and product categories drive defect volume, defect rate, and repair cost?",
-      "vi": "Câu 3: Chuyền và nhóm sản phẩm nào kéo số lỗi, tỷ lệ lỗi và chi phí sửa chữa tăng cao?"
+      "en": "Line & Product Drivers: Which lines and product categories drive defect rate and repair cost?",
+      "vi": "Ma trận Chuyền & Sản phẩm: Dây chuyền và nhóm sản phẩm nào tác động mạnh nhất đến tỷ lệ lỗi và chi phí?"
     },
     "ui.find_notable_patterns_across_production_lines_products_and_record": {
       "en": "Compare production lines, product categories, and repair costs in the selected scope. Which products and lines stand out on defect rate vs. unit repair cost, and how does missing cost data affect the picture?",
@@ -241,8 +241,8 @@
       "vi": "Đề xuất ưu tiên hành động"
     },
     "ui.priorities_suggested_owners_and_measures": {
-      "en": "Top 3 priorities, owners, and target metrics.",
-      "vi": "3 ưu tiên hàng đầu, đầu mối phụ trách và chỉ số đo lường."
+      "en": "Action Roadmap: Top 3 priority issues, owners, and target KPIs.",
+      "vi": "Kế hoạch hành động: Top 3 vấn đề ưu tiên xử lý, đầu mối phụ trách và chỉ số KPI."
     },
     "ui.recommend_the_top_three_issues_production_should_investigate_firs": {
       "en": "What are the top 3 issues we should investigate first in this scope? For each, list the evidence, next check, suggested owner role, and target metric.",
@@ -253,12 +253,12 @@
       "vi": "TRỢ LÝ CHẤT LƯỢNG"
     },
     "ui.ask_about_production_quality": {
-      "en": "Ask the Quality Analyst",
-      "vi": "Hỏi Trợ lý Chất lượng"
+      "en": "Quality Intelligence Assistant",
+      "vi": "Trợ lý Phân tích Chất lượng Sản xuất"
     },
     "ui.explore_a_finding_understand_a_change_and_decide_what_to_investig": {
-      "en": "Ask about defect trends, Critical hotspots, line & product differences, or repair costs in the selected scope.",
-      "vi": "Hỏi trực tiếp về xu hướng lỗi, điểm nóng lỗi Nghiêm trọng, chênh lệch giữa các chuyền/sản phẩm và chi phí sửa chữa trong phạm vi đang chọn."
+      "en": "Investigate defect trends, isolate critical hotspots, compare line performance, and prioritize corrective actions.",
+      "vi": "Phân tích xu hướng lỗi, khoanh vùng điểm nóng nghiêm trọng, đối chiếu hiệu suất các chuyền và đề xuất hành động khắc phục kịp thời."
     },
     "ui.ai_unavailable": {
       "en": "AI unavailable",
@@ -309,8 +309,8 @@
       "vi": "Tải dữ liệu Tổng quan để bắt đầu"
     },
     "ui.this_draft_keeps_an_earlier_selection": {
-      "en": "This question is pinned to an earlier filter selection.",
-      "vi": "Câu hỏi đang giữ bộ lọc đã chọn trước đó."
+      "en": "This question is locked to an earlier Dashboard scope.",
+      "vi": "Câu hỏi này đang cố định theo phạm vi bộ lọc đã chọn trước đó."
     },
     "ui.use_current_dashboard": {
       "en": "Use current Dashboard",
@@ -401,8 +401,8 @@
       "vi": "Chọn câu hỏi để bắt đầu"
     },
     "ui.edit_the_question_before_sending": {
-      "en": "Edit the question before sending.",
-      "vi": "Bạn có thể chỉnh câu hỏi trước khi gửi."
+      "en": "Select a starter below or customize your own inquiry:",
+      "vi": "Chọn hướng phân tích gợi ý bên dưới hoặc tùy chỉnh câu hỏi theo nhu cầu:"
     },
     "ui.based_on": {
       "en": "Based on",
@@ -481,8 +481,8 @@
       "vi": "Đóng thông báo"
     },
     "ui.delivery_has_not_been_confirmed_check_the_conversation_before_sen": {
-      "en": "Delivery has not been confirmed. Check the conversation before sending again to avoid a duplicate request.",
-      "vi": "Chưa xác nhận được yêu cầu đã đến hệ thống. Kiểm tra hội thoại trước khi gửi lại để tránh yêu cầu trùng."
+      "en": "Message status unconfirmed. Please check the conversation before resending to avoid duplicate analysis.",
+      "vi": "Chưa nhận được xác nhận từ hệ thống. Vui lòng kiểm tra lại khung hội thoại trước khi gửi lại để tránh bị phân tích trùng."
     },
     "ui.restore_the_question_for_review": {
       "en": "Restore the question for review",
@@ -770,7 +770,7 @@
     },
     "ui.cost_coverage_currency_unspecified": {
       "en": "cost coverage · currency unspecified",
-      "vi": "có dữ liệu chi phí · chưa rõ loại tiền"
+      "vi": "Độ bao phủ chi phí · Chưa xác định đơn vị tiền tệ"
     },
     "ui.no_logged_events_in_this_scope": {
       "en": "No defects in this view",
@@ -882,11 +882,11 @@
     },
     "ui.local_currency_unspecified": {
       "en": "Local currency, unspecified",
-      "vi": "Nội tệ, chưa rõ loại tiền"
+      "vi": "Đồng nội tệ, chưa xác định đơn vị tiền tệ"
     },
     "ui.cost_coverage": {
       "en": "Cost recorded",
-      "vi": "Có ghi nhận chi phí"
+      "vi": "Tỷ lệ ghi nhận chi phí"
     },
     "ui.selected_events_have_unknown_cost": {
       "en": "defects without a valid cost",
@@ -898,11 +898,11 @@
     },
     "ui.cost_coverage_2": {
       "en": "cost coverage",
-      "vi": "độ phủ chi phí"
+      "vi": "độ bao phủ chi phí"
     },
     "ui.unknown_costs_are_excluded_this_is_observed_cost_not_an_estimate_": {
-      "en": "Unknown costs are excluded. This is observed cost, not an estimate of the full repair burden.",
-      "vi": "Chi phí chưa biết được loại khỏi tổng. Đây là chi phí đã ghi nhận, chưa phải ước tính toàn bộ chi phí sửa chữa."
+      "en": "Missing cost records are excluded. This reflects observed valid costs, not an estimate of the total repair burden.",
+      "vi": "Các trường hợp khuyết dữ liệu chi phí được loại khỏi tổng số. Đây là chi phí thực tế ghi nhận được, không đại diện cho toàn bộ chi phí sửa chữa thực tế phát sinh."
     },
     "ui.product_repair_cost_concentration": {
       "en": "Top 10 costliest products & Pareto 80% check",
@@ -921,12 +921,16 @@
       "vi": "Tỷ lệ có chi phí"
     },
     "ui.no_known_repair_cost_in_this_view": {
-      "en": "No known repair cost in this view.",
-      "vi": "Chưa có chi phí sửa chữa đã biết trong phạm vi này."
+      "en": "No recorded repair costs in this view.",
+      "vi": "Chưa có chi phí sửa chữa được ghi nhận trong phạm vi này."
     },
     "ui.products_account_for_80_of_known_linked_repair_costs": {
-      "en": "of 100 products account for 80% of recorded repair costs (costs are spread across many products rather than concentrated in a few).",
-      "vi": "trên 100 sản phẩm chiếm 80% tổng chi phí sửa chữa (chi phí trải rộng trên nhiều mã sản phẩm chứ không chỉ dồn vào một vài mã)."
+      "en": "{count} of {total} products in this scope account for at least 80% of known repair costs linked to the product master.",
+      "vi": "{count} trên {total} mã sản phẩm trong phạm vi này chiếm ít nhất 80% chi phí sửa chữa đã biết của các lỗi khớp danh mục sản phẩm."
+    },
+    "ui.no_positive_linked_repair_cost_for_pareto": {
+      "en": "No positive known repair cost is linked to products in this view.",
+      "vi": "Không có chi phí sửa chữa đã biết lớn hơn 0 từ các lỗi khớp danh mục sản phẩm trong phạm vi này."
     },
     "ui.historical_signal_check": {
       "en": "HISTORICAL SIGNAL CHECK",
@@ -990,19 +994,19 @@
     },
     "ui.actual_defect_rate_is_unavailable": {
       "en": "Actual defect rate is unavailable",
-      "vi": "Chưa có tỷ lệ lỗi thực tế"
+      "vi": "Tỷ lệ lỗi thực tế không khả dụng"
     },
     "ui.actual_production_and_inspected_units_were_not_supplied_reference": {
       "en": "Actual production and inspected units were not supplied. Reference intensity helps compare logged burden.",
-      "vi": "Chưa có sản lượng và số đơn vị được kiểm tra thực tế. Cường độ tham chiếu giúp so sánh mức lỗi đã ghi nhận."
+      "vi": "Không có số liệu sản lượng và kiểm tra thực tế. Tần suất lỗi trên 1.000 SP định mức giúp so sánh mật độ phát sinh lỗi ghi nhận."
     },
     "ui.events_with_unknown_cost": {
       "en": "events with unknown cost",
-      "vi": "sự kiện chưa rõ chi phí"
+      "vi": "sự kiện khuyết dữ liệu chi phí"
     },
     "ui.missing_costs_stay_unknown_and_are_excluded_from_repair_totals": {
       "en": "Missing costs stay unknown and are excluded from repair totals.",
-      "vi": "Chi phí thiếu vẫn là chưa biết và không được tính vào tổng chi phí sửa chữa."
+      "vi": "Các sự kiện khuyết chi phí được phân loại là chưa ghi nhận và không cộng vào tổng chi phí sửa chữa."
     },
     "ui.events_without_a_product_match": {
       "en": "events without a product match",
@@ -1025,8 +1029,8 @@
       "vi": "Lỗi được phân tích"
     },
     "ui.quarantined_rows": {
-      "en": "Rows set aside",
-      "vi": "Dòng tách riêng"
+      "en": "Quarantined rows (integrity issues)",
+      "vi": "Dòng cách ly kiểm soát"
     },
     "ui.dates_with_no_logged_events": {
       "en": "Days with no defects logged",
@@ -1078,7 +1082,7 @@
     },
     "ui.repair_cost_distribution": {
       "en": "Repair cost distribution",
-      "vi": "Phân phối chi phí sửa chữa"
+      "vi": "Phân bố chi phí sửa chữa"
     },
     "ui.distribution_of_observed_valid_costs": {
       "en": "Spread of repair cost per defect",
@@ -1090,27 +1094,27 @@
     },
     "ui.cost_coverage_3": {
       "en": "of all defects",
-      "vi": "tổng số lỗi"
+      "vi": "trên tổng số lỗi ghi nhận"
     },
     "ui.median": {
       "en": "Median",
       "vi": "Trung vị"
     },
     "ui.25th_percentile": {
-      "en": "25th percentile",
-      "vi": "Phân vị 25"
+      "en": "25th percentile (P25)",
+      "vi": "Phân vị 25 (P25)"
     },
     "ui.75th_percentile": {
-      "en": "75th percentile",
-      "vi": "Phân vị 75"
+      "en": "75th percentile (P75)",
+      "vi": "Phân vị 75 (P75)"
     },
     "ui.95th_percentile": {
-      "en": "95th percentile",
-      "vi": "Phân vị 95"
+      "en": "95th percentile (P95)",
+      "vi": "Phân vị 95 (P95)"
     },
     "ui.local_currency_counts_cover_events_with_valid_cost_only_missing_o": {
       "en": "Values in local currency (unspecified). Includes only defects with valid recorded costs; missing or negative entries are excluded.",
-      "vi": "Đơn vị: nội tệ (chưa rõ loại tiền). Chỉ tính các lỗi có chi phí hợp lệ; các bản ghi thiếu hoặc âm đã được loại trừ."
+      "vi": "Đơn vị: đồng nội tệ (chưa xác định đơn vị tiền tệ). Chỉ tính các lỗi có chi phí hợp lệ; các bản ghi khuyết hoặc có giá trị âm đã được loại trừ."
     },
     "ui.logged_events": {
       "en": "Defects",
@@ -1154,7 +1158,7 @@
     },
     "ui.cram_r_s_v": {
       "en": "Cramér's V:",
-      "vi": "Cramér's V:"
+      "vi": "Hệ số Cramér's V:"
     },
     "ui.p_value": {
       "en": "· p-value:",
@@ -1210,7 +1214,7 @@
     },
     "ui.products_ranked_by_reference_output_intensity": {
       "en": "Products ranked by reference-output intensity",
-      "vi": "Sản phẩm xếp theo cường độ trên sản lượng tham chiếu"
+      "vi": "Xếp hạng sản phẩm theo tỷ lệ lỗi trên 1.000 SP định mức"
     },
     "ui.top_products_ranked_by_logged_event_count": {
       "en": "Top products ranked by logged event count",
@@ -1233,8 +1237,8 @@
       "vi": "Trên 1.000 SP"
     },
     "ui.cumulative": {
-      "en": "Cumulative",
-      "vi": "Lũy kế"
+      "en": "Cumulative share (%)",
+      "vi": "Tỷ lệ tích lũy (%)"
     },
     "ui.no_eligible_products_for_this_ranking": {
       "en": "No eligible products for this ranking.",
@@ -1254,11 +1258,11 @@
     },
     "ui.no_positive_linked_event_burden_for_a_pareto_threshold": {
       "en": "No positive linked-event burden for a Pareto threshold.",
-      "vi": "Không có sự kiện đã ghép để xác định ngưỡng Pareto."
+      "vi": "Không có sự kiện lỗi khớp danh mục để xác định ngưỡng Pareto."
     },
     "ui.master_products_reach_80_of_linked_logged_events_in_this_scope": {
-      "en": "of 100 products account for 80% of matched defects in this view.",
-      "vi": "trên 100 mã sản phẩm chiếm 80% tổng số lỗi khớp mã trong phạm vi này."
+      "en": "{count} of {total} products in this scope account for at least 80% of matched defect events.",
+      "vi": "{count} trên {total} mã sản phẩm trong phạm vi này chiếm ít nhất 80% tổng số sự kiện lỗi khớp mã sản phẩm."
     },
     "ui.daily_logged_events": {
       "en": "Defects per day",
@@ -1273,16 +1277,16 @@
       "vi": "Ngày vượt ngưỡng"
     },
     "ui.the_records_behind_this_view": {
-      "en": "UNDERLYING DEFECT LOG",
-      "vi": "DỮ LIỆU BẢN GHI GỐC"
+      "en": "UNDERLYING DEFECT RECORDS",
+      "vi": "NHẬT KÝ BẢN GHI LỖI CHI TIẾT"
     },
     "ui.explore_the_filtered_defect_log": {
       "en": "Filtered defect records",
       "vi": "Danh sách bản ghi lỗi theo bộ lọc"
     },
     "ui.retained_events_in_this_applied_scope": {
-      "en": "defects match the applied filters",
-      "vi": "lỗi khớp bộ lọc đang áp dụng"
+      "en": "defect records matching the applied filters",
+      "vi": "bản ghi lỗi phù hợp với bộ lọc đang áp dụng"
     },
     "ui.loading_filtered_records": {
       "en": "Loading filtered records…",
@@ -1293,8 +1297,8 @@
       "vi": "Sắp xếp theo"
     },
     "ui.sort_direction": {
-      "en": "Sort direction",
-      "vi": "Chiều sắp xếp"
+      "en": "Sort order",
+      "vi": "Thứ tự sắp xếp"
     },
     "ui.descending": {
       "en": "Descending",
@@ -1329,8 +1333,8 @@
       "vi": "Sản phẩm / chuyền"
     },
     "ui.defect_location": {
-      "en": "Defect / location",
-      "vi": "Lỗi / vị trí"
+      "en": "Defect Type / Location",
+      "vi": "Loại lỗi / Vị trí lỗi"
     },
     "ui.severity": {
       "en": "Severity",
@@ -1349,8 +1353,8 @@
       "vi": "Không rõ"
     },
     "ui.no_records_match_this_scope": {
-      "en": "No records match this scope.",
-      "vi": "Không có bản ghi phù hợp phạm vi này."
+      "en": "No defect records match the selected filter criteria.",
+      "vi": "Không có bản ghi lỗi nào khớp với điều kiện lọc đã chọn."
     },
     "ui.loading_records": {
       "en": "Loading records…",
@@ -1477,8 +1481,8 @@
       "vi": "Chưa đính kèm được tệp. Kiểm tra định dạng và dung lượng rồi thử lại. Câu hỏi của bạn vẫn được giữ lại."
     },
     "ui.connection_interrupted_we_are_reconnecting_your_draft_is_kept_her": {
-      "en": "Connection interrupted. We are reconnecting; your draft is kept here.",
-      "vi": "Kết nối bị gián đoạn. Hệ thống đang kết nối lại; bản nháp của bạn được giữ ở đây."
+      "en": "Connection interrupted. Reconnecting automatically—your draft has been preserved.",
+      "vi": "Kết nối bị gián đoạn. Đang tự động kết nối lại; nội dung bạn đang nhập vẫn được giữ nguyên vẹn."
     },
     "ui.result_could_not_be_verified": {
       "en": "The result could not be verified. Your question and any saved results are kept here. Review them before trying again.",
@@ -1581,8 +1585,8 @@
       "vi": "Tải gói bằng chứng"
     },
     "ui.open_receipt_json": {
-      "en": "Open receipt JSON",
-      "vi": "Mở biên nhận JSON"
+      "en": "View audit receipt (JSON)",
+      "vi": "Xem dữ liệu chứng thực tính toán (JSON)"
     },
     "ui.snapshot_and_verification_references": {
       "en": "Snapshot and verification references",
@@ -1601,8 +1605,8 @@
       "vi": "Phiên bản quy tắc"
     },
     "ui.execution_receipt": {
-      "en": "Execution receipt",
-      "vi": "Biên nhận thực thi"
+      "en": "Computation execution receipt",
+      "vi": "Chứng thực thực thi tính toán"
     },
     "ui.source_sha_256": {
       "en": "Source SHA-256",
@@ -1613,8 +1617,8 @@
       "vi": "SHA-256 của kết quả"
     },
     "ui.investigation_and_handoff_brief": {
-      "en": "Investigation and handoff brief",
-      "vi": "Hồ sơ điều tra và brief bàn giao"
+      "en": "Investigation record & Handoff brief",
+      "vi": "Hồ sơ điều tra & Biên bản bàn giao hiện trường"
     },
     "ui.keep_checked_findings_open_hypotheses_and_the_next_measurement_to": {
       "en": "Keep checked findings, open hypotheses and the next measurement together.",
@@ -1673,8 +1677,8 @@
       "vi": "Chưa lưu kết quả đã kiểm."
     },
     "ui.open_and_tested_hypotheses": {
-      "en": "Open and tested hypotheses",
-      "vi": "Giả thuyết đang mở và đã kiểm"
+      "en": "Active and tested hypotheses",
+      "vi": "Giả thuyết đang theo dõi và đã kiểm chứng"
     },
     "ui.add_a_hypothesis": {
       "en": "Add a hypothesis",
@@ -1725,12 +1729,12 @@
       "vi": "Dùng bản đã lưu"
     },
     "ui.registered_briefs_and_artifacts": {
-      "en": "Registered briefs and artifacts",
-      "vi": "Brief và đầu ra đã đăng ký"
+      "en": "Exported briefs and evidence artifacts",
+      "vi": "Biên bản bàn giao và tệp bằng chứng lưu trữ"
     },
     "ui.no_registered_brief_yet_ask_the_analyst_to_prepare_a_handoff_brie": {
-      "en": "No registered brief yet. Ask the analyst to prepare a handoff brief from this investigation.",
-      "vi": "Chưa có brief đã đăng ký. Yêu cầu trợ lý chuẩn bị brief bàn giao từ hồ sơ điều tra này."
+      "en": "No handoff brief generated yet. Request the analyst to compile an official handoff brief from this record.",
+      "vi": "Chưa có biên bản bàn giao nào được lưu. Bạn có thể yêu cầu trợ lý tổng hợp biên bản bàn giao chính thức từ hồ sơ này."
     },
     "ui.loading_the_saved_investigation": {
       "en": "Loading the saved investigation…",
@@ -2194,39 +2198,39 @@
     },
     "ui.cost_coverage_4": {
       "en": "Cost coverage",
-      "vi": "Độ phủ chi phí"
+      "vi": "Độ bao phủ chi phí"
     },
     "ui.test_the_assumption": {
-      "en": "TEST THE ASSUMPTION",
-      "vi": "THỬ GIẢ ĐỊNH"
+      "en": "SENSITIVITY & STRESS TESTING",
+      "vi": "KIỂM TRA ĐỘ NHẠY GIẢ ĐỊNH"
     },
     "ui.would_the_priority_change": {
-      "en": "Would the priority change?",
-      "vi": "Ưu tiên có thay đổi không?"
+      "en": "Do Action Priorities Hold Under Alternative Rules?",
+      "vi": "Thứ tự ưu tiên hành động có bị thay đổi?"
     },
     "ui.a_scenario_recalculates_this_scope_beside_the_canonical_policy_th": {
-      "en": "A scenario recalculates this scope beside the canonical policy. The original records and canonical results remain available.",
-      "vi": "Kịch bản giả định tính lại phạm vi này để so với quy tắc chuẩn. Vẫn có thể mở bản ghi gốc và kết quả chuẩn."
+      "en": "Recalculates metrics under alternative data rules to test decision robustness against the canonical baseline, without altering raw records.",
+      "vi": "Tính toán lại các chỉ số theo quy ước dữ liệu khác để kiểm tra độ bền của quyết định so với quy tắc chuẩn; không làm thay đổi bản ghi gốc."
     },
     "ui.scenario": {
       "en": "Scenario",
       "vi": "Kịch bản giả định"
     },
     "ui.this_changes_financial_availability_only_events_with_observed_cos": {
-      "en": "This changes financial availability only. Events with observed cost 10 remain in event counts.",
-      "vi": "Chỉ thay đổi dữ liệu dùng cho phân tích tài chính. Sự kiện có chi phí bằng 10 vẫn nằm trong số đếm sự kiện."
+      "en": "Affects financial metrics only: repair costs equal to 10 are withheld as unknown placeholders. Defect event counts remain unchanged. Lower cost reflects withheld data, not actual savings.",
+      "vi": "Chỉ ảnh hưởng đến chỉ số tài chính: các chi phí bằng 10 bị tạm giữ vì nghi là giá trị mặc định. Số lượng lỗi không đổi. Tổng chi phí giảm là do loại trừ dữ liệu, không phải tiết kiệm chi phí."
     },
     "ui.ambiguous_dates_use_day_month_some_events_may_move_outside_januar": {
-      "en": "Ambiguous dates use day/month. Some events may move outside January to June; original date text is retained.",
-      "vi": "Ngày mơ hồ được đọc theo ngày/tháng. Một số sự kiện có thể ra ngoài tháng 1 đến 6; chuỗi ngày gốc vẫn được giữ."
+      "en": "Ambiguous slash dates (both numbers ≤ 12) are parsed as Day/Month. Some events shift into H2 2024, falling outside the study window (Jan–Jun). This count reduction is a filtering artifact, not manufacturing improvement or a confidence interval.",
+      "vi": "Ngày dạng gạch chéo (cả hai số ≤ 12) được đọc theo Ngày/Tháng. Một số sự kiện bị đẩy sang nửa cuối năm, rơi ra ngoài khung quan sát (T1–T6/2024). Số lỗi giảm là do hiệu ứng lọc thời gian, không phản ánh chất lượng cải thiện hay khoảng tin cậy."
     },
     "ui.this_assumes_the_source_year_2026_should_be_2024_it_is_a_sensitiv": {
-      "en": "This assumes the source year 2026 should be 2024. It is a sensitivity test, not a correction to the source.",
-      "vi": "Kịch bản giả định năm 2026 trong nguồn là năm 2024. Đây là phép kiểm độ nhạy, chưa phải dữ liệu nguồn đã được sửa."
+      "en": "Assumes dates logged as 2026 were clerical typos for 2024 and brings them into scope. This tests whether priorities change, without permanently altering source data.",
+      "vi": "Giả định các bản ghi năm 2026 là lỗi gõ nhầm của năm 2024 và đưa vào phạm vi phân tích. Phép thử này nhằm rà soát xem ưu tiên có bị xáo trộn không, không sửa đổi dữ liệu nguồn gốc."
     },
     "ui.reset_to_canonical": {
-      "en": "Reset to canonical",
-      "vi": "Về quy tắc chuẩn"
+      "en": "Reset to canonical baseline",
+      "vi": "Quay về quy tắc chuẩn mặc định"
     },
     "ui.comparing_against_the_same_canonical_scope": {
       "en": "Comparing against the same canonical scope…",
@@ -2245,12 +2249,12 @@
       "vi": "điểm phần trăm"
     },
     "ui.the_priority_order_changes_under_this_assumption_review_the_compa": {
-      "en": "The priority order changes under this assumption. Review the comparison before choosing an action.",
-      "vi": "Thứ tự ưu tiên thay đổi dưới giả định này. Xem phần so sánh trước khi chọn hành động."
+      "en": "Action priorities change under this scenario. Carefully review ranking shifts and evidence before finalizing operational follow-up.",
+      "vi": "Thứ tự ưu tiên hành động bị thay đổi dưới kịch bản này. Cần đối chiếu kỹ biến động thứ hạng và bằng chứng trước khi quyết định biện pháp vận hành."
     },
     "ui.the_priority_order_is_unchanged_under_this_assumption_data_limits": {
-      "en": "The priority order is unchanged under this assumption. Data limits still apply.",
-      "vi": "Thứ tự ưu tiên giữ nguyên dưới giả định này. Các giới hạn dữ liệu vẫn áp dụng."
+      "en": "Action priorities remain robust and unchanged under this scenario. However, underlying data limitations (unverified output and reporting completeness) still apply.",
+      "vi": "Thứ tự ưu tiên hành động vẫn vững chắc và không đổi dưới kịch bản này. Dù vậy, các giới hạn dữ liệu nguồn (chưa có sản lượng thực tế và mức độ đầy đủ của ghi nhận) vẫn cần lưu ý."
     },
     "ui.ranking_changes_and_comparison_evidence": {
       "en": "Ranking changes and comparison evidence",
@@ -2258,7 +2262,7 @@
     },
     "ui.lines_by_reference_intensity": {
       "en": "Lines by reference intensity",
-      "vi": "Chuyền theo cường độ tham chiếu"
+      "vi": "Xếp hạng chuyền theo tỷ lệ lỗi định mức"
     },
     "ui.defect_types_by_observed_cost": {
       "en": "Defect types by observed cost",
@@ -2294,27 +2298,27 @@
     },
     "ui.scenario_exclude_cost_10": {
       "en": "Exclude cost 10 from financial analysis",
-      "vi": "Loại chi phí bằng 10 khỏi phân tích tài chính"
+      "vi": "Loại trừ chi phí mặc định (=10) khỏi phân tích chi phí"
     },
     "ui.scenario_ambiguous_dm": {
-      "en": "Read ambiguous dates as day/month",
-      "vi": "Đọc ngày mơ hồ theo ngày/tháng"
+      "en": "Interpret ambiguous slash dates as Day/Month (DD/MM)",
+      "vi": "Diễn giải ngày dạng gạch chéo phân vân theo Ngày/Tháng (DD/MM)"
     },
     "ui.scenario_year_2024": {
-      "en": "Treat the 2026 dates as 2024",
-      "vi": "Giả định các ngày năm 2026 thuộc năm 2024"
+      "en": "Assume year 2026 dates were typos for 2024",
+      "vi": "Giả định các ngày ghi năm 2026 là lỗi gõ nhầm của năm 2024"
     },
     "ui.analysis_refused": {
-      "en": "This request could not be answered as phrased. Check the note below and adjust your question.",
-      "vi": "Chưa thể trả lời yêu cầu theo cách đặt câu hỏi này. Hãy xem lý do bên dưới và điều chỉnh lại câu hỏi."
+      "en": "Unable to process the request as phrased. Please see the guidance below to refine your inquiry.",
+      "vi": "Chưa thể xử lý câu hỏi theo cách diễn đạt này. Vui lòng xem gợi ý bên dưới để tinh chỉnh lại câu hỏi."
     },
     "ui.analysis_incomplete": {
       "en": "Response ended early. Any verified figures are saved; try narrowing your question.",
       "vi": "Phản hồi bị ngắt giữa chừng. Các số liệu đã kiểm chứng vẫn được lưu; hãy thử thu hẹp câu hỏi."
     },
     "ui.analysis_timeout": {
-      "en": "The analysis reached its time limit. Review saved results and narrow the next request.",
-      "vi": "Phân tích đã chạm giới hạn thời gian. Xem kết quả đã lưu và thu hẹp yêu cầu tiếp theo."
+      "en": "Analysis timed out. You can review partial findings above or narrow the data scope for a faster response.",
+      "vi": "Phân tích quá thời gian chờ do khối lượng dữ liệu lớn. Bạn có thể xem kết quả sơ bộ ở trên hoặc thu hẹp phạm vi để có phản hồi nhanh hơn."
     },
     "ui.analysis_unavailable": {
       "en": "AI is unavailable. The Dashboard, evidence and exports remain available.",
@@ -2345,20 +2349,20 @@
       "vi": "Đang tải dòng gốc và quyết định xử lý trường…"
     },
     "ui.original_http_row": {
-      "en": "Raw JSON from HTTP API (row {row})",
-      "vi": "JSON gốc từ HTTP API (dòng {row})"
+      "en": "Raw source data (Row {row})",
+      "vi": "Bản ghi nguồn ban đầu (Dòng {row})"
     },
     "ui.canonical_event": {
-      "en": "Cleaned record",
-      "vi": "Bản ghi sau khi làm sạch"
+      "en": "Standardized record (Canonical)",
+      "vi": "Bản ghi đã chuẩn hóa quy tắc"
     },
     "ui.selected_scenario_event": {
       "en": "Event in the selected scenario",
       "vi": "Sự kiện trong kịch bản đang chọn"
     },
     "ui.field_decisions": {
-      "en": "Field processing decisions",
-      "vi": "Quyết định xử lý trường"
+      "en": "Field-level cleaning rules",
+      "vi": "Nhật ký xử lý & chuẩn hóa từng trường"
     },
     "ui.field": {
       "en": "Field",
@@ -2373,16 +2377,16 @@
       "vi": "Giá trị sau xử lý"
     },
     "ui.policy_decision": {
-      "en": "Policy decision and original audit text",
-      "vi": "Quyết định theo quy tắc và văn bản kiểm tra gốc"
+      "en": "Policy decision and audit notes",
+      "vi": "Quy tắc xử lý và mô tả quy chuẩn kiểm toán"
     },
     "ui.no_field_changes": {
-      "en": "No field processing decisions are recorded for this event.",
-      "vi": "Chưa ghi nhận quyết định xử lý trường cho sự kiện này."
+      "en": "No data corrections were required for this record.",
+      "vi": "Bản ghi này nguyên vẹn, không cần áp dụng quy tắc chỉnh sửa nào."
     },
     "ui.trace_truncated": {
       "en": "The trace reached its result limit. The displayed rows are a partial set.",
-      "vi": "Truy vết đã chạm giới hạn kết quả. Các dòng đang hiện chỉ là một phần."
+      "vi": "Đã đạt giới hạn bản ghi truy vết. Danh sách chỉ hiển thị một phần kết quả."
     },
     "ui.check_category_mix": {
       "en": "Check the category mix before comparing lines",
@@ -2398,7 +2402,7 @@
     },
     "ui.line_category_table": {
       "en": "Line and category reference intensities",
-      "vi": "Cường độ tham chiếu theo chuyền và nhóm sản phẩm"
+      "vi": "Tỷ lệ lỗi định mức theo chuyền và nhóm sản phẩm"
     },
     "ui.reference_output": {
       "en": "Reference output",
@@ -2498,7 +2502,7 @@
     },
     "ui.record_sort_defect_date": {
       "en": "Defect date",
-      "vi": "Ngày lỗi"
+      "vi": "Ngày ghi nhận lỗi"
     },
     "ui.record_sort_defect_id": {
       "en": "Defect id",
@@ -2545,12 +2549,12 @@
       "vi": "Các tệp này giữ phạm vi và nội dung tại lúc tạo. Nội dung hồ sơ chỉnh sửa sau đó nằm trong bản xuất theo phiên bản ở trên."
     },
     "ui.half_period_comparison": {
-      "en": "Half-period comparison",
-      "vi": "So sánh hai nửa giai đoạn"
+      "en": "Half-period trend comparison",
+      "vi": "So sánh nửa đầu và nửa cuối kỳ"
     },
     "ui.half_period_changes": {
       "en": "Defects {value0} · Critical {value1} · Known repair cost {value2}",
-      "vi": "Lỗi {value0} · Nghiêm trọng {value1} · Chi phí sửa đã biết {value2}"
+      "vi": "Số lỗi {value0} · Lỗi nghiêm trọng {value1} · Chi phí sửa đã biết {value2}"
     },
     "ui.half_period_changes_without_cost": {
       "en": "Defects {value0} · Critical {value1}",
@@ -2586,7 +2590,7 @@
     },
     "ui.cost_per_known_cost_event": {
       "en": "Average cost per repair",
-      "vi": "Chi phí TB mỗi lần sửa"
+      "vi": "Chi phí TB / sự kiện lỗi có chi phí"
     },
     "ui.ratio_to_other_lines": {
       "en": "{value0}× other lines",
@@ -2597,8 +2601,8 @@
       "vi": "Tất cả chuyền"
     },
     "ui.not_carried_on_line": {
-      "en": "Not made on this line",
-      "vi": "Chuyền này không sản xuất nhóm này"
+      "en": "Not produced on this line",
+      "vi": "Không sản xuất trên chuyền này"
     },
     "ui.category_line_matrix_footnote": {
       "en": "Darker orange indicates more events per 1,000 reference units. A dash means the master data has no product in that category on that line.",
@@ -2698,7 +2702,7 @@
     },
     "ui.dashboard_kpi_critical_detail": {
       "en": "{value0} of all recorded events",
-      "vi": "{value0} tổng số sự kiện ghi nhận"
+      "vi": "Chiếm {value0} tổng số sự kiện ghi nhận"
     },
     "ui.dashboard_kpi_rate": {
       "en": "Events / 1,000 reference units",
@@ -2718,7 +2722,7 @@
     },
     "ui.dashboard_kpi_cost_detail": {
       "en": "cost recorded for {value0} of events · currency unspecified",
-      "vi": "có chi phí ở {value0} sự kiện · chưa rõ loại tiền"
+      "vi": "Ghi nhận chi phí cho {value0} sự kiện · Chưa xác định đơn vị tiền tệ"
     },
     "ui.dashboard_kpi_cost_help": {
       "en": "Total valid repair cost in local currency (currency unit not specified in source). Missing or negative values are excluded rather than counted as zero.",
@@ -2726,7 +2730,7 @@
     },
     "ui.dashboard_kpi_avg": {
       "en": "Average recorded cost per event",
-      "vi": "Chi phí ghi nhận TB mỗi sự kiện"
+      "vi": "Chi phí sửa chữa TB / sự kiện có chi phí"
     },
     "ui.dashboard_kpi_avg_detail": {
       "en": "{value0} in {value2} → {value1} in {value3}",
@@ -2753,8 +2757,8 @@
       "vi": "KHUYẾN NGHỊ · 3 ƯU TIÊN HÀNG ĐẦU"
     },
     "ui.dashboard_priorities_title": {
-      "en": "Top 3 issues for Production to address first",
-      "vi": "3 vấn đề ưu tiên cần xử lý trước"
+      "en": "Top 3 operational priorities for Production",
+      "vi": "3 ưu tiên vận hành trọng tâm xưởng cần xử lý ngay"
     },
     "ui.dashboard_priorities_caption": {
       "en": "Ranked by Critical defect share, defect rate per 1,000 reference units, and average repair cost per defect. Updates automatically with your filters.",
@@ -2778,7 +2782,7 @@
     },
     "ui.dashboard_p_critical_value": {
       "en": "of defects here are Critical",
-      "vi": "số lỗi ở đây thuộc mức nghiêm trọng"
+      "vi": "là lỗi Nghiêm trọng tại vị trí này"
     },
     "ui.dashboard_p_critical_detail": {
       "en": "{value0} of {value1} defects here · {value2} Critical at other locations",
@@ -2810,11 +2814,11 @@
     },
     "ui.dashboard_p_cost_title": {
       "en": "High unit repair cost on {value0}",
-      "vi": "Chi phí sửa mỗi lỗi cao tại {value0}"
+      "vi": "Chi phí sửa chữa bình quân cao tại {value0}"
     },
     "ui.dashboard_p_cost_value": {
       "en": "average recorded cost per event",
-      "vi": "chi phí ghi nhận TB mỗi sự kiện"
+      "vi": "chi phí sửa trung bình mỗi sự kiện"
     },
     "ui.dashboard_p_cost_detail": {
       "en": "vs {value0} on other lines ({value1}×) · {value2} of recorded repair cost",
@@ -2830,7 +2834,7 @@
     },
     "ui.dashboard_p_type_detail": {
       "en": "{value0} of all recorded repair cost",
-      "vi": "{value0} tổng chi phí sửa đã ghi nhận"
+      "vi": "Chiếm {value0} tổng chi phí sửa đã ghi nhận"
     },
     "ui.dashboard_owner": {
       "en": "Suggested owner",
@@ -2930,7 +2934,7 @@
     },
     "ui.dashboard_cost_type_title": {
       "en": "{value0} defects carry {value1} of repair cost",
-      "vi": "Lỗi {value0} chiếm {value1} chi phí sửa"
+      "vi": "Lỗi {value0} chiếm {value1} chi phí sửa chữa ghi nhận"
     },
     "ui.dashboard_cost_flat": {
       "en": "Repair cost by line and defect type",
@@ -2950,7 +2954,7 @@
     },
     "ui.dashboard_cost_share_line": {
       "en": "{value0} of repair cost",
-      "vi": "{value0} tổng chi phí sửa"
+      "vi": "Chiếm {value0} tổng chi phí sửa"
     },
     "ui.dashboard_cost_by_type": {
       "en": "Repair cost by defect type",
@@ -3002,7 +3006,7 @@
     },
     "ui.dashboard_records_caption": {
       "en": "Open the records for the applied filters, sort them and trace any record back to its source row.",
-      "vi": "Mở bản ghi theo bộ lọc đang áp dụng, sắp xếp và truy một bản ghi về dòng nguồn gốc."
+      "vi": "Tra cứu các bản ghi lỗi theo bộ lọc đang áp dụng, sắp xếp và truy vết nguồn gốc chi tiết của từng bản ghi."
     },
     "ui.dashboard_share_kicker": {
       "en": "EXPORT AND SHARE",
@@ -3025,8 +3029,8 @@
       "vi": "Tóm tắt một trang dạng Markdown: chỉ số chính, ưu tiên và ngày cần kiểm tra."
     },
     "ui.dashboard_share_csv": {
-      "en": "Filtered defect records (CSV)",
-      "vi": "Dữ liệu lỗi theo bộ lọc (CSV)"
+      "en": "Filtered clean defect records (CSV)",
+      "vi": "Bản ghi lỗi sạch theo bộ lọc (CSV)"
     },
     "ui.dashboard_share_csv_desc": {
       "en": "Cleaned defect records matching the current filters, ready to open in Excel or share with other departments.",
@@ -3041,12 +3045,12 @@
       "vi": "CSV kèm định nghĩa, bộ lọc và mã băm nguồn để người khác kiểm lại số liệu."
     },
     "ui.dashboard_share_workbook": {
-      "en": "Data quality workbook (DATA_QUALITY.xlsx)",
-      "vi": "Báo cáo chất lượng dữ liệu (DATA_QUALITY.xlsx)"
+      "en": "Data Quality Audit Workbook (DATA_QUALITY.xlsx)",
+      "vi": "Sổ kiểm toán chất lượng dữ liệu (DATA_QUALITY.xlsx)"
     },
     "ui.dashboard_share_workbook_desc": {
-      "en": "Part 1 deliverable: documents all 12 data quality issues found, detection rules, cleaning actions and impact on results.",
-      "vi": "Deliverable Part 1 của đề bài: tổng hợp 12 vấn đề chất lượng dữ liệu, cách phát hiện, hướng xử lý và tác động lên kết quả."
+      "en": "Part 1 Core Audit Deliverable: fully documents all 12 data quality issues, detection rules, cleaning actions, and downstream analytical impact.",
+      "vi": "Hồ sơ bàn giao kiểm toán Part 1: tổng hợp toàn diện 12 vấn đề chất lượng dữ liệu, quy tắc phát hiện, phương án xử lý làm sạch và tác động đối soát lên kết quả."
     },
     "ui.dashboard_download": {
       "en": "Download",
@@ -3066,11 +3070,11 @@
     },
     "ui.dashboard_quality_rows": {
       "en": "{value0} rows received → {value1} defects analysed",
-      "vi": "{value0} dòng nhận về → {value1} lỗi được phân tích"
+      "vi": "{value0} dòng dữ liệu tiếp nhận → {value1} sự kiện lỗi đưa vào phân tích"
     },
     "ui.dashboard_quality_rows_detail": {
       "en": "{value0} duplicate copies removed, {value1} contradictory rows set aside and {value2} dated outside the study period. Every step is in the workbook.",
-      "vi": "Đã bỏ {value0} bản trùng, tách riêng {value1} dòng mâu thuẫn và {value2} dòng ngoài kỳ nghiên cứu. Mọi bước đều có trong sổ chất lượng."
+      "vi": "Đã loại bỏ {value0} bản ghi trùng lặp, cách ly {value1} dòng vi phạm tính toàn vẹn và loại {value2} dòng ngoài kỳ khảo sát. Toàn bộ quy trình đối soát được lưu trong sổ DATA_QUALITY."
     },
     "ui.dashboard_quality_cost": {
       "en": "{value0} defects without a valid cost",
@@ -3086,7 +3090,7 @@
     },
     "ui.dashboard_quality_unmatched_detail": {
       "en": "Counted in plant totals but left out of line, category and product rates.",
-      "vi": "Vẫn tính vào tổng nhà máy nhưng không vào tỷ lệ theo chuyền, nhóm và sản phẩm."
+      "vi": "Vẫn được tính vào tổng số lỗi toàn nhà máy nhưng không tính vào tỷ lệ lỗi theo chuyền, nhóm và từng sản phẩm."
     },
     "ui.dashboard_quality_rate": {
       "en": "Reference intensity uses fixed monthly output",
@@ -3106,7 +3110,7 @@
     },
     "ui.dashboard_tools_caption": {
       "en": "Check whether the priorities hold under other data assumptions, then record who follows up.",
-      "vi": "Kiểm tra các ưu tiên có còn đúng khi đổi giả định dữ liệu, rồi ghi lại ai theo dõi."
+      "vi": "Kiểm tra tính vững của các ưu tiên khi thay đổi giả định dữ liệu, đồng thời phân công và theo dõi tiến độ xử lý."
     },
     "ui.dashboard_defects_n": {
       "en": "{value0} defects",
@@ -3189,8 +3193,8 @@
       "vi": "Bạn có thể soạn câu hỏi tại đây. Môi trường này chưa hỗ trợ gửi câu hỏi."
     },
     "ui.agent_suggestions": {
-      "en": "Suggested questions from the case study",
-      "vi": "Câu hỏi gợi ý theo đề bài"
+      "en": "Recommended Quality Inquiries",
+      "vi": "Hướng điều tra chất lượng trọng tâm"
     },
     "ui.apply_scenario": {
       "en": "Apply assumption",
@@ -3205,8 +3209,8 @@
       "vi": "Ngày ghi nhận"
     },
     "ui.clear_record_date": {
-      "en": "Show all records in applied scope",
-      "vi": "Xem mọi bản ghi trong phạm vi đã áp dụng"
+      "en": "Clear date filter (show full scope)",
+      "vi": "Xóa lọc ngày (xem toàn bộ phạm vi)"
     },
     "ui.records_date_scope_note": {
       "en": "This date narrows only this record view. CSV downloads still contain the full applied scope.",
@@ -3217,12 +3221,12 @@
       "vi": "sự kiện lỗi ghi nhận trong ngày này thuộc phạm vi đã áp dụng"
     },
     "ui.trend_drivers_kicker": {
-      "en": "WHAT DROVE THE CHANGE",
-      "vi": "ĐÓNG GÓP VÀO BIẾN ĐỘNG SỐ LỖI"
+      "en": "KEY DRIVERS OF CHANGE",
+      "vi": "YẾU TỐ DẪN DẮT BIẾN ĐỘNG"
     },
     "ui.trend_drivers_title": {
-      "en": "Drivers of the change from {value0} to {value1} ({value2} defects)",
-      "vi": "Đóng góp vào mức thay đổi từ {value0} đến {value1} ({value2} lỗi)"
+      "en": "Drivers of change from {value0} to {value1} ({value2} defects)",
+      "vi": "Các yếu tố dẫn dắt thay đổi từ {value0} đến {value1} ({value2} lỗi)"
     },
     "ui.trend_drivers_caption": {
       "en": "Compares the last month in view against the first month to show which defect types and production lines contributed most to the change.",
@@ -3397,22 +3401,22 @@
     "to": "đến",
     "Filtered defect records": "Bản ghi lỗi theo bộ lọc",
     "ID": "Mã lỗi",
-    "linked": "đã ghép",
-    "unmatched": "chưa ghép",
-    "Critical events · Unknowns included": "sự kiện nghiêm trọng · Mẫu số gồm mức độ chưa rõ",
-    "cost coverage · currency unspecified": "có dữ liệu chi phí · chưa rõ loại tiền",
-    "of selected events have known repair costs": "sự kiện được chọn có chi phí sửa chữa đã ghi nhận",
-    "selected events have unknown cost": "sự kiện được chọn chưa xác định chi phí",
+    "linked": "đã khớp danh mục",
+    "unmatched": "chưa khớp danh mục",
+    "Critical events · Unknowns included": "Lỗi nghiêm trọng · Mẫu số bao gồm mức độ chưa xác định",
+    "cost coverage · currency unspecified": "Độ bao phủ chi phí · Chưa xác định đơn vị tiền tệ",
+    "of selected events have known repair costs": "số lỗi được chọn có chi phí sửa chữa đã ghi nhận",
+    "selected events have unknown cost": "số lỗi trong phạm vi chọn chưa ghi nhận chi phí",
     "coverage": "có dữ liệu",
     "events": "sự kiện",
     "logged events": "sự kiện đã ghi nhận",
     "of location": "tại vị trí này",
     "master products": "sản phẩm danh mục",
     ". January stays fixed when selected months change.": ". Đường cơ sở tháng 1 được giữ cố định khi thay đổi khoảng tháng.",
-    "Candidate dates (": "Ngày cần xem xét (",
+    "Candidate dates (": "Ngày có dấu hiệu bất thường (",
     "· p-value:": "· Giá trị p:",
     "View evidence for": "Xem bằng chứng cho",
-    "master products reach 80% of linked logged events in this scope.": "sản phẩm danh mục chiếm 80% số sự kiện đã ghép trong phạm vi này.",
+    "master products reach 80% of linked logged events in this scope.": "mã sản phẩm trong danh mục chiếm 80% tổng số lỗi đã khớp dữ liệu trong phạm vi này.",
     "exploratory candidate dates exceed the frozen January reference.": "ngày gợi ý vượt ngưỡng tham chiếu tháng 1 cố định.",
     "retained events in this applied scope": "sự kiện được giữ trong phạm vi đã áp dụng",
     "Page": "Trang",
@@ -3451,7 +3455,7 @@
     "All severities": "Tất cả mức độ",
     "Choose the full-month scope and dimensions for this review.": "Chọn khoảng tháng trọn vẹn và các chiều phân tích cần xem.",
     "The start month must be on or before the end month.": "Tháng bắt đầu phải trước hoặc trùng tháng kết thúc.",
-    "Full months. Event filters change the intensity numerator only.": "Dùng tháng trọn vẹn. Bộ lọc sự kiện chỉ thay đổi tử số của chỉ số cường độ.",
+    "Full months. Event filters change the intensity numerator only.": "Dùng các tháng trọn vẹn. Các bộ lọc sự kiện chỉ thay đổi tử số của tỷ lệ lỗi định mức.",
     "Reset draft": "Đặt lại bộ lọc nháp",
     "Applying…": "Đang áp dụng…",
     "Apply filters": "Áp dụng bộ lọc",
@@ -3468,7 +3472,7 @@
     "Critical share": "Tỷ trọng sự kiện nghiêm trọng",
     "Events / 1,000 reference output": "Sự kiện / 1.000 đơn vị tham chiếu",
     "Static master output; not a defect probability": "Sản lượng danh mục tĩnh; không phải xác suất lỗi",
-    "Known repair cost": "Chi phí sửa chữa đã biết",
+    "Known repair cost": "Chi phí sửa chữa đã ghi nhận",
     "Unavailable": "Chưa có dữ liệu",
     "No logged events in this scope": "Không có sự kiện lỗi được ghi nhận trong phạm vi này",
     "Try another filter combination. Master products may still appear with zero logged events; missing events do not establish zero defects or zero production.": "Thử kết hợp bộ lọc khác. Sản phẩm trong danh mục vẫn có thể hiện với 0 sự kiện; thiếu bản ghi không chứng minh không có lỗi hoặc không có sản xuất.",
@@ -3481,11 +3485,11 @@
     "Ranked by events per 1,000 reference output units. Confirm actual exposure before comparing performance.": "Xếp theo số sự kiện trên 1.000 đơn vị sản lượng tham chiếu. Cần xác nhận sản lượng và quy mô kiểm tra thực tế trước khi so sánh hiệu quả.",
     "PRODUCT CONCENTRATION": "MỨC TẬP TRUNG THEO SẢN PHẨM",
     "Products with the most events": "Sản phẩm có nhiều sự kiện lỗi nhất",
-    "Master cohort includes products with zero events. Unmatched events stay in plant totals.": "Nhóm danh mục bao gồm cả sản phẩm có 0 sự kiện. Sự kiện không ghép được sản phẩm vẫn được tính trong tổng nhà máy.",
+    "Master cohort includes products with zero events. Unmatched events stay in plant totals.": "Danh mục bao gồm cả các sản phẩm có 0 lỗi ghi nhận. Sự kiện chưa khớp mã sản phẩm vẫn được tính vào tổng toàn nhà máy.",
     "KNOWN COSTS ONLY": "CHỈ TÍNH CHI PHÍ ĐÃ BIẾT",
-    "Repair burden & capture": "Chi phí sửa chữa và độ đầy đủ",
+    "Repair burden & capture": "Chi phí sửa chữa & Tỷ lệ ghi nhận",
     "Observed repair cost": "Chi phí sửa chữa ghi nhận",
-    "Local currency, unspecified": "Nội tệ, chưa rõ loại tiền",
+    "Local currency, unspecified": "Đồng nội tệ, chưa xác định đơn vị tiền tệ",
     "Cost coverage": "Tỷ lệ có dữ liệu chi phí",
     "Known repair cost by defect type": "Chi phí sửa chữa đã biết theo loại lỗi",
     "Unknown costs are excluded without imputation. Read cost totals together with coverage; they do not estimate the full repair burden.": "Chi phí chưa biết được loại khỏi tổng, không điền ước tính. Cần đọc tổng chi phí cùng tỷ lệ có dữ liệu; tổng này không đại diện toàn bộ chi phí sửa chữa.",
@@ -3496,7 +3500,7 @@
     "Daily candidates for investigation": "Ngày cần xem xét thêm",
     "January daily mean": "Trung bình ngày tháng 1",
     "Upper reference": "Ngưỡng tham chiếu trên",
-    "No January baseline events for this scope. The screen is unavailable.": "Không có sự kiện tháng 1 làm đường cơ sở trong phạm vi này. Chưa thể sàng lọc.",
+    "No January baseline events for this scope. The screen is unavailable.": "Không có dữ liệu tháng 1 để làm mức chuẩn cơ sở (baseline) trong phạm vi này; chưa thể chạy thuật toán sàng lọc bất thường.",
     "Candidate dates": "Các ngày cần xem xét",
     "No dates exceed the reference in this view.": "Không có ngày nào vượt ngưỡng tham chiếu trong góc nhìn này.",
     "Exploratory candidates, not confirmed process alarms or validated statistical process control. No actual daily exposure is available.": "Đây là các ngày gợi ý để tìm hiểu, chưa phải cảnh báo quy trình đã xác nhận hay kiểm soát quá trình bằng thống kê đã được thẩm định. Chưa có sản lượng và quy mô kiểm tra theo ngày.",
@@ -3511,28 +3515,28 @@
     "Source event rows": "Dòng sự kiện nguồn",
     "Retained study events": "Sự kiện trong kỳ được giữ",
     "Quarantined rows": "Dòng bị cách ly",
-    "Unmatched events": "Sự kiện không ghép được",
-    "Unknown repair costs": "Sự kiện chưa rõ chi phí",
+    "Unmatched events": "Sự kiện chưa khớp danh mục",
+    "Unknown repair costs": "Sự kiện chưa ghi nhận chi phí",
     "Dates with no logged events": "Ngày không có bản ghi lỗi",
-    "Cleaning reconciliation": "Đối soát sau làm sạch",
+    "Cleaning reconciliation": "Đối soát cân đối dữ liệu làm sạch",
     "Verified": "Đã đối soát",
-    "Not reconciled": "Chưa khớp đối soát",
+    "Not reconciled": "Chưa cân khớp đối soát",
     "Definitions, boundaries & assumptions": "Định nghĩa, phạm vi và giả định",
-    "raw rows": "Dòng nguồn",
+    "raw rows": "Dòng dữ liệu thô ban đầu",
     "duplicate copies removed": "Bản sao trùng đã loại",
-    "quarantined rows": "Dòng bị cách ly",
-    "retained clean events": "Sự kiện sạch được giữ",
-    "out of scope events": "Sự kiện ngoài kỳ",
+    "quarantined rows": "Dòng cách ly kiểm soát",
+    "retained clean events": "Bản ghi lỗi sạch được giữ lại",
+    "out of scope events": "Sự kiện ngoài phạm vi khảo sát",
     "analysis events": "Sự kiện trong kỳ phân tích",
-    "raw equals removed plus quarantined plus clean": "Dòng nguồn bằng tổng dòng loại, cách ly và giữ lại",
+    "raw equals removed plus quarantined plus clean": "Cân đối đối soát: Dòng thô = Bản trùng đã loại + Dòng cách ly + Bản ghi sạch giữ lại",
     "event count": "Số sự kiện lỗi",
-    "known repair cost": "Chi phí sửa chữa đã biết",
+    "known repair cost": "chi phí sửa chữa đã ghi nhận",
     "cost coverage pct": "Tỷ lệ có dữ liệu chi phí",
-    "reference intensity per 1000": "Cường độ trên 1.000 sản lượng tham chiếu",
+    "reference intensity per 1000": "Tỷ lệ lỗi trên 1.000 SP định mức",
     "critical share pct": "Tỷ trọng lỗi nghiêm trọng",
     "anomalies": "Sàng lọc ngày cần xem xét",
     "Evidence & provenance": "Bằng chứng và nguồn gốc",
-    "Immutable calculation receipt for this applied view": "Biên nhận tính toán bất biến cho góc nhìn đã áp dụng",
+    "Immutable calculation receipt for this applied view": "Bản chứng thực tính toán cố định cho phạm vi này",
     "Selected numeric path": "Đường dẫn số liệu đã chọn",
     "in the receipt result.": "trong kết quả của biên nhận.",
     "Context": "Ngữ cảnh",
@@ -3572,7 +3576,7 @@
     "Events": "Sự kiện",
     "Critical": "Nghiêm trọng",
     "Cumulative": "Lũy kế",
-    "No positive linked-event burden for a Pareto threshold.": "Không có sự kiện đã ghép để xác định ngưỡng Pareto.",
+    "No positive linked-event burden for a Pareto threshold.": "Không có dữ liệu lỗi khớp mã sản phẩm để xác định ngưỡng Pareto 80/20.",
     "Daily logged events": "Sự kiện ghi nhận theo ngày",
     "January reference": "Tham chiếu tháng 1",
     "Candidate": "Ngày cần xem xét",
@@ -3610,26 +3614,26 @@
     "Field checks run after exact-copy removal; raw profile separately counts all received rows. Post-join and date-scope checks run after ID resolution.": "Kiểm tra trường dữ liệu diễn ra sau khi loại bản sao trùng khớp; hồ sơ dữ liệu thô đếm riêng mọi dòng nhận được. Kiểm tra sau ghép và theo kỳ được thực hiện sau khi xử lý ID.",
     "One month is selected; there is no between-month trend comparison.": "Chỉ chọn một tháng nên chưa thể so sánh xu hướng giữa các tháng.",
     "At least two nonempty locations and severity levels are required for an association test.": "Cần ít nhất hai vị trí và hai mức độ có bản ghi để kiểm định mối liên hệ.",
-    "Exploratory association, not causation. Cramer's V describes the magnitude; repeated units and inspection mix are unobserved.": "Kiểm định Chi-square (p < 0,0001) xác nhận mức độ nghiêm trọng phụ thuộc rõ rệt vào vị trí lỗi chứ không phải ngẫu nhiên (lỗi ở Linh kiện dễ rơi vào mức Nghiêm trọng hơn hẳn Bề mặt và Bên trong). Hệ số Cramér's V = 0,121 cho thấy mức độ liên hệ ở ngưỡng nhẹ – vừa.",
+    "Exploratory association, not causation. Cramer's V describes the magnitude; repeated units and inspection mix are unobserved.": "Mối liên hệ mang tính khám phá, không khẳng định quan hệ nhân quả. Hệ số Cramér's V thể hiện độ mạnh của mối liên hệ; chưa kiểm soát các lỗi lặp lại trên cùng sản phẩm và cơ cấu phương pháp kiểm tra.",
     "Sparse expected cells make the chi-square approximation unreliable; do not use this p-value as evidence of association.": "Số lượng mẫu ở một số ô quá ít nên kiểm định Chi-square chưa đủ độ tin cậy trong phạm vi lọc hẹp này.",
     "Frozen January daily logged-count screen (mean + 3√mean)": "Công thức ngưỡng cảnh báo ngày = Trung bình lỗi/ngày của tháng 1 + 3×√(trung bình tháng 1)",
     "Exploratory candidates for investigation, not confirmed defects, process alarms or validated SPC limits.": "Các ngày vượt ngưỡng là tín hiệu cảnh báo sớm để kỹ sư kiểm tra thực tế tại chuyền, chưa phải kết luận sự cố dây chuyền.",
-    "The baseline uses the same non-date filters; the January baseline remains fixed when month filters change.": "Mức nền tháng 1 được tính theo đúng chuyền/sản phẩm đang lọc và giữ cố định khi đổi khoảng tháng.",
-    "Calendar days with no records contribute zero logged events; actual reporting completeness and operating days are unknown.": "Những ngày không phát sinh bản ghi được tính là 0 lỗi (trong kỳ có 16/182 ngày không có bản ghi lỗi).",
-    "A Poisson-like equal-exposure assumption is unverified. No actual daily output, inspected units, or adjustment for multiple screening comparisons is available.": "Ngưỡng cảnh báo này giả định sản lượng sản xuất mỗi ngày tương đương nhau (do dữ liệu nguồn chỉ cung cấp sản lượng định mức theo tháng).",
+    "The baseline uses the same non-date filters; the January baseline remains fixed when month filters change.": "Mức chuẩn cơ sở tháng 1 được tính theo đúng chuyền/sản phẩm đang lọc và giữ cố định khi thay đổi khoảng thời gian quan sát.",
+    "Calendar days with no records contribute zero logged events; actual reporting completeness and operating days are unknown.": "Những ngày không có bản ghi được tính là 0 sự kiện lỗi đã ghi nhận; chưa xác định độ đầy đủ của báo cáo và ngày vận hành thực tế.",
+    "A Poisson-like equal-exposure assumption is unverified. No actual daily output, inspected units, or adjustment for multiple screening comparisons is available.": "Giả định kiểu Poisson về quy mô sản xuất và kiểm tra tương đương giữa các ngày chưa được kiểm chứng. Chưa có sản lượng thực tế theo ngày, số đơn vị đã kiểm tra hoặc hiệu chỉnh cho việc sàng lọc nhiều lần.",
     "In this snapshot, no study month has source events after day 28. Unverified month-end reporting can distort the baseline and candidate count.": "Lưu ý chất lượng dữ liệu: Không tháng nào có bản ghi lỗi sau ngày 28. Cần kiểm tra lại việc nhập liệu cuối tháng trước khi tự động hóa cảnh báo.",
     "The supplied records are a historical January-June 2024 case study; refresh time is not event freshness.": "Các bản ghi thuộc tình huống lịch sử từ tháng 1 đến tháng 6/2024; thời điểm làm mới không phản ánh độ mới của sự kiện.",
     "One row represents a logged defect event; multiple events may concern one unit, and no unit identifier is available.": "Mỗi dòng là một sự kiện lỗi; nhiều sự kiện có thể thuộc cùng một đơn vị sản phẩm và chưa có mã định danh đơn vị.",
     "Actual monthly/daily production, inspected units, inspection coverage and operating days are unavailable.": "Chưa có sản lượng thực tế theo tháng hoặc ngày, số đơn vị đã kiểm tra, độ bao phủ kiểm tra và ngày vận hành.",
     "Absent calendar dates mean zero logged events, not verified zero defects or zero production; calendar coverage is described for the current snapshot below.": "Ngày không xuất hiện chỉ có nghĩa là 0 sự kiện được ghi nhận, chưa xác nhận không có lỗi hoặc không sản xuất; độ bao phủ ngày được mô tả cho bản dữ liệu hiện tại bên dưới.",
     "Ambiguous slash dates use M/D/YYYY inferred from the predominant unambiguous source rows. Daily candidate dates depend on this convention; confirm ambiguous dates with the source owner before operational prioritization.": "Ngày dùng dấu gạch chéo bị mơ hồ được đọc theo M/D/YYYY, suy ra từ phần lớn dòng nguồn có ngày rõ nghĩa. Các ngày gợi ý phụ thuộc quy ước này; cần xác nhận với chủ nguồn trước khi ưu tiên xử lý vận hành.",
-    "Unknown repair costs are excluded from financial sums and reported through explicit coverage; currency name is unspecified.": "Chi phí sửa chữa chưa biết được loại khỏi tổng tài chính và thể hiện bằng tỷ lệ có dữ liệu; chưa xác định loại tiền.",
+    "Unknown repair costs are excluded from financial sums and reported through explicit coverage; currency name is unspecified.": "Chi phí sửa chữa khuyết dữ liệu được loại khỏi tổng số tài chính và được theo dõi qua độ bao phủ chi phí; chưa xác định đơn vị tiền tệ.",
     "Product-to-line mapping and reference output are static; historical reassignment and production mix cannot be verified.": "Ánh xạ sản phẩm với chuyền và sản lượng tham chiếu là dữ liệu tĩnh; chưa xác minh được việc đổi chuyền trong quá khứ và cơ cấu sản xuất.",
-    "Unique retained logged defect events in the selected full-month scope, including unmatched products at plant level.": "Các sự kiện lỗi duy nhất được giữ trong khoảng tháng trọn vẹn đã chọn, bao gồm sản phẩm không ghép được khi tính tổng nhà máy.",
+    "Unique retained logged defect events in the selected full-month scope, including unmatched products at plant level.": "Tổng số sự kiện lỗi duy nhất được giữ lại trong kỳ khảo sát, bao gồm cả sản phẩm chưa khớp danh mục khi tính tổng toàn nhà máy.",
     "Sum of observed nonnegative repair costs only, in unspecified local currency; not a full cost estimate.": "Chỉ cộng chi phí sửa chữa không âm đã quan sát, theo nội tệ chưa xác định; không ước tính toàn bộ chi phí.",
     "Events with known valid repair cost / all selected events × 100.": "Sự kiện có chi phí sửa chữa hợp lệ đã biết / toàn bộ sự kiện được chọn × 100.",
-    "Reference-output intensity = linked logged defect events / (sum of monthly_output for all eligible master products × selected full months) × 1,000. Static reference output is not verified actual production; this is not a defect probability. Event filters change the numerator only.": "Cường độ trên sản lượng tham chiếu = sự kiện lỗi đã ghép / (tổng monthly_output của mọi sản phẩm danh mục phù hợp × số tháng trọn vẹn đã chọn) × 1.000. Sản lượng tham chiếu tĩnh chưa phải sản lượng thực tế đã xác minh; đây không phải xác suất lỗi. Bộ lọc sự kiện chỉ thay đổi tử số.",
-    "Critical events / all selected events × 100; Unknown severity remains in the denominator.": "Sự kiện nghiêm trọng / toàn bộ sự kiện được chọn × 100; mức độ chưa rõ vẫn nằm trong mẫu số.",
+    "Reference-output intensity = linked logged defect events / (sum of monthly_output for all eligible master products × selected full months) × 1,000. Static reference output is not verified actual production; this is not a defect probability. Event filters change the numerator only.": "Tỷ lệ lỗi trên 1.000 SP định mức = Sự kiện lỗi khớp mã / (Tổng monthly_output của toàn bộ sản phẩm hợp lệ trong danh mục × Số tháng đã chọn) × 1.000. Sản lượng định mức tĩnh chưa phải sản lượng thực tế đã kiểm chứng; đây không phải xác suất lỗi. Bộ lọc sự kiện chỉ thay đổi tử số.",
+    "Critical events / all selected events × 100; Unknown severity remains in the denominator.": "Số sự kiện lỗi Nghiêm trọng / tổng số sự kiện trong phạm vi chọn × 100; mức độ Chưa xác định vẫn nằm trong mẫu số.",
     "Exploratory daily logged-count candidates exceeding a fixed January mean + 3√mean reference. No actual daily exposure or reporting completeness is available; this is not validated statistical process control.": "Các ngày thăm dò có số sự kiện vượt ngưỡng tháng 1 cố định: trung bình + 3√trung bình. Chưa có quy mô sản xuất, kiểm tra theo ngày hoặc độ đầy đủ báo cáo; đây chưa phải kiểm soát quá trình bằng thống kê đã được thẩm định.",
     "Review these defect records with operators, inspect representative failures and verify causes before choosing corrective actions.": "Cùng kỹ thuật viên và công nhân đứng máy kiểm tra các bản ghi lỗi này, rà soát mẫu lỗi thực tế và xác định nguyên nhân gốc trước khi chọn biện pháp khắc phục.",
     "Quality Engineer and relevant Production Team Leader": "Kỹ sư chất lượng và trưởng nhóm sản xuất liên quan",
@@ -3638,8 +3642,8 @@
     "Recalculate events per actual produced/inspected units and repeat Critical-event counts at matched exposure; no reduction target is inferred from this case.": "Tính lại tỷ lệ lỗi trên sản lượng sản xuất/kiểm tra thực tế và theo dõi số lỗi Nghiêm trọng lặp lại trong cùng điều kiện kiểm tra.",
     "Review costly recurring repairs with Maintenance, reconcile missing/invalid costs with Finance, and verify corrective-action economics.": "Cùng bộ phận Bảo trì kiểm tra các lỗi tốn chi phí sửa chữa cao lặp lại, đồng thời đối soát các bản ghi thiếu chi phí với bộ phận Tài chính.",
     "Maintenance Lead, Quality Engineer and Finance": "Trưởng bộ phận bảo trì, kỹ sư chất lượng và tài chính",
-    "Track known repair cost, cost per repaired event and cost coverage together; compare verified repair costs at comparable exposure before setting a savings target.": "Theo dõi tổng chi phí sửa chữa, chi phí trung bình mỗi lần sửa và tỷ lệ bản ghi có đầy đủ dữ liệu chi phí.",
-    "Track known repair cost, mean observed cost per event with known cost, and cost coverage together; compare verified repair costs at comparable exposure before setting a savings target.": "Theo dõi tổng chi phí sửa chữa, chi phí trung bình mỗi lần sửa và tỷ lệ bản ghi có đầy đủ dữ liệu chi phí.",
+    "Track known repair cost, cost per repaired event and cost coverage together; compare verified repair costs at comparable exposure before setting a savings target.": "Theo dõi đồng thời tổng chi phí sửa chữa ghi nhận được, chi phí bình quân mỗi sự kiện có chi phí và độ bao phủ chi phí; so sánh chi phí sửa chữa đã xác thực ở quy mô tương đương trước khi đặt mục tiêu tiết kiệm.",
+    "Track known repair cost, mean observed cost per event with known cost, and cost coverage together; compare verified repair costs at comparable exposure before setting a savings target.": "Theo dõi đồng thời tổng chi phí sửa chữa ghi nhận được, chi phí bình quân mỗi sự kiện có chi phí và độ bao phủ chi phí; so sánh chi phí sửa chữa đã xác thực ở quy mô tương đương trước khi đặt mục tiêu tiết kiệm.",
     "Minor": "Nhẹ",
     "Moderate": "Trung bình",
     "Cosmetic": "Ngoại quan",
@@ -3653,9 +3657,9 @@
     "Visual Inspection": "Kiểm tra trực quan",
     "Unmatched product": "Sản phẩm chưa khớp",
     "Unmatched products": "Sản phẩm chưa khớp",
-    "known": "Đã biết",
-    "unknown": "Chưa biết",
-    "missing": "Thiếu",
+    "known": "Đã ghi nhận",
+    "unknown": "Chưa ghi nhận",
+    "missing": "Khuyết dữ liệu",
     "invalid": "Không hợp lệ",
     "valid": "Hợp lệ",
     "invalid_negative": "Âm, không hợp lệ",
@@ -3710,9 +3714,9 @@
     "The app is stopping; saved evidence is retained": "Ứng dụng đang dừng; bằng chứng đã lưu được giữ lại",
     "Run stopped. Correct the reported issue and send another prompt.": "Lượt phân tích đã dừng. Hãy xử lý lỗi được báo rồi gửi lại yêu cầu.",
     "Some claims remain unverified; inspect the QA result": "Một số phát biểu chưa được xác minh; hãy xem kết quả QA",
-    "Run stopped at its configured cost limit; pending instructions are retained": "Lượt phân tích đã dừng ở giới hạn chi phí; các yêu cầu đang chờ được giữ lại",
+    "Run stopped at its configured cost limit; pending instructions are retained": "Lượt phân tích đã dừng ở giới hạn ngân sách; các chỉ dẫn đang chờ được bảo lưu",
     "Your new dashboard scope is queued for a separate run after the current analysis.": "Phạm vi mới đã được xếp vào lượt riêng sau khi phân tích hiện tại kết thúc.",
-    "Your instruction is queued for the next safe agent boundary.": "Yêu cầu của bạn đang chờ được áp dụng ở bước tiếp theo phù hợp.",
+    "Your instruction is queued for the next safe agent boundary.": "Chỉ dẫn của bạn đã được xếp hàng và sẽ áp dụng tại bước an toàn tiếp theo của Agent.",
     "Your new response language is queued for a separate run after the current analysis.": "Ngôn ngữ trả lời mới được xếp vào lượt riêng sau khi phân tích hiện tại kết thúc.",
     "analysis_context": "Ngữ cảnh phân tích",
     "analysis context": "Ngữ cảnh phân tích",

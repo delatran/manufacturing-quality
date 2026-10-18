@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import './verify-session-stream';
+import './verify-conversation-state';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import EventView, {

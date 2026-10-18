@@ -249,3 +249,52 @@ def test_restart_after_terminal_checkpoint_clears_only_its_recovery_guard(tmp_pa
     assert not provider.calls and not store.stopped("visitor")
     assert store.events("visitor")[-1]["data"]["phase"] == "conversation_reconciled"
     store.close()
+
+
+def test_restart_reads_only_the_latest_durable_turn(tmp_path):
+    class LatestTurnPage:
+        async def __aiter__(self):
+            yield SimpleNamespace(id="turn_known", session_id="asess_known", status="cancelled")
+            raise AssertionError("Historical turn pages must not be requested")
+
+    class LatestTurnProvider(Provider):
+        async def turns(self, identity, **kwargs):
+            assert identity == "asess_known"
+            assert kwargs == {"order": "desc", "limit": 1}
+            return LatestTurnPage()
+
+    store = SessionStore(tmp_path)
+    interrupted(store)
+    asyncio.run(recover_managed_sessions(store, Settings(), client=LatestTurnProvider()))
+    assert not store.stopped("visitor")
+    assert store.events("visitor")[-1]["data"]["terminal_confirmed"] is True
+    store.close()
+
+
+def test_restart_reads_each_conversation_history_once(tmp_path, monkeypatch):
+    store = SessionStore(tmp_path)
+    for _ in range(6):
+        rid = interrupted(store)
+        store.emit(
+            "visitor",
+            rid,
+            "usage",
+            {
+                "provider_api": "agents",
+                "provider_session_id": "asess_known",
+                "provider_terminal": True,
+            },
+        )
+    calls = []
+    events = store.events
+
+    def read_events(sid, after=0):
+        calls.append(sid)
+        return events(sid, after)
+
+    monkeypatch.setattr(store, "events", read_events)
+    provider = Provider()
+    asyncio.run(recover_managed_sessions(store, Settings(), client=provider))
+    assert calls == ["visitor"]
+    assert not provider.calls
+    store.close()

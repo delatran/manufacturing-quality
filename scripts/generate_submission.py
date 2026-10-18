@@ -438,8 +438,8 @@ def render_analysis(report: dict[str, Any], language: str) -> str:
                 + f". Không dùng mẫu số sản lượng: {n(top_category['eligible_events_per_cohort_product'], 1)} sự kiện mỗi sản phẩm so với {n(min(other_events_per_product), 1)}–{n(max(other_events_per_product), 1)} ở các nhóm khác. Đây là sản phẩm sản lượng thấp (trung bình {n(top_category['average_monthly_output_per_product'])} đơn vị/tháng so với {n(k['known_monthly_output_subtotal'] / k['output_known_product_count'])} của toàn nhà máy).",
             ),
             pick(
-                "The problem travels with the product family, not the line, so a fix on one line will not be enough. Design, materials and changeover practice are the levers; line-by-line blame would miss them.",
-                "Vấn đề đi theo dòng sản phẩm chứ không theo chuyền, nên sửa ở một chuyền là không đủ. Đòn bẩy là thiết kế, vật liệu và cách chuyển đổi sản xuất; quy trách nhiệm theo từng chuyền sẽ bỏ sót chúng.",
+                "The category has elevated reference intensity across the lines that make it. Shared design, materials and changeover practices are hypotheses to investigate; these descriptive comparisons do not separate product and line causes. Verify actual exposure and differences among products before choosing a corrective action.",
+                "Nhóm sản phẩm có cường độ tham chiếu cao trên các chuyền sản xuất nhóm này. Thiết kế, vật liệu và cách chuyển đổi sản xuất chung là các giả thuyết cần điều tra; so sánh mô tả này chưa tách được nguyên nhân từ sản phẩm và chuyền. Cần xác minh sản lượng thực tế và khác biệt giữa các sản phẩm trước khi chọn biện pháp khắc phục.",
             ),
         ],
         [
@@ -464,8 +464,8 @@ def render_analysis(report: dict[str, Any], language: str) -> str:
                 + ".",
             ),
             pick(
-                f"It is the largest cost lever ({pct(lead_cost['known_cost_share_pct'])} of known repair cost). Because the gap holds for the same product family, look at the line's repair routes and cost recording, not its product mix.",
-                f"Đây là đòn bẩy chi phí lớn nhất ({pct(lead_cost['known_cost_share_pct'])} chi phí sửa chữa đã biết). Vì chênh lệch vẫn còn trong cùng dòng sản phẩm, cần xem cách sửa và cách ghi nhận chi phí của chuyền, không phải cơ cấu sản phẩm.",
+                f"This line accounts for the largest share of observed repair cost ({pct(lead_cost['known_cost_share_pct'])}). Investigate repair routes and cost recording alongside product mix: comparison within a category still leaves differences in products, failure types and severity unresolved.",
+                f"Chuyền này chiếm tỷ trọng chi phí sửa chữa ghi nhận lớn nhất ({pct(lead_cost['known_cost_share_pct'])}). Cần điều tra cách sửa và cách ghi nhận chi phí cùng với cơ cấu sản phẩm: so sánh trong một nhóm vẫn chưa xử lý khác biệt về sản phẩm, loại lỗi và mức độ nghiêm trọng.",
             ),
         ],
         [
@@ -477,8 +477,8 @@ def render_analysis(report: dict[str, Any], language: str) -> str:
                 + (single_vi + "." if single_vi else ""),
             ),
             pick(
-                "Ranking lines on raw counts misleads. Where a category exists on only one line, line and product effects cannot be separated, so compare the same products across lines.",
-                "Xếp hạng chuyền theo số lỗi thô dễ gây hiểu sai. Khi một nhóm sản phẩm chỉ có ở một chuyền thì không tách được tác động của chuyền và của sản phẩm, nên cần so cùng sản phẩm giữa các chuyền.",
+                "Raw counts describe logged workload. Where a category exists on only one line, these data cannot separate line and product effects. Use shared-category comparisons where available, check remaining product-mix differences and collect actual production and inspection exposure before assessing line performance.",
+                "Số đếm thô mô tả khối lượng lỗi ghi nhận. Khi một nhóm sản phẩm chỉ có ở một chuyền, dữ liệu này không tách được tác động của chuyền và sản phẩm. Có thể so sánh nhóm xuất hiện trên nhiều chuyền, kiểm tra chênh lệch cơ cấu sản phẩm còn lại và thu thập sản lượng thực tế cùng phạm vi kiểm tra trước khi đánh giá hiệu suất chuyền.",
             ),
         ],
         [

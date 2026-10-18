@@ -8,6 +8,7 @@ import math
 import sqlite3
 import threading
 import uuid
+from contextlib import closing
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -15,6 +16,34 @@ from typing import Any
 from .localization import normalize_language, translate_text
 
 ACTION_INTENTS = ("none", "draft_create", "draft_update")
+_RUNS_QUERY = (
+    "SELECT id,state,created,finished,analysis_context_id,language,action_intent "
+    "FROM runs WHERE session_id=? ORDER BY created"
+)
+_EVENTS_QUERY = "SELECT * FROM events WHERE session_id=? AND id>? ORDER BY id"
+_UPLOADS_QUERY = "SELECT * FROM uploads WHERE session_id=? ORDER BY rowid"
+
+
+def _finite_json_float(value: str) -> float:
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError("Stored event contains a non-finite number")
+    return number
+
+
+def _reject_json_constant(value: str) -> None:
+    raise ValueError(f"Stored event contains an invalid JSON constant: {value}")
+
+
+_EVENT_DECODER = json.JSONDecoder(
+    parse_float=_finite_json_float, parse_constant=_reject_json_constant
+)
+
+
+def _event_data(value: str) -> Any:
+    # The writer rejects non-finite values. Do not silently turn corrupt
+    # persisted evidence into null when a response serializer encounters it.
+    return _EVENT_DECODER.decode(value)
 
 
 def normalize_action_intent(value: str = "none") -> str:
@@ -32,6 +61,7 @@ class SessionStore:
         self.root = root.resolve()
         self.root.mkdir(parents=True, exist_ok=True)
         self._lock = threading.RLock()
+        self._closed = False
         self.db = sqlite3.connect(self.root / "workspace.sqlite3", check_same_thread=False)
         self.db.row_factory = sqlite3.Row
         self.db.execute("PRAGMA journal_mode=WAL")
@@ -48,6 +78,9 @@ class SessionStore:
                 run_id TEXT, type TEXT NOT NULL, time TEXT NOT NULL, data TEXT NOT NULL
             );
             CREATE INDEX IF NOT EXISTS events_session ON events(session_id, id);
+            CREATE INDEX IF NOT EXISTS events_messages ON events(session_id, id)
+                WHERE type='message';
+            CREATE INDEX IF NOT EXISTS runs_session ON runs(session_id, created);
             CREATE TABLE IF NOT EXISTS uploads (
                 id TEXT PRIMARY KEY, session_id TEXT NOT NULL, name TEXT NOT NULL,
                 path TEXT NOT NULL, sha256 TEXT NOT NULL, size INTEGER NOT NULL
@@ -73,6 +106,8 @@ class SessionStore:
                 id TEXT PRIMARY KEY, session_id TEXT NOT NULL, run_id TEXT NOT NULL,
                 created TEXT NOT NULL, payload TEXT NOT NULL, undone INTEGER NOT NULL DEFAULT 0
             );
+            CREATE INDEX IF NOT EXISTS steering_session ON steering(session_id, state, id);
+            CREATE INDEX IF NOT EXISTS costs_run ON costs(run_id);
         """)
         # Additive migrations preserve existing local conversations.
         reservation_columns = {
@@ -115,6 +150,7 @@ class SessionStore:
     def close(self) -> None:
         with self._lock:
             self.db.close()
+            self._closed = True
 
     def create_session(self) -> dict[str, Any]:
         sid = uuid.uuid4().hex
@@ -122,30 +158,47 @@ class SessionStore:
             self.db.execute("INSERT INTO sessions(id,created) VALUES (?,?)", (sid, utc_now()))
         return self.session(sid)
 
-    def session(self, sid: str) -> dict[str, Any]:
+    def require_session(self, sid: str) -> None:
+        """Validate ownership without loading a conversation's growing event history."""
         with self._lock:
-            row = self.db.execute("SELECT * FROM sessions WHERE id=?", (sid,)).fetchone()
+            found = self.db.execute("SELECT 1 FROM sessions WHERE id=?", (sid,)).fetchone()
+        if found is None:
+            raise KeyError(sid)
+
+    def runs(self, sid: str) -> list[dict[str, Any]]:
+        with self._lock:
+            return [dict(row) for row in self.db.execute(_RUNS_QUERY, (sid,))]
+
+    def session(self, sid: str) -> dict[str, Any]:
+        """Read one coherent WAL snapshot without holding the shared writer lock."""
+        if self._closed:
+            raise sqlite3.ProgrammingError("Cannot operate on a closed database.")
+        uri = (self.root / "workspace.sqlite3").as_uri() + "?mode=ro"
+        with closing(sqlite3.connect(uri, uri=True)) as snapshot:
+            snapshot.row_factory = sqlite3.Row
+            snapshot.execute("BEGIN")
+            row = snapshot.execute("SELECT id,created FROM sessions WHERE id=?", (sid,)).fetchone()
             if row is None:
                 raise KeyError(sid)
-            runs = [
-                dict(r)
-                for r in self.db.execute(
-                    "SELECT id,state,created,finished,analysis_context_id,language,action_intent FROM runs WHERE session_id=? ORDER BY created",
+            return {
+                "id": sid,
+                "created": row["created"],
+                # Iterate the cursor instead of retaining a second full list
+                # of raw rows alongside the decoded conversation.
+                "events": [
+                    {**dict(event), "data": _event_data(event["data"])}
+                    for event in snapshot.execute(_EVENTS_QUERY, (sid, 0))
+                ],
+                "uploads": [
+                    {key: upload[key] for key in upload.keys() if key not in {"path", "session_id"}}
+                    for upload in snapshot.execute(_UPLOADS_QUERY, (sid,))
+                ],
+                "runs": [dict(run) for run in snapshot.execute(_RUNS_QUERY, (sid,))],
+                "pending_instructions": snapshot.execute(
+                    "SELECT count(*) FROM steering WHERE session_id=? AND state!='completed'",
                     (sid,),
-                )
-            ]
-        with self._lock:
-            pending = self.db.execute(
-                "SELECT count(*) FROM steering WHERE session_id=? AND state!='completed'", (sid,)
-            ).fetchone()[0]
-        return {
-            "id": sid,
-            "created": row["created"],
-            "events": self.events(sid),
-            "uploads": self.uploads(sid),
-            "runs": runs,
-            "pending_instructions": pending,
-        }
+                ).fetchone()[0],
+            }
 
     def history(self, sid: str) -> list[dict[str, Any]]:
         with self._lock:
@@ -155,7 +208,7 @@ class SessionStore:
         return json.loads(row[0])
 
     def investigation(self, sid: str) -> dict[str, Any]:
-        self.session(sid)
+        self.require_session(sid)
         with self._lock:
             row = self.db.execute(
                 "SELECT * FROM investigations WHERE session_id=?", (sid,)
@@ -197,6 +250,13 @@ class SessionStore:
         self, sid: str, expected_version: int, changes: dict[str, Any]
     ) -> dict[str, Any]:
         """Compare-and-swap work state, independently of serialized model history."""
+        with self._lock, self.db:
+            return self._save_investigation(sid, expected_version, changes)
+
+    def _save_investigation(
+        self, sid: str, expected_version: int, changes: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Save within the caller's locked transaction."""
         if (
             type(expected_version) is not int
             or expected_version < 0
@@ -213,38 +273,103 @@ class SessionStore:
         encoded = json.dumps(changes, ensure_ascii=False, allow_nan=False)
         if len(encoded.encode("utf-8")) > 100_000:
             raise ValueError("Investigation content exceeds its bounded size")
+        current = self.investigation(sid)
+        if current["version"] != expected_version:
+            raise ValueError("Investigation version changed; reload before saving")
+        payload = {key: value for key, value in current.items() if key in allowed}
+        payload.update(changes)
+        updated = utc_now()
+        encoded_payload = json.dumps(payload, ensure_ascii=False, allow_nan=False)
+        saved = self.db.execute(
+            "INSERT INTO investigations(session_id,version,updated,payload) VALUES (?,?,?,?) "
+            "ON CONFLICT(session_id) DO UPDATE SET version=excluded.version,"
+            "updated=excluded.updated,payload=excluded.payload WHERE investigations.version=?",
+            (
+                sid,
+                expected_version + 1,
+                updated,
+                encoded_payload,
+                expected_version,
+            ),
+        )
+        if saved.rowcount != 1:
+            raise ValueError("Investigation version changed; reload before saving")
+        return {
+            "session_id": sid,
+            "version": expected_version + 1,
+            "updated_at": updated,
+            **json.loads(encoded_payload),
+        }
+
+    def save_ui_command(self, sid: str, rid: str, command: dict[str, Any]) -> dict[str, Any]:
         with self._lock, self.db:
+            return self._save_ui_command(sid, rid, command)
+
+    def _save_ui_command(self, sid: str, rid: str, command: dict[str, Any]) -> dict[str, Any]:
+        self.require_session(sid)
+        prior = self.db.execute(
+            "SELECT payload FROM ui_commands WHERE id=?", (command["command_id"],)
+        ).fetchone()
+        encoded = json.dumps(command, ensure_ascii=False, sort_keys=True, allow_nan=False)
+        if prior and prior["payload"] != encoded:
+            raise ValueError("A UI command identity cannot be reused with different parameters")
+        self.db.execute(
+            "INSERT OR IGNORE INTO ui_commands(id,session_id,run_id,created,payload) VALUES (?,?,?,?,?)",
+            (command["command_id"], sid, rid, utc_now(), encoded),
+        )
+        return command
+
+    def commit_ui_command(
+        self,
+        sid: str,
+        rid: str,
+        command: dict[str, Any],
+        *,
+        expected_version: int,
+        undo_command_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Commit a command, its view state and optional undo marker together."""
+        with self._lock, self.db:
+            self.db.execute("BEGIN IMMEDIATE")
             current = self.investigation(sid)
             if current["version"] != expected_version:
                 raise ValueError("Investigation version changed; reload before saving")
-            payload = {key: value for key, value in current.items() if key in allowed}
-            payload.update(changes)
-            self.db.execute(
-                "INSERT INTO investigations(session_id,version,updated,payload) VALUES (?,?,?,?) "
-                "ON CONFLICT(session_id) DO UPDATE SET version=excluded.version,updated=excluded.updated,payload=excluded.payload",
-                (
-                    sid,
-                    expected_version + 1,
-                    utc_now(),
-                    json.dumps(payload, ensure_ascii=False, allow_nan=False),
-                ),
+            if current["ui"].get("context_id") != command["expected_context_id"]:
+                raise ValueError("The UI scope changed; this stale command was not applied")
+            if undo_command_id is not None:
+                original = self.ui_command(sid, undo_command_id)
+                if (
+                    original["undone"]
+                    or original["context_id"] != command["expected_context_id"]
+                    or current["ui"].get("last_command_id") != undo_command_id
+                ):
+                    raise ValueError(
+                        "Only the latest command in its unchanged UI context can be undone"
+                    )
+            self._save_ui_command(sid, rid, command)
+            saved = self._save_investigation(
+                sid,
+                expected_version,
+                {
+                    "findings": [
+                        {**item, "status": "stale"}
+                        if item.get("context_id") != command["context_id"]
+                        else item
+                        for item in current["findings"]
+                    ],
+                    "ui": {
+                        "context_id": command["context_id"],
+                        "panel": command["panel"],
+                        "last_command_id": command["command_id"],
+                    },
+                },
             )
-        return self.investigation(sid)
-
-    def save_ui_command(self, sid: str, rid: str, command: dict[str, Any]) -> dict[str, Any]:
-        self.session(sid)
-        with self._lock, self.db:
-            prior = self.db.execute(
-                "SELECT payload FROM ui_commands WHERE id=?", (command["command_id"],)
-            ).fetchone()
-            encoded = json.dumps(command, ensure_ascii=False, sort_keys=True, allow_nan=False)
-            if prior and prior["payload"] != encoded:
-                raise ValueError("A UI command identity cannot be reused with different parameters")
-            self.db.execute(
-                "INSERT OR IGNORE INTO ui_commands(id,session_id,run_id,created,payload) VALUES (?,?,?,?,?)",
-                (command["command_id"], sid, rid, utc_now(), encoded),
-            )
-        return command
+            if undo_command_id is not None:
+                self.db.execute(
+                    "UPDATE ui_commands SET undone=1 WHERE id=? AND session_id=?",
+                    (undo_command_id, sid),
+                )
+            return saved
 
     def ui_command(self, sid: str, command_id: str) -> dict[str, Any]:
         with self._lock:
@@ -283,12 +408,34 @@ class SessionStore:
             "data": json.loads(encoded),
         }
 
-    def events(self, sid: str, after: int = 0) -> list[dict]:
+    def events(self, sid: str, after: int = 0, *, limit: int | None = None) -> list[dict]:
+        if limit is not None and (type(limit) is not int or limit < 1):
+            raise ValueError("An event page requires a positive size")
+        parameters = (sid, after) if limit is None else (sid, after, limit)
         with self._lock:
             rows = self.db.execute(
-                "SELECT * FROM events WHERE session_id=? AND id>? ORDER BY id", (sid, after)
+                _EVENTS_QUERY if limit is None else _EVENTS_QUERY + " LIMIT ?", parameters
             ).fetchall()
-        return [{**dict(row), "data": json.loads(row["data"])} for row in rows]
+        return [{**dict(row), "data": _event_data(row["data"])} for row in rows]
+
+    def latest_user_language(self, sid: str) -> str | None:
+        with self._lock:
+            row = self.db.execute(
+                "SELECT json_extract(data,'$.language') FROM events "
+                "WHERE session_id=? AND type='message' AND json_extract(data,'$.role')='user' "
+                "AND json_extract(data,'$.language') IN ('en','vi') ORDER BY id DESC LIMIT 1",
+                (sid,),
+            ).fetchone()
+        return row[0] if row else None
+
+    def latest_run_answer(self, sid: str, rid: str) -> dict | None:
+        with self._lock:
+            row = self.db.execute(
+                "SELECT * FROM events WHERE session_id=? AND run_id=? AND type='message' "
+                "AND json_extract(data,'$.role')='assistant' ORDER BY id DESC LIMIT 1",
+                (sid, rid),
+            ).fetchone()
+        return {**dict(row), "data": _event_data(row["data"])} if row else None
 
     def begin_run(
         self,
@@ -299,7 +446,7 @@ class SessionStore:
     ) -> tuple[str, Path]:
         language = normalize_language(language)
         action_intent = normalize_action_intent(action_intent)
-        self.session(sid)
+        self.require_session(sid)
         rid = uuid.uuid4().hex
         directory = self.root / "sessions" / sid / "runs" / rid
         directory.mkdir(parents=True)
@@ -556,7 +703,7 @@ class SessionStore:
         return events
 
     def add_upload(self, sid: str, name: str, content: bytes) -> dict:
-        self.session(sid)
+        self.require_session(sid)
         file_id = uuid.uuid4().hex
         clean_name = Path(name.replace("\\", "/")).name
         if not clean_name or clean_name in {".", ".."}:
@@ -581,16 +728,14 @@ class SessionStore:
 
     def uploads(self, sid: str, *, internal: bool = False) -> list[dict]:
         with self._lock:
-            rows = self.db.execute(
-                "SELECT * FROM uploads WHERE session_id=? ORDER BY rowid", (sid,)
-            ).fetchall()
+            rows = self.db.execute(_UPLOADS_QUERY, (sid,)).fetchall()
         return [
             {k: row[k] for k in row.keys() if internal or k not in {"path", "session_id"}}
             for row in rows
         ]
 
     def artifact(self, sid: str, run_id: str, filename: str) -> Path:
-        self.session(sid)
+        self.require_session(sid)
         with self._lock:
             row = self.db.execute(
                 "SELECT id FROM runs WHERE id=? AND session_id=?", (run_id, sid)

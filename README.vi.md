@@ -59,7 +59,7 @@ Bắt đầu từ phần tổng quan, chọn một hạng mục ưu tiên, sau �
 | **Tổng quan và ưu tiên** | Bốn chỉ số chính, đường xu hướng theo tháng, so sánh hai nửa giai đoạn và ba hạng mục ưu tiên kèm bằng chứng cùng hành động đề xuất. |
 | **Xu hướng và ngày bất thường** | Số sự kiện lỗi và lỗi Critical theo tháng, các nhóm đóng góp chính vào mức tăng, và số lỗi từng ngày so với ngưỡng sàng lọc tính từ tháng 1. Nhấn vào ngày vượt ngưỡng để xem từng bản ghi. |
 | **Vị trí và mức độ lỗi** | Tỷ trọng mức độ nghiêm trọng giữa các vị trí lỗi, bảng chéo kèm kiểm định chi-square / Cramér's V, và lượng lỗi theo phương pháp kiểm tra. |
-| **Chuyền và sản phẩm** | Xếp hạng chuyền và sản phẩm theo số sự kiện hoặc số sự kiện trên 1.000 đơn vị sản lượng tham chiếu, kết hợp so sánh nhóm sản phẩm trong từng chuyền để tách ảnh hưởng của cơ cấu sản phẩm. |
+| **Chuyền và sản phẩm** | Xếp hạng chuyền và sản phẩm theo số sự kiện hoặc số sự kiện trên 1.000 đơn vị sản lượng tham chiếu, kết hợp so sánh nhóm sản phẩm trong từng chuyền để mô tả cơ cấu sản phẩm và khác biệt giữa các chuyền. |
 | **Chi phí sửa chữa** | Chi phí sửa chữa hợp lệ theo chuyền, loại lỗi và mức độ nghiêm trọng, phân phối chi phí và các sản phẩm chiếm tỷ trọng chi phí cao nhất. |
 
 Lọc dữ liệu theo tháng, chuyền, nhóm sản phẩm, sản phẩm, mức độ nghiêm trọng, loại lỗi, vị trí lỗi và phương pháp kiểm tra. Nút **Xem bằng chứng** chuyển thẳng tới biểu đồ hoặc bảng số liệu liên quan; nút **Tra cứu danh sách bản ghi lỗi** mở bảng dữ liệu đã làm sạch kèm truy vết về dòng HTTP gốc và quy tắc xử lý.
@@ -117,7 +117,7 @@ Trên macOS/Linux dùng `sh scripts/check.sh`. Lệnh này kiểm tra lockfile d
 
 ## Phân tích đề bài: Part 3
 
-Phạm vi: tháng 1–6/2024 theo canonical policy `canonical-v2`, dataset `dataset-4586b9cf07494f8c8481a2f8f8a578359fbab7c4c7435b06ccb7defef31fa515` và snapshot báo cáo `2b9bd4ef427437f7c79678cc`. Dữ liệu lỗi được lấy qua HTTP lúc `2026-10-17T17:58:26.052168+00:00`. Tiền tệ là **local currency (chưa xác định loại tiền)**. Số chưa làm tròn, định nghĩa và bằng chứng nguồn nằm trong [snapshot chuẩn](reports/canonical_snapshot.json); dashboard hiển thị đúng các số này.
+Phạm vi: tháng 1–6/2024 theo canonical policy `canonical-v2`, dataset `dataset-4586b9cf07494f8c8481a2f8f8a578359fbab7c4c7435b06ccb7defef31fa515` và snapshot báo cáo `33cc3a616435735e314b5eb1`. Dữ liệu lỗi được lấy qua HTTP lúc `2026-10-18T20:02:23.655186+00:00`. Tiền tệ là **local currency (chưa xác định loại tiền)**. Số chưa làm tròn, định nghĩa và bằng chứng nguồn nằm trong [snapshot chuẩn](reports/canonical_snapshot.json); dashboard hiển thị đúng các số này.
 
 ### Phát hiện chính
 
@@ -166,9 +166,9 @@ Mọi chuyền đều tăng. Line-3 tăng nhanh nhất (31 → 74 sự kiện) v
 
 | Mẫu hình | Bằng chứng | Vì sao quan trọng với team Production |
 |---|---|---|
-| Category 4 có cường độ lỗi cao nhất trên mọi chuyền | 4,592 so với 1,473 sự kiện trên 1.000 đơn vị tham chiếu; gấp 1,56–7,19 lần phần còn lại của từng chuyền. Không dùng mẫu số sản lượng: 14,1 sự kiện mỗi sản phẩm so với 9,4–10,2 ở các nhóm khác. Đây là sản phẩm sản lượng thấp (trung bình 512 đơn vị/tháng so với 991 của toàn nhà máy). | Vấn đề đi theo dòng sản phẩm chứ không theo chuyền, nên sửa ở một chuyền là không đủ. Đòn bẩy là thiết kế, vật liệu và cách chuyển đổi sản xuất; quy trách nhiệm theo từng chuyền sẽ bỏ sót chúng. |
-| Chi phí sửa ở Line-3 cao hơn hẳn | 685,69 so với 413,35 mỗi lần sửa có chi phí (gấp 1,66 lần); riêng Category 4: 701,74 ở Line-3 so với 445,58 ở các chuyền khác. | Đây là đòn bẩy chi phí lớn nhất (37,43% chi phí sửa chữa đã biết). Vì chênh lệch vẫn còn trong cùng dòng sản phẩm, cần xem cách sửa và cách ghi nhận chi phí của chuyền, không phải cơ cấu sản phẩm. |
-| Thứ hạng chuyền phụ thuộc vào mẫu số | Line-4 có nhiều sự kiện nhất (340); Line-3 có cường độ cao nhất (2,2907 trên 1.000 đơn vị tham chiếu). Category 2 chỉ được sản xuất trên Line-3; Category 3 chỉ được sản xuất trên Line-4. | Xếp hạng chuyền theo số lỗi thô dễ gây hiểu sai. Khi một nhóm sản phẩm chỉ có ở một chuyền thì không tách được tác động của chuyền và của sản phẩm, nên cần so cùng sản phẩm giữa các chuyền. |
+| Category 4 có cường độ lỗi cao nhất trên mọi chuyền | 4,592 so với 1,473 sự kiện trên 1.000 đơn vị tham chiếu; gấp 1,56–7,19 lần phần còn lại của từng chuyền. Không dùng mẫu số sản lượng: 14,1 sự kiện mỗi sản phẩm so với 9,4–10,2 ở các nhóm khác. Đây là sản phẩm sản lượng thấp (trung bình 512 đơn vị/tháng so với 991 của toàn nhà máy). | Nhóm sản phẩm có cường độ tham chiếu cao trên các chuyền sản xuất nhóm này. Thiết kế, vật liệu và cách chuyển đổi sản xuất chung là các giả thuyết cần điều tra; so sánh mô tả này chưa tách được nguyên nhân từ sản phẩm và chuyền. Cần xác minh sản lượng thực tế và khác biệt giữa các sản phẩm trước khi chọn biện pháp khắc phục. |
+| Chi phí sửa ở Line-3 cao hơn hẳn | 685,69 so với 413,35 mỗi lần sửa có chi phí (gấp 1,66 lần); riêng Category 4: 701,74 ở Line-3 so với 445,58 ở các chuyền khác. | Chuyền này chiếm tỷ trọng chi phí sửa chữa ghi nhận lớn nhất (37,43%). Cần điều tra cách sửa và cách ghi nhận chi phí cùng với cơ cấu sản phẩm: so sánh trong một nhóm vẫn chưa xử lý khác biệt về sản phẩm, loại lỗi và mức độ nghiêm trọng. |
+| Thứ hạng chuyền phụ thuộc vào mẫu số | Line-4 có nhiều sự kiện nhất (340); Line-3 có cường độ cao nhất (2,2907 trên 1.000 đơn vị tham chiếu). Category 2 chỉ được sản xuất trên Line-3; Category 3 chỉ được sản xuất trên Line-4. | Số đếm thô mô tả khối lượng lỗi ghi nhận. Khi một nhóm sản phẩm chỉ có ở một chuyền, dữ liệu này không tách được tác động của chuyền và sản phẩm. Có thể so sánh nhóm xuất hiện trên nhiều chuyền, kiểm tra chênh lệch cơ cấu sản phẩm còn lại và thu thập sản lượng thực tế cùng phạm vi kiểm tra trước khi đánh giá hiệu suất chuyền. |
 | Chi phí sửa không đi theo mức độ nghiêm trọng | Chi phí trung bình mỗi sự kiện có chi phí: Minor 476,13, Moderate 490,25, Critical 489,14. Theo loại lỗi, Functional trung bình 503,85 so với 474,43–475,65. Trung vị chi phí đã biết 488,45, p90 770,35. | Không thể dùng chi phí thay cho mức độ nghiêm trọng: ưu tiên an toàn và chức năng theo số lỗi Critical, còn chi phí dùng để chọn việc cải tiến quy trình sửa. Chi phí gần như đồng đều cũng là lý do để kiểm tra với Tài chính cách ghi nhận chi phí sửa chữa. |
 | Sàng lọc theo ngày chỉ ra các ngày có số lỗi cao bất thường | 7 ngày vượt ngưỡng 11,27 sự kiện/ngày tính từ tháng 1 (trung bình tháng 1 là 4,74): 2024-04-09, 2024-05-25, 2024-06-03, 2024-06-10, 2024-06-20, 2024-06-21, 2024-06-27. | Ngày vượt ngưỡng đầu tiên trong dữ liệu lịch sử rơi vào tháng 4. Sàng lọc hồi cứu chỉ ra các ngày cần điều tra; đây chưa phải cảnh báo thời gian thực hay bằng chứng xác nhận quy trình đã thay đổi. Cảnh báo vận hành cần baseline trượt theo từng chuyền và nhóm sản phẩm, dữ liệu ghi nhận đáng tin cậy và kiểm chứng với sự cố đã xác nhận. |
 | Việc ghi nhận dữ liệu còn khoảng trống | Không có sự kiện sau ngày 28 ở bất kỳ tháng nào; 16/182 ngày trống; 22 chi phí chưa biết; 12 chi phí đúng bằng 10. | Cần sửa việc ghi nhận trước khi tự động hóa cảnh báo; nếu không, khoảng trống cuối tháng sẽ trông như cải thiện và tổng chi phí vẫn thiếu. |
@@ -200,7 +200,7 @@ Mọi chuyền đều tăng. Line-3 tăng nhanh nhất (31 → 74 sự kiện) v
 
 Đây cũng là ba ưu tiên dashboard hiển thị ở mục “Ưu tiên hàng đầu cho phạm vi này” trong phần Tổng quan; backend suy ra chúng từ phân tích ở trên. Các mục tiêu là tạm thời cho đến khi có sản lượng và khối lượng kiểm tra thực tế.
 
-#### Ưu tiên 1: Điều tra lỗi Critical tại Component
+#### Ưu tiên 1: Điều tra lỗi nghiêm trọng (Critical) tại Component
 
 - **Bằng chứng:** 148/346 sự kiện tại Component là Critical (42,77%), so với 27,72% ở các vị trí khác; Component chiếm 42,41% tổng số lỗi Critical.
 - **Hành động:** Lấy 148 bản ghi Critical, tháo và phân tích lỗi đại diện theo từng dòng sản phẩm, kiểm tra lô linh kiện đầu vào và thông số lắp ráp; thêm bước kiểm khoanh vùng tại khâu kiểm Component cho đến khi xác nhận nguyên nhân.
@@ -217,7 +217,7 @@ Mọi chuyền đều tăng. Line-3 tăng nhanh nhất (31 → 74 sự kiện) v
 #### Ưu tiên 3: Điều tra chi phí sửa chữa mỗi sự kiện tại Line-3
 
 - **Bằng chứng:** 685,69 mỗi lần sửa có chi phí so với 413,35 ở các chuyền khác (gấp 1,66 lần); 37,43% chi phí đã biết đến từ 26,51% số sự kiện; chênh lệch vẫn còn trong Category 4 (701,74 so với 445,58).
-- **Hành động:** Cùng Bảo trì tách chi phí sửa của Line-3 theo nhân công, vật tư, làm lại và dịch vụ ngoài; so sánh cách sửa cùng sản phẩm ở chuyền khác; xác nhận với Tài chính rằng các chuyền ghi nhận chi phí theo cùng quy tắc.
+- **Hành động:** Cùng Bảo trì tách chi phí sửa của Line-3 theo nhân công, vật tư, làm lại và dịch vụ ngoài; so sánh cách sửa các sản phẩm tương đương trong cùng nhóm ở chuyền khác, kiểm tra chênh lệch cơ cấu sản phẩm còn lại; xác nhận với Tài chính rằng các chuyền ghi nhận chi phí theo cùng quy tắc.
 - **Phụ trách:** Trưởng nhóm Line-3 (chủ trì) cùng Trưởng bộ phận Bảo trì và Tài chính.
 - **Thước đo thành công:** Chi phí sửa trung bình mỗi sự kiện của Line-3 so với các chuyền khác, kèm độ phủ chi phí. Mục tiêu tạm thời: thu hẹp một nửa khoảng chênh 272,33 mỗi sự kiện trong một quý.
 

@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { getRecords } from './api';
 import { useDashboardLanguage } from './dashboard-language';
@@ -15,64 +15,79 @@ const sortOptions = [
   'repair_cost',
 ] as const;
 
-export const Records = memo(function Records({
-  data,
-  dateFilter,
-  onClearDate,
-}: {
+type RecordsProps = {
   data: DashboardData;
   dateFilter?: string;
   onClearDate?: () => void;
+};
+
+export const Records = memo(function Records(props: RecordsProps) {
+  const [sort, setSort] = useState('defect_date');
+  const [direction, setDirection] = useState('desc');
+  const scope = JSON.stringify([
+    props.data.context.context_id,
+    props.data.links.records,
+    props.dateFilter,
+  ]);
+  // Keep sorting preferences, but reset paging and trace selection atomically with the scope.
+  return (
+    <ScopedRecords
+      key={scope}
+      {...props}
+      sort={sort}
+      onSort={setSort}
+      direction={direction}
+      onDirection={setDirection}
+    />
+  );
+});
+
+function ScopedRecords({
+  data,
+  dateFilter,
+  onClearDate,
+  sort,
+  onSort,
+  direction,
+  onDirection,
+}: RecordsProps & {
+  sort: string;
+  onSort: (value: string) => void;
+  direction: string;
+  onDirection: (value: string) => void;
 }) {
   const { tr, prose, number, date, sourceLabel } = useDashboardLanguage();
 
   const [page, setPage] = useState(1);
-  const [sort, setSort] = useState('defect_date');
   const [tracedEvent, setTracedEvent] = useState<number>();
-  const [direction, setDirection] = useState('desc');
-  const [result, setRecords] = useState<RecordsData>();
-  const [loadedScope, setLoadedScope] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const recordsRegion = useRef<HTMLDivElement>(null);
+  const closeTrace = useCallback(() => setTracedEvent(undefined), []);
+  const [result, setResult] = useState<{
+    key: string;
+    records?: RecordsData;
+    error?: string;
+  }>();
   const [reload, setReload] = useState(0);
-  const recordScope = `${data.links.records}|${dateFilter ?? ''}`;
-  const records = loadedScope === recordScope ? result : undefined;
-  const previousUrl = useRef(recordScope);
-  useEffect(() => {
-    setPage(1);
-    setTracedEvent(undefined);
-  }, [data.context.context_id, dateFilter]);
+  const requestKey = JSON.stringify([page, sort, direction, reload]);
+  const currentResult = result?.key === requestKey ? result : undefined;
+  const records = currentResult?.records;
+  const error = currentResult?.error;
+  const loading = currentResult === undefined;
   useEffect(() => {
     const controller = new AbortController();
-    // A new context always starts on page one; never render records from the old view.
-    const contextChanged = previousUrl.current !== recordScope;
-    previousUrl.current = recordScope;
-    setRecords(undefined);
-    setLoading(true);
-    setError('');
-    getRecords(
-      data.links.records,
-      contextChanged ? 1 : page,
-      sort,
-      direction,
-      controller.signal,
-      dateFilter,
-    )
+    getRecords(data.links.records, page, sort, direction, controller.signal, dateFilter)
       .then((result) => {
-        if (!controller.signal.aborted) {
-          setRecords(result);
-          setLoadedScope(recordScope);
-        }
+        if (!controller.signal.aborted) setResult({ key: requestKey, records: result });
       })
       .catch((failure: unknown) => {
         if (!controller.signal.aborted)
-          setError(failure instanceof Error ? failure.message : String(failure));
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
+          setResult({
+            key: requestKey,
+            error: failure instanceof Error ? failure.message : String(failure),
+          });
       });
     return () => controller.abort();
-  }, [data.links.records, recordScope, dateFilter, page, sort, direction, reload]);
+  }, [data.links.records, dateFilter, page, sort, direction, requestKey]);
   return (
     <Panel
       kicker={tr('ui.the_records_behind_this_view')}
@@ -106,7 +121,7 @@ export const Records = memo(function Records({
             <select
               value={sort}
               onChange={(event) => {
-                setSort(event.target.value);
+                onSort(event.target.value);
                 setPage(1);
               }}
             >
@@ -124,7 +139,7 @@ export const Records = memo(function Records({
             id="record-order"
             value={direction}
             onChange={(event) => {
-              setDirection(event.target.value);
+              onDirection(event.target.value);
               setPage(1);
             }}
           >
@@ -142,6 +157,7 @@ export const Records = memo(function Records({
         </div>
       )}
       <div
+        ref={recordsRegion}
         className="table-scroll"
         aria-busy={loading}
         tabIndex={0}
@@ -205,11 +221,12 @@ export const Records = memo(function Records({
           <p className="empty-chart">{tr('ui.no_records_match_this_scope')}</p>
         )}
       </div>
-      {tracedEvent && data.links.trace && (
+      {tracedEvent !== undefined && data.links.trace && (
         <RecordTrace
           url={data.links.trace}
           defectId={tracedEvent}
-          onClose={() => setTracedEvent(undefined)}
+          onClose={closeTrace}
+          fallbackFocusRef={recordsRegion}
         />
       )}
       <div className="pagination">
@@ -239,4 +256,4 @@ export const Records = memo(function Records({
       </div>
     </Panel>
   );
-});
+}

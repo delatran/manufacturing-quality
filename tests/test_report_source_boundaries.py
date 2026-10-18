@@ -76,6 +76,199 @@ def test_yearless_calendar_ranges_require_one_exact_source_period():
     assert typed_calendar_text("| Tháng 1–3 |", {"one": entry, "two": other})[1]
 
 
+@pytest.fixture
+def period_halves_entry():
+    return {
+        "tool": "analysis_query",
+        "execution_kind": "bounded_analysis",
+        "result": {
+            "ok": True,
+            "context": {
+                "context_id": "context",
+                "snapshot_id": "snapshot",
+                "dataset_version": "dataset",
+                "policy_version": "policy",
+                "scenario": "",
+                "filters": {
+                    "start_month": "2024-01",
+                    "end_month": "2024-06",
+                    "scenario": "",
+                },
+            },
+            "analysis": {
+                "period_halves": {
+                    "enabled": True,
+                    "first": {"months": ["2024-01", "2024-02", "2024-03"]},
+                    "second": {"months": ["2024-04", "2024-05", "2024-06"]},
+                },
+            },
+        },
+    }
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "| Metric | Jan–Mar 2024 | Apr–Jun 2024 |",
+        "| Metric | January through March 2024 | April through June 2024 |",
+        "| Chỉ tiêu | tháng 1–3/2024 | tháng 4–6/2024 |",
+        "| Chỉ tiêu | Tháng 1–3 | Tháng 4–6 |",
+    ],
+)
+def test_explicit_half_periods_authorize_their_exact_calendar_labels(period_halves_entry, text):
+    assert not typed_calendar_text(text, {"query": period_halves_entry})[1]
+
+
+@pytest.mark.parametrize(
+    ("path", "value"),
+    [
+        (("tool",), "python"),
+        (("tool",), "dashboard_context"),
+        (("execution_kind",), "canonical_receipt_import"),
+        (("result", "ok"), False),
+        (("result", "ok"), None),
+        (("result", "context", "context_id"), None),
+        (("result", "context", "snapshot_id"), None),
+        (("result", "context", "scenario"), "unbound-scenario"),
+        (("result", "analysis", "period_halves", "enabled"), False),
+        (("result", "analysis", "period_halves", "enabled"), "true"),
+        (("result", "analysis", "period_halves", "first", "months"), []),
+        (("result", "analysis", "period_halves", "second", "months"), None),
+    ],
+)
+def test_half_period_labels_require_successful_frozen_query(period_halves_entry, path, value):
+    target = period_halves_entry
+    for key in path[:-1]:
+        target = target[key]
+    target[path[-1]] = value
+    assert typed_calendar_text("Jan–Mar 2024", {"query": period_halves_entry})[1]
+
+
+@pytest.mark.parametrize(
+    ("first", "second"),
+    [
+        (["2024-01", "2024-03"], ["2024-04", "2024-06"]),
+        (["2024-01", "2024-02", "2024-03"], ["2024-03", "2024-05", "2024-06"]),
+        (["2024-01", "2024-03", "2024-02"], ["2024-04", "2024-05", "2024-06"]),
+        (["2024-01", "2024-02"], ["2024-03", "2024-04", "2024-05", "2024-06"]),
+        (["2023-12", "2024-01", "2024-02"], ["2024-03", "2024-04", "2024-05"]),
+        (["2024-01", "2024-13", "2024-03"], ["2024-04", "2024-05", "2024-06"]),
+        (["2024-01", "2024-2", "2024-03"], ["2024-04", "2024-05", "2024-06"]),
+        (["2024-01", 2, "2024-03"], ["2024-04", "2024-05", "2024-06"]),
+    ],
+)
+def test_half_periods_must_partition_the_whole_context_contiguously(
+    period_halves_entry, first, second
+):
+    halves = period_halves_entry["result"]["analysis"]["period_halves"]
+    halves["first"]["months"] = first
+    halves["second"]["months"] = second
+    issues = typed_calendar_text("Jan–Mar 2024", {"query": period_halves_entry})[1]
+    assert issues
+    assert issues[0]["available_periods"] == [["2024-01", "2024-06"]]
+
+
+def test_half_periods_can_partition_contiguous_months_across_years(period_halves_entry):
+    period_halves_entry["result"]["context"]["filters"].update(
+        start_month="2023-11", end_month="2024-02"
+    )
+    halves = period_halves_entry["result"]["analysis"]["period_halves"]
+    halves["first"]["months"] = ["2023-11", "2023-12"]
+    halves["second"]["months"] = ["2024-01", "2024-02"]
+    assert not typed_calendar_text(
+        "| Nov–Dec 2023 | Jan–Feb 2024 |", {"query": period_halves_entry}
+    )[1]
+
+
+def test_half_periods_cannot_bind_conflicting_frozen_contexts(period_halves_entry):
+    context = json.loads(json.dumps(period_halves_entry["result"]["context"]))
+    period_halves_entry["analysis_context"] = context
+    assert not typed_calendar_text("Jan–Mar 2024", {"query": period_halves_entry})[1]
+    context["context_id"] = "another-context"
+    assert typed_calendar_text("Jan–Mar 2024", {"query": period_halves_entry})[1]
+
+
+def test_half_periods_are_not_inferred_from_context_or_arbitrary_month_lists(period_halves_entry):
+    analysis = period_halves_entry["result"].pop("analysis")
+    assert typed_calendar_text("Jan–Mar 2024", {"query": period_halves_entry})[1]
+    period_halves_entry["result"]["narrative"] = "Jan–Mar 2024; Apr–Jun 2024"
+    period_halves_entry["result"]["other_analysis"] = analysis
+    assert typed_calendar_text("Jan–Mar 2024", {"query": period_halves_entry})[1]
+    assert not typed_calendar_text("Jan–Jun 2024", {"query": period_halves_entry})[1]
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Jan–Apr 2024",
+        "Feb–Mar 2024",
+        "Jan–Mar 2025",
+        "Event count is Jan–Mar 2024",
+        "Tháng 1–3 sự kiện",
+        "Tháng 1–3/2024 local currency",
+    ],
+)
+def test_half_period_evidence_does_not_authorize_other_ranges_or_measures(
+    period_halves_entry, text
+):
+    assert typed_calendar_text(text, {"query": period_halves_entry})[1]
+
+
+def test_yearless_half_periods_remain_ambiguous_across_years(period_halves_entry):
+    other = json.loads(json.dumps(period_halves_entry).replace("2024-", "2025-"))
+    assert typed_calendar_text("Tháng 1–3", {"one": period_halves_entry, "two": other})[1]
+
+
+@pytest.mark.asyncio
+async def test_half_period_table_uses_available_receipt_and_still_requires_numeric_citations(
+    evidence_subject,
+):
+    runtime, tools, *_ = evidence_subject
+    view = json.loads(
+        await runtime._call("analysis_query", {"section": "period_halves", "filters": filters()})
+    )
+    ids = {item["path"]: item["id"] for item in view["numeric_evidence"]}
+    text = "| Metric | Jan–Mar 2024 | Apr–Jun 2024 |\n|---|---|---|\n| Events |"
+    text += " | ".join(
+        "[value:" + ids[f"$.analysis.period_halves.{half}.event_count"] + "]"
+        for half in ("first", "second")
+    )
+    text += " |"
+    report = runtime.resolve_report(ReportDraft(report=text))
+    # Calendar headers use all successful frozen receipts without inline claims.
+    # Numeric table cells still require their own citations to that receipt.
+    checked = audit_report(report, tools.ledger)
+    assert checked["verified"], checked
+    unsupported = report.model_copy(update={"report": report.report.replace("Jan–Mar", "Jan–Apr")})
+    assert not audit_report(unsupported, tools.ledger)["verified"]
+    halves = view["result"]["analysis"]["period_halves"]
+    uncited = AnalystReport(
+        report="| Metric | Jan–Mar 2024 | Apr–Jun 2024 |\n|---|---|---|\n"
+        f"| Events | {halves['first']['event_count']} | {halves['second']['event_count']} |",
+        claims=[],
+    )
+    assert not audit_report(uncited, tools.ledger)["verified"]
+
+
+def test_forged_half_period_receipt_still_fails_ledger_integrity(tmp_path, period_halves_entry):
+    ledger = EvidenceLedger(tmp_path)
+    receipt = ledger.record(
+        "analysis_query",
+        "# frozen half-period query",
+        period_halves_entry["result"],
+        execution_kind="bounded_analysis",
+    )
+    receipt["result"]["context"]["filters"]["end_month"] = "2024-04"
+    halves = receipt["result"]["analysis"]["period_halves"]
+    halves["first"]["months"] = ["2024-01", "2024-02"]
+    halves["second"]["months"] = ["2024-03", "2024-04"]
+    ledger.path.write_text(json.dumps(receipt) + "\n", encoding="utf-8")
+    report = AnalystReport(report="| Metric | Jan–Feb 2024 | Mar–Apr 2024 |", claims=[])
+    checked = audit_report(report, ledger)
+    assert not checked["verified"]
+    assert any("entry hash mismatch" in error for error in checked["errors"])
+
+
 @pytest.mark.asyncio
 async def test_comparison_column_period_aliases_cannot_authorize_numeric_values(evidence_subject):
     runtime, tools, *_ = evidence_subject

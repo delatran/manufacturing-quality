@@ -27,7 +27,7 @@ def scope_grants(text, options):
     normalized = plain_text(text)
     clauses = re.split(r"[.;!?\n]|\b(?:but|nhung)\b", normalized)
     negation = r"\b(?:do not|don['’]?t|dont|never|khong duoc|khong|dung)\b"
-    controls = r"\b(?:change|modify|apply|switch|show|display|open|set|select|doi|thay doi|ap dung|loc|mo|hien thi|chon|chuyen)\b"
+    controls = r"\b(?:change|modify|apply|switch|show|display|open|set|select|reset|restore|undo|revert|doi|thay doi|ap dung|loc|mo|hien thi|chon|chuyen|dat|khoi phuc|hoan tac|quay ve|quay lai)\b"
     negative_clauses = [
         clause for clause in clauses if re.search(negation, clause) and re.search(controls, clause)
     ]
@@ -53,11 +53,7 @@ def scope_grants(text, options):
         if clause not in negative_clauses and not re.search(definition, clause)
     )
     view_requested = bool(
-        re.search(
-            r"\b(?:open|show|display|apply|switch|select|set|reset|restore|undo|revert|mo|hien thi|ap dung|chon|dat|loc|doi|chuyen|khoi phuc|hoan tac|quay ve|quay lai)\b",
-            positive,
-        )
-        or re.match(r"\s*(?:what about|how about|con)\s+", positive)
+        re.search(controls, positive) or re.match(r"\s*(?:what about|how about|con)\s+", positive)
     )
     normalized = positive
     grants = {}

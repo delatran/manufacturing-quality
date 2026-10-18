@@ -56,11 +56,11 @@ from .agent_views import (
 )
 from .chart_views import create_chart_view, validate_chart_view
 from .claim_feedback import (
+    calendar_text_checker,
     citation_rows,
     numeric_role,
     reference_context,
     source_contexts,
-    typed_calendar_text,
     typed_identifier_text,
     typed_policy_text,
 )
@@ -392,9 +392,9 @@ def source_schema_evidence(entries, ledger=None):
     return output
 
 
-def verified_source_links(ledger):
+def verified_source_links(ledger, *, entries=None):
     links: set[str] = set()
-    for entry in ledger.records():
+    for entry in ledger.records() if entries is None else entries:
         result = entry.get("result", {})
         if not isinstance(result, dict) or result.get("ok") is False:
             continue
@@ -659,11 +659,11 @@ def render_source_table(binding, source):
     }
 
 
-def source_table_catalog(ledger):
+def source_table_catalog(ledger, *, entries=None):
     """Read run-local issued identities; markers alone never establish trust."""
     if ledger is None:
         return {}
-    entries = ledger.records()
+    entries = ledger.records() if entries is None else entries
     catalog = {}
     sources = {(entry["execution_id"], entry["entry_sha256"]): entry for entry in entries}
     for entry in entries:
@@ -699,7 +699,7 @@ def source_table_catalog(ledger):
     return catalog
 
 
-def audit_table_blocks(markdown, ledger):
+def audit_table_blocks(markdown, ledger, *, entries=None):
     """Verify LF-canonical blocks before masking labels; artifact bytes stay unchanged."""
     errors: list[str] = []
     used: list[dict[str, Any]] = []
@@ -710,9 +710,9 @@ def audit_table_blocks(markdown, ledger):
     # Text-mode writes on Windows may add CRLF. This is the sole allowed
     # normalization; lone CR, cell whitespace and source content remain exact.
     markdown = markdown.replace("\r\n", "\n")
-    catalog = source_table_catalog(ledger)
+    catalog = source_table_catalog(ledger, entries=entries)
     if ledger is not None:
-        errors.extend(ledger.verify_integrity())
+        errors.extend(ledger.verify_integrity(entries))
 
     def validate(match):
         view = catalog.get(match[1])
@@ -882,7 +882,7 @@ def result_at_path(value, path):
     return value
 
 
-def report_metadata_labels(ledger):
+def report_metadata_labels(ledger, *, entries=None):
     """Only exact known categorical/date labels are exempt from numeric prose QA."""
     labels = set()
     month_words = (
@@ -955,7 +955,7 @@ def report_metadata_labels(ledger):
                 if match[3]:
                     labels.add(f"ngày {int(match[3])}/{month}/{year}")
 
-    for entry in ledger.records():
+    for entry in ledger.records() if entries is None else entries:
         authoritative = entry.get("execution_kind") == "canonical_receipt_import" and entry.get(
             "tool"
         ) in {"dashboard_context", "dashboard_compare_scope"}
@@ -1078,10 +1078,10 @@ def receipt_projection(result):
     return visit(result, "$"), omitted
 
 
-def report_unit_patterns(ledger):
+def report_unit_patterns(ledger, *, entries=None):
     """Recognize declared unit scales only within explicit unit phrases."""
     patterns: set[str] = set()
-    for entry in ledger.records():
+    for entry in ledger.records() if entries is None else entries:
         result = entry.get("result", {})
         if not isinstance(result, dict) or result.get("ok") is False:
             continue
@@ -1182,24 +1182,41 @@ def source_bound_table_period_text(markdown, entries):
 
 def audit_report(report: AnalystReport, ledger: EvidenceLedger) -> dict[str, Any]:
     """Check ledger integrity and bind every displayed numeric token to evidence."""
+    # Every audit reads fresh bytes once. All checks then use that same snapshot,
+    # so a second disk read cannot replace evidence after its integrity check.
+    records = ledger.records()
     claims = [claim.model_dump() for claim in report.claims]
-    result = ledger.verify_claims(claims)
+    result = ledger.verify_claims(claims, entries=records)
     errors = list(result["errors"])
-    tables = audit_table_blocks(report.report, ledger)
+    tables = audit_table_blocks(report.report, ledger, entries=records)
     errors.extend(tables["errors"])
     by_id = {claim.id: claim for claim in report.claims}
-    metadata_labels = report_metadata_labels(ledger)
-    entries = {entry["execution_id"]: entry for entry in ledger.records()}
+    # Keep compiled patterns local to this audit. A large label catalog otherwise
+    # churns Python's regex cache and recompiles every label on every report line.
+    metadata_patterns = [
+        re.compile(r"(?<![\w-])" + re.escape(label) + r"(?![\w-])", re.IGNORECASE)
+        for label in report_metadata_labels(ledger, entries=records)
+    ]
+    entries = {entry["execution_id"]: entry for entry in records}
     numeric_issues = []
-    unit_patterns = report_unit_patterns(ledger)
-    source_links = verified_source_links(ledger)
-    artifact_identifiers = registered_identifiers(ledger)
+    unit_patterns = [
+        re.compile(pattern, re.IGNORECASE)
+        for pattern in report_unit_patterns(ledger, entries=records)
+    ]
+    source_links = verified_source_links(ledger, entries=records)
+    artifact_patterns = [
+        re.compile(
+            r"(?<![\w/.\-])" + re.escape(identifier) + r"(?=$|[^\w/.\-]|\.(?=$|\s|[)\]}\"',;:!?]))"
+        )
+        for identifier in registered_identifiers(ledger)
+    ]
     if len(by_id) != len(report.claims):
         errors.append("Duplicate numeric claim identifiers")
     if re.search(r"\[value:", report.report, re.IGNORECASE):
         errors.append("An unresolved numeric display placeholder remains in the report")
     numeric_text = source_bound_sql_text(tables["numeric_text"], entries)
     numeric_text = source_bound_table_period_text(numeric_text, entries)
+    check_calendar = calendar_text_checker(entries)
     for index, line in enumerate(numeric_text.splitlines()):
         references = _CITATION.findall(line)
         for identity in references:
@@ -1212,14 +1229,8 @@ def audit_report(report: AnalystReport, ledger: EvidenceLedger) -> dict[str, Any
         # URL destinations are machine identifiers; their visible labels remain
         # checked, including digits embedded in currency or ordinary words.
         text = numeric_prose(text, source_links)
-        for identifier in artifact_identifiers:
-            text = re.sub(
-                r"(?<![\w/.\-])"
-                + re.escape(identifier)
-                + r"(?=$|[^\w/.\-]|\.(?=$|\s|[)\]}\"',;:!?]))",
-                " ",
-                text,
-            )
+        for pattern in artifact_patterns:
+            text = pattern.sub(" ", text)
         errors.extend(
             f"Line {index + 1}: {error}" for error in display_errors(line, claims, entries)
         )
@@ -1233,7 +1244,7 @@ def audit_report(report: AnalystReport, ledger: EvidenceLedger) -> dict[str, Any
             [by_id[identity].model_dump() for identity in references if identity in by_id],
             entries,
         )
-        text, calendar_issues = typed_calendar_text(text, entries)
+        text, calendar_issues = check_calendar(text)
         for issue in calendar_issues:
             errors.append(
                 f"Line {index + 1}: calendar label {issue['label']!r} is unsupported. {issue['reason']}"
@@ -1244,15 +1255,10 @@ def audit_report(report: AnalystReport, ledger: EvidenceLedger) -> dict[str, Any
                 f"Line {index + 1}: {issue['identifier_type']} label {issue['label']!r} is not established by the cited source row"
             )
             numeric_issues.append({**issue, "line": index + 1})
-        for label in metadata_labels:
-            text = re.sub(
-                r"(?<![\w-])" + re.escape(label) + r"(?![\w-])",
-                " source label ",
-                text,
-                flags=re.IGNORECASE,
-            )
+        for pattern in metadata_patterns:
+            text = pattern.sub(" source label ", text)
         for pattern in unit_patterns:
-            text = re.sub(pattern, " ", text, flags=re.IGNORECASE)
+            text = pattern.sub(" ", text)
         adjacent = adjacent_value_error(text)
         if adjacent:
             errors.append(f"Line {index + 1}: {adjacent}")
@@ -3193,10 +3199,9 @@ class AnalystRuntime:
                 room = VIEW_BYTES - len(canonical(without_examples).encode("utf-8"))
                 receipt["citation_rows"] = citation_rows(entry, evidence, max_bytes=max(0, room))
             if len(canonical(receipt).encode("utf-8")) > VIEW_BYTES and selected is None:
-                if _page_size is None:
-                    return self.model_receipt(entry, _page_size=3)
-                if _page_size == 3:
-                    return self.model_receipt(entry, _page_size=1)
+                next_page_size = 4 if _page_size is None else _page_size - 1
+                if next_page_size > 0:
+                    return self.model_receipt(entry, _page_size=next_page_size)
             if len(canonical(receipt).encode("utf-8")) > VIEW_BYTES:
                 raise ValueError(
                     "Analysis view exceeds the response bound; select a narrower section or exact original child field"
@@ -3488,17 +3493,44 @@ class AnalystRuntime:
                 "fields": expected_fields,
                 "proofs": expected_proofs,
             }
+        reviewed_revision = self.steering_revision
+
+        def before_commit():
+            try:
+                pending = self._steering_pending()
+            except ResponseProtocolError as error:
+                raise DraftNotSaved(
+                    "Draft was not saved because a new instruction has unresolved admission"
+                ) from error
+            if (
+                reviewed_revision != self.steering_revision
+                or pending
+                or not self._steering_idle.is_set()
+            ):
+                raise DraftNotSaved(
+                    "Draft was not saved because new instructions require a fresh proposal and review"
+                )
+            current_context, _, _ = self.validate_analysis_context(self.analysis_context)
+            if (
+                self.action_intent != required_intent
+                or proposal["context_id"] != context["context_id"]
+                or current_context["context_id"] != context["context_id"]
+            ):
+                raise DraftNotSaved(
+                    "Draft authority or context changed during review; nothing was saved"
+                )
+
         try:
+            await self._steering_idle.wait()
+            before_commit()
             proposal, semantic_review = await self.review_draft_proposal(proposal)
-        except (ProviderStopped, BudgetExceeded):
+            before_commit()
+        except (ProviderStopped, BudgetExceeded, DraftNotSaved):
             raise
         except Exception as error:
             raise DraftNotSaved(
                 f"Draft was not saved during prewrite review: {type(error).__name__}: {error}"
             ) from error
-        if self.action_intent != required_intent or proposal["context_id"] != context["context_id"]:
-            raise ValueError("Draft authority or context changed during review; nothing was saved")
-        self.validate_analysis_context(self.analysis_context)
         expected_fields, expected_proofs = proposal["fields"], proposal["proofs"]
         if proposal["operation"] == "operations_create_draft":
             result = await self.operations_service.create_case(
@@ -3510,6 +3542,7 @@ class AnalystRuntime:
                 actor="agent",
                 authorized=True,
                 content_evidence=expected_proofs,
+                before_commit=before_commit,
             )
         else:
             result = await self.operations_service.update_case(
@@ -3519,6 +3552,7 @@ class AnalystRuntime:
                 actor="agent",
                 authorized=True,
                 content_evidence=expected_proofs,
+                before_commit=before_commit,
             )
         # Read durable state back before reporting success, including service validation.
         try:
@@ -4454,16 +4488,17 @@ class AnalystRuntime:
             suffix = Path(paths[0]).suffix.lower()
             reader = (
                 "read_excel"
-                if suffix in {".xls", ".xlsx"}
+                if suffix in {".xls", ".xlsx", ".xlsm"}
                 else "read_json"
-                if suffix == ".json"
+                if suffix in {".json", ".jsonl", ".ndjson"}
                 else "read_parquet"
                 if suffix == ".parquet"
                 else "read_csv"
             )
+            reader_options = ", lines=True" if suffix in {".jsonl", ".ndjson"} else ""
             code = f"""import pandas as pd
 import matplotlib.pyplot as plt
-df = pd.{reader}({paths[0]!r})
+df = pd.{reader}({paths[0]!r}{reader_options})
 numeric = df.select_dtypes(include='number')
 summary = numeric.describe().to_dict() if len(numeric.columns) else {{}}
 result = {{'row_count': len(df), 'column_count': len(df.columns), 'missing_cells': int(df.isna().sum().sum()), 'numeric_summary': summary}}

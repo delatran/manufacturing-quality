@@ -188,7 +188,8 @@ class AnalysisService:
         self._loader = snapshot_loader or (
             lambda: load_snapshot(self.root / "data" / "master_data.csv")
         )
-        self._lock = asyncio.Lock()
+        self._snapshot_task: asyncio.Task[str] | None = None
+        self._context_tasks: dict[str, asyncio.Task[_ContextReceipt]] = {}
         self._snapshots: dict[str, _FrozenSnapshot] = {}
         self._contexts: dict[str, _ContextReceipt] = {}
         self._latest: str | None = None
@@ -237,7 +238,46 @@ class AnalysisService:
         )
         return code, {name: sha256(content) for name, content in sorted(sources.items())}, registry
 
-    async def _fetch(self) -> None:
+    def _freeze_snapshot(self, snapshot: Snapshot) -> _FrozenSnapshot:
+        """Detach and seal source data without publishing service state."""
+        snapshot = copy.deepcopy(snapshot)
+        for name in ("source_sha256", "master_sha256"):
+            if not isinstance(snapshot.provenance.get(name), str) or not ID_PATTERN.fullmatch(
+                snapshot.provenance[name]
+            ):
+                raise SourceError(f"Prepared snapshot has an invalid {name}")
+        if not snapshot.provenance.get("fetched_at") or not snapshot.provenance.get("source_url"):
+            raise SourceError("Prepared snapshot is missing HTTP provenance")
+        clean_hash = sha256(
+            canonical(
+                {
+                    "products": [asdict(product) for product in snapshot.products],
+                    "events": [event.as_record() for event in snapshot.events],
+                    "audit": [asdict(entry) for entry in snapshot.audit],
+                    "quality": snapshot.quality,
+                    "raw_summary": snapshot.raw_summary,
+                }
+            )
+        )
+        snapshot_id = sha256(
+            canonical(
+                {
+                    "source_sha256": snapshot.provenance["source_sha256"],
+                    "master_sha256": snapshot.provenance["master_sha256"],
+                    "clean_sha256": clean_hash,
+                    "code_sha256": self.code_sha256,
+                    "kpi_version": self.kpi_version,
+                }
+            )
+        )
+        provenance = {
+            **snapshot.provenance,
+            "pipeline_snapshot_id": snapshot.provenance.get("snapshot_id"),
+            "snapshot_id": snapshot_id,
+        }
+        return _FrozenSnapshot(replace(snapshot, provenance=provenance), clean_hash)
+
+    async def _fetch(self) -> str:
         self._status["last_attempt_at"] = _now()
         try:
             if inspect.iscoroutinefunction(self._loader):
@@ -248,46 +288,11 @@ class AnalysisService:
                     snapshot = await snapshot
             if not isinstance(snapshot, Snapshot):
                 raise SourceError("Snapshot loader did not return a prepared case-study snapshot")
-            snapshot = copy.deepcopy(snapshot)
-            for name in ("source_sha256", "master_sha256"):
-                if not isinstance(snapshot.provenance.get(name), str) or not ID_PATTERN.fullmatch(
-                    snapshot.provenance[name]
-                ):
-                    raise SourceError(f"Prepared snapshot has an invalid {name}")
-            if not snapshot.provenance.get("fetched_at") or not snapshot.provenance.get(
-                "source_url"
-            ):
-                raise SourceError("Prepared snapshot is missing HTTP provenance")
-            clean_hash = sha256(
-                canonical(
-                    {
-                        "products": [asdict(product) for product in snapshot.products],
-                        "events": [event.as_record() for event in snapshot.events],
-                        "audit": [asdict(entry) for entry in snapshot.audit],
-                        "quality": snapshot.quality,
-                        "raw_summary": snapshot.raw_summary,
-                    }
-                )
-            )
-            snapshot_id = sha256(
-                canonical(
-                    {
-                        "source_sha256": snapshot.provenance["source_sha256"],
-                        "master_sha256": snapshot.provenance["master_sha256"],
-                        "clean_sha256": clean_hash,
-                        "code_sha256": self.code_sha256,
-                        "kpi_version": self.kpi_version,
-                    }
-                )
-            )
-            provenance = {
-                **snapshot.provenance,
-                "pipeline_snapshot_id": snapshot.provenance.get("snapshot_id"),
-                "snapshot_id": snapshot_id,
-            }
-            self._snapshots.setdefault(
-                snapshot_id, _FrozenSnapshot(replace(snapshot, provenance=provenance), clean_hash)
-            )
+            # Deep copies and canonical encoding grow with every source row.
+            # Keep them off the event loop; publish only a complete frozen value.
+            frozen = await asyncio.to_thread(self._freeze_snapshot, snapshot)
+            snapshot_id = frozen.snapshot.provenance["snapshot_id"]
+            self._snapshots.setdefault(snapshot_id, frozen)
             self._latest = snapshot_id
             self._status.update(stale=False, last_error=None)
         except (SourceError, OSError) as error:
@@ -296,15 +301,36 @@ class AnalysisService:
                 raise SourceError(
                     f"The HTTP source is unavailable and no complete snapshot is loaded: {error}"
                 ) from error
+        assert self._latest is not None
+        return self._latest
+
+    def _snapshot_finished(self, task: asyncio.Task[str]) -> None:
+        if self._snapshot_task is task:
+            self._snapshot_task = None
+        if not task.cancelled():
+            # A disconnected caller may be the last waiter. Retrieve failures so
+            # that a later request can retry without an unobserved-task warning.
+            task.exception()
+
+    async def _refresh_snapshot(self) -> str:
+        task = self._snapshot_task
+        if task is None:
+            task = asyncio.create_task(self._fetch())
+            self._snapshot_task = task
+            task.add_done_callback(self._snapshot_finished)
+        # A caller's cancellation must not abandon an in-flight fetch or cause
+        # a competing fetch to publish an older source over a newer generation.
+        return await asyncio.shield(task)
 
     async def _snapshot(self, snapshot_id: str | None = None) -> _FrozenSnapshot:
         if snapshot_id is not None:
             _identifier(snapshot_id, "snapshot_id")
         if snapshot_id in self._snapshots:
             return self._snapshots[snapshot_id]
-        if self._latest is None:
-            await self._fetch()
         selected = snapshot_id or self._latest
+        if self._latest is None:
+            fetched_id = await self._refresh_snapshot()
+            selected = snapshot_id or fetched_id
         if selected not in self._snapshots:
             raise SnapshotUnavailable(
                 "The requested frozen snapshot is not available in this server. The current HTTP source or analysis code has a different identity; the request was not switched to the latest snapshot."
@@ -398,8 +424,7 @@ class AnalysisService:
                     raise ValueError("analysis does not match its receipt")
 
             manifest = json.loads(manifest_bytes.decode("utf-8"))
-            for artifact in manifest:
-                ledger.resolve_artifact(artifact["path"], manifest=manifest)
+            ledger.verify_artifacts(manifest=manifest)
             return json.loads(saved.payload)
         except (ValueError, KeyError, TypeError, OSError) as error:
             raise EvidenceIntegrityError(
@@ -497,7 +522,6 @@ class AnalysisService:
                 sealed_ledger_bytes=(canonical(entry) + "\n").encode("utf-8"),
                 manifest_sha256=descriptor["manifest_sha256"],
             )
-            self._contexts[context_id] = saved
             return saved
         except (ValueError, TypeError, KeyError, OSError) as error:
             raise EvidenceIntegrityError(
@@ -695,15 +719,18 @@ class AnalysisService:
                 write_manifest=False,
             )
             for locale in ("en", "vi"):
-                localized = {
-                    name: content
-                    for name, content in files.items()
-                    if name != "bundle_manifest.json"
-                }
-                localized["export_metadata.json"] = canonical(
-                    _export_metadata(locale, context)
-                ).encode("utf-8")
-                if locale == "vi":
+                if locale == "en":
+                    # The default bundle already contains English export metadata.
+                    loc_zip_bytes = zip_bytes_data
+                else:
+                    localized = {
+                        name: content
+                        for name, content in files.items()
+                        if name != "bundle_manifest.json"
+                    }
+                    localized["export_metadata.json"] = canonical(
+                        _export_metadata(locale, context)
+                    ).encode("utf-8")
                     localized["README.md"] = (
                         "# Bằng chứng phân tích đã đóng băng\n\n"
                         "context.json xác định dataset, policy, scenario và toàn bộ bộ lọc. analysis.json khớp với kết quả đã xác minh trong evidence.json và ledger.jsonl.\n\n"
@@ -712,13 +739,15 @@ class AnalysisService:
                         "Chất lượng dữ liệu và workbook giữ phạm vi canonical toàn nguồn. Tỷ lệ dùng sản lượng tham chiếu tĩnh, gồm product không có sự kiện. Kết quả lịch sử và scenario không chứng minh điều kiện sản xuất hiện tại hay khoản tiết kiệm đã thực hiện.\n\n"
                         "export_metadata.json ghi scope, ngôn ngữ, quy ước số và đơn vị. bundle_manifest.json liệt kê SHA-256 của từng file; không sửa file trong gói nếu cần đối soát.\n"
                     ).encode()
-                loc_manifest = {
-                    "context_id": context_id,
-                    "execution_id": receipt["execution_id"],
-                    "files": {name: sha256(content) for name, content in sorted(localized.items())},
-                }
-                localized["bundle_manifest.json"] = canonical(loc_manifest).encode("utf-8")
-                loc_zip_bytes = _zip_bytes(localized)
+                    loc_manifest = {
+                        "context_id": context_id,
+                        "execution_id": receipt["execution_id"],
+                        "files": {
+                            name: sha256(content) for name, content in sorted(localized.items())
+                        },
+                    }
+                    localized["bundle_manifest.json"] = canonical(loc_manifest).encode("utf-8")
+                    loc_zip_bytes = _zip_bytes(localized)
                 path = artifacts / f"evidence.{locale}.zip"
                 path.write_bytes(loc_zip_bytes)
                 ledger.register_artifact(
@@ -753,7 +782,6 @@ class AnalysisService:
                 sealed_ledger_bytes=(canonical(receipt) + "\n").encode("utf-8"),
                 manifest_sha256=descriptor["manifest_sha256"],
             )
-            self._contexts[context_id] = saved
             return saved
         finally:
             # Delete only this call's unpublished directory, never an existing context.
@@ -770,6 +798,34 @@ class AnalysisService:
         payload["status"] = copy.deepcopy(self._status)
         return payload
 
+    def _context_finished(self, context_id: str, task: asyncio.Task[_ContextReceipt]) -> None:
+        if self._context_tasks.get(context_id) is task:
+            del self._context_tasks[context_id]
+        if not task.cancelled():
+            task.exception()
+
+    async def _materialize_context(
+        self, context_id: str, build: Callable[[], _ContextReceipt]
+    ) -> _ContextReceipt:
+        saved = self._contexts.get(context_id)
+        if saved is not None:
+            return saved
+        task = self._context_tasks.get(context_id)
+        if task is None:
+
+            async def prepare() -> _ContextReceipt:
+                saved = await asyncio.to_thread(build)
+                # Publish only the finished immutable receipt, on the event loop.
+                self._contexts[context_id] = saved
+                return saved
+
+            task = asyncio.create_task(prepare())
+            self._context_tasks[context_id] = task
+            task.add_done_callback(lambda done: self._context_finished(context_id, done))
+        # Share preparation, never the verification result. Each caller checks
+        # every persisted artifact again after this task completes.
+        return await asyncio.shield(task)
+
     async def _get_context(
         self,
         scope: Scope,
@@ -783,23 +839,21 @@ class AnalysisService:
         )
         validation = analytics.missing_event_filter_values(frozen.snapshot, scope)
         context_id = self._context_id(frozen.snapshot.provenance["snapshot_id"], scope)
-        saved = self._contexts.get(context_id)
-        if saved is None:
-            saved = await asyncio.to_thread(self._create, frozen, scope, validation)
-        return self._response(saved)
+        saved = await self._materialize_context(
+            context_id, lambda: self._create(frozen, scope, validation)
+        )
+        return await asyncio.to_thread(self._response, saved)
 
     async def get_context(
         self, filters: dict[str, Any] | None = None, snapshot_id: str | None = None
     ) -> dict[str, Any]:
         scope = _scope(filters)
-        async with self._lock:
-            return await self._get_context(scope, snapshot_id)
+        return await self._get_context(scope, snapshot_id)
 
     async def refresh(self, filters: dict[str, Any] | None = None) -> dict[str, Any]:
         scope = _scope(filters)
-        async with self._lock:
-            await self._fetch()
-            return await self._get_context(scope, self._latest)
+        snapshot_id = await self._refresh_snapshot()
+        return await self._get_context(scope, snapshot_id)
 
     async def refresh_for_context(self, context_id: str) -> dict[str, Any]:
         """Refresh an exact verified scope, retaining event values that disappear.
@@ -808,56 +862,75 @@ class AnalysisService:
         exceptions. Ordinary Dashboard filtering and refresh stay strict.
         """
         _identifier(context_id, "context_id")
-        async with self._lock:
-            baseline = await self._context_by_id(context_id)
-            scope = _scope(baseline["context"]["filters"])
-            permitted = {
-                field: getattr(scope, field)
-                for field in analytics.EVENT_FILTER_OPTIONS
-                if getattr(scope, field)
-            }
-            await self._fetch()
-            return await self._get_context(
-                scope, self._latest, permitted_missing_event_filters=permitted
-            )
+        baseline = await self._context_by_id(context_id)
+        scope = _scope(baseline["context"]["filters"])
+        permitted = {
+            field: getattr(scope, field)
+            for field in analytics.EVENT_FILTER_OPTIONS
+            if getattr(scope, field)
+        }
+        snapshot_id = await self._refresh_snapshot()
+        return await self._get_context(
+            scope, snapshot_id, permitted_missing_event_filters=permitted
+        )
 
     async def _context_by_id(self, context_id: str) -> dict[str, Any]:
         _identifier(context_id, "context_id")
         saved = self._contexts.get(context_id)
         if saved is None:
-            descriptor = self._read_descriptor(context_id)
-            frozen = await self._snapshot(descriptor["context"]["snapshot_id"])
-            saved = await asyncio.to_thread(self._restore, context_id, frozen, descriptor)
-        return self._response(saved)
+            task = self._context_tasks.get(context_id)
+            if task is not None:
+                saved = await asyncio.shield(task)
+            else:
+                try:
+                    descriptor = await asyncio.to_thread(self._read_descriptor, context_id)
+                except ContextNotFound:
+                    # Preparation may have started while the descriptor was
+                    # being read, before its staging directory was published.
+                    task = self._context_tasks.get(context_id)
+                    saved = self._contexts.get(context_id)
+                    if task is not None:
+                        saved = await asyncio.shield(task)
+                    elif saved is None:
+                        raise
+                else:
+                    frozen = await self._snapshot(descriptor["context"]["snapshot_id"])
+                    saved = await self._materialize_context(
+                        context_id, lambda: self._restore(context_id, frozen, descriptor)
+                    )
+        assert saved is not None
+        return await asyncio.to_thread(self._response, saved)
 
     async def context_by_id(self, context_id: str) -> dict[str, Any]:
-        async with self._lock:
-            return await self._context_by_id(context_id)
+        return await self._context_by_id(context_id)
 
     async def snapshot_for_context(self, context_id: str) -> Snapshot:
-        async with self._lock:
-            payload = await self._context_by_id(context_id)
-            frozen = self._snapshots[payload["context"]["snapshot_id"]]
-            return replace(
-                copy.deepcopy(frozen.snapshot),
-                provenance=copy.deepcopy(payload["analysis"]["metadata"]),
-            )
+        payload = await self._context_by_id(context_id)
+        frozen = self._snapshots[payload["context"]["snapshot_id"]]
+        snapshot = await asyncio.to_thread(copy.deepcopy, frozen.snapshot)
+        return replace(
+            snapshot,
+            provenance=copy.deepcopy(payload["analysis"]["metadata"]),
+        )
 
     async def input_paths_for_context(self, context_id: str) -> list[Path]:
-        async with self._lock:
-            payload = await self._context_by_id(context_id)
-            saved = self._contexts[context_id]
-            ledger = EvidenceLedger(saved.directory)
-            paths = [
-                ledger.resolve_artifact("artifacts/" + name)
-                for name in ("cleaned_records.csv", "reference_products.csv")
-            ]
-            for path in paths:
-                if sha256(path.read_bytes()) != payload["evidence"]["input_sha256"][path.name]:
-                    raise EvidenceIntegrityError(
-                        "A cleaned context input no longer matches the analysis receipt"
-                    )
-            return paths
+        payload = await self._context_by_id(context_id)
+        return await asyncio.to_thread(
+            self._input_paths, self._contexts[context_id], payload["evidence"]["input_sha256"]
+        )
+
+    def _input_paths(self, saved: _ContextReceipt, input_hashes: dict[str, str]) -> list[Path]:
+        ledger = EvidenceLedger(saved.directory)
+        paths = [
+            ledger.resolve_artifact("artifacts/" + name)
+            for name in ("cleaned_records.csv", "reference_products.csv")
+        ]
+        for path in paths:
+            if sha256(path.read_bytes()) != input_hashes[path.name]:
+                raise EvidenceIntegrityError(
+                    "A cleaned context input no longer matches the analysis receipt"
+                )
+        return paths
 
     async def records(
         self,
@@ -888,89 +961,87 @@ class AnalysisService:
             raise ValueError("page_size must be between 1 and 100")
         if sort_by not in SORT_FIELDS or sort_order not in {"asc", "desc"}:
             raise ValueError("Unknown record sort field or direction")
-        async with self._lock:
-            payload = await self._context_by_id(context_id)
-            cached_rows = self._records_cache.get(context_id)
-            if cached_rows is None:
-                snapshot = self._snapshots[payload["context"]["snapshot_id"]].snapshot
-                cached_rows = [
-                    event.as_record()
-                    for event in analytics.filter_events(
-                        snapshot, _scope(payload["context"]["filters"])
-                    )
-                ]
-                cached_rows.sort(key=lambda row: (row["defect_id"], row["source_row"]))
-                if len(self._records_cache) >= 64:
-                    self._records_cache.pop(next(iter(self._records_cache)))
-                self._records_cache[context_id] = cached_rows
+        payload = await self._context_by_id(context_id)
+        cached_rows = self._records_cache.get(context_id)
+        if cached_rows is None:
+            snapshot = self._snapshots[payload["context"]["snapshot_id"]].snapshot
+            cached_rows = [
+                event.as_record()
+                for event in analytics.filter_events(
+                    snapshot, _scope(payload["context"]["filters"])
+                )
+            ]
+            cached_rows.sort(key=lambda row: (row["defect_id"], row["source_row"]))
+            if len(self._records_cache) >= 64:
+                self._records_cache.pop(next(iter(self._records_cache)))
+            self._records_cache[context_id] = cached_rows
 
-            if defect_date is not None:
-                base_rows = [row for row in cached_rows if row["defect_date"] == defect_date]
+        if defect_date is not None:
+            base_rows = [row for row in cached_rows if row["defect_date"] == defect_date]
+        else:
+            base_rows = cached_rows
+
+        missing: list[dict[str, Any]] = []
+        present: list[dict[str, Any]] = []
+        for row in base_rows:
+            val = row[sort_by]
+            if val is None or (sort_by == "severity" and val == "Unknown"):
+                missing.append(row)
             else:
-                base_rows = cached_rows
+                present.append(row)
 
-            missing: list[dict[str, Any]] = []
-            present: list[dict[str, Any]] = []
-            for row in base_rows:
-                val = row[sort_by]
-                if val is None or (sort_by == "severity" and val == "Unknown"):
-                    missing.append(row)
-                else:
-                    present.append(row)
-
-            key = (
-                (lambda row: _SEVERITY_ORDER.get(row["severity"], -1))
-                if sort_by == "severity"
-                else (lambda row: row[sort_by])
-            )
-            present.sort(key=key, reverse=sort_order == "desc")
-            rows = present + missing
-            total = len(rows)
-            page_count = max(1, math.ceil(total / page_size))
-            page = min(page, page_count)
-            return {
-                "context": payload["context"],
-                "record_filters": {"defect_date": defect_date},
-                "total": total,
-                "page": page,
-                "page_size": page_size,
-                "page_count": page_count,
-                "sort_by": sort_by,
-                "sort_order": sort_order,
-                "rows": rows[(page - 1) * page_size : page * page_size],
-                "status": payload["status"],
-            }
+        key = (
+            (lambda row: _SEVERITY_ORDER.get(row["severity"], -1))
+            if sort_by == "severity"
+            else (lambda row: row[sort_by])
+        )
+        present.sort(key=key, reverse=sort_order == "desc")
+        rows = present + missing
+        total = len(rows)
+        page_count = max(1, math.ceil(total / page_size))
+        page = min(page, page_count)
+        return {
+            "context": payload["context"],
+            "record_filters": {"defect_date": defect_date},
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "page_count": page_count,
+            "sort_by": sort_by,
+            "sort_order": sort_order,
+            "rows": [row.copy() for row in rows[(page - 1) * page_size : page * page_size]],
+            "status": payload["status"],
+        }
 
     async def compare_scenario(self, context_id: str, scenario: str) -> dict[str, Any]:
         validate_scenario(scenario)
-        async with self._lock:
-            origin = await self._context_by_id(context_id)
-            base_scope = _scope(origin["context"]["filters"])
-            snapshot_id = origin["context"]["snapshot_id"]
-            canonical_payload = await self._get_context(
-                replace(base_scope, scenario=""),
-                snapshot_id,
-                permitted_missing_event_filters=origin["evidence"].get("scope_validation"),
-            )
-            selected_payload = await self._get_context(
-                replace(base_scope, scenario=scenario),
-                snapshot_id,
-                permitted_missing_event_filters=origin["evidence"].get("scope_validation"),
-            )
-            comparison = analytics.compare_reports(
-                canonical_payload["analysis"], selected_payload["analysis"]
-            )
-            comparison["source_contexts"] = {
-                "canonical": canonical_payload["context"]["context_id"],
-                "selected": selected_payload["context"]["context_id"],
-            }
-            return {
-                "context": origin["context"],
-                "canonical": canonical_payload,
-                "selected": selected_payload,
-                "comparison": comparison,
-                "status": copy.deepcopy(self._status),
-            }
+        origin = await self._context_by_id(context_id)
+        base_scope = _scope(origin["context"]["filters"])
+        snapshot_id = origin["context"]["snapshot_id"]
+        canonical_payload = await self._get_context(
+            replace(base_scope, scenario=""),
+            snapshot_id,
+            permitted_missing_event_filters=origin["evidence"].get("scope_validation"),
+        )
+        selected_payload = await self._get_context(
+            replace(base_scope, scenario=scenario),
+            snapshot_id,
+            permitted_missing_event_filters=origin["evidence"].get("scope_validation"),
+        )
+        comparison = analytics.compare_reports(
+            canonical_payload["analysis"], selected_payload["analysis"]
+        )
+        comparison["source_contexts"] = {
+            "canonical": canonical_payload["context"]["context_id"],
+            "selected": selected_payload["context"]["context_id"],
+        }
+        return {
+            "context": origin["context"],
+            "canonical": canonical_payload,
+            "selected": selected_payload,
+            "comparison": comparison,
+            "status": copy.deepcopy(self._status),
+        }
 
     async def compare_periods(
         self,
@@ -985,33 +1056,49 @@ class AnalysisService:
             )
         if dimension not in analytics.COMPARISON_DIMENSIONS:
             raise ValueError("Unknown comparison dimension")
-        async with self._lock:
-            origin = await self._context_by_id(context_id)
-            filters = origin["context"]["filters"]
-            baseline_scope = _scope({**filters, **baseline_filters})
-            comparison_scope = _scope({**filters, **comparison_filters})
-            snapshot_id = origin["context"]["snapshot_id"]
-            baseline = await self._get_context(baseline_scope, snapshot_id)
-            comparison = await self._get_context(comparison_scope, snapshot_id)
-            snapshot = self._snapshots[snapshot_id].snapshot
-            result = analytics.compare_periods(
-                snapshot, baseline_scope, comparison_scope, dimension
-            )
-            result["metadata"] = {
-                key: origin["context"][key]
-                for key in ("dataset_version", "policy_version", "snapshot_id")
-            }
-            result["source_contexts"] = {
-                "baseline": baseline["context"]["context_id"],
-                "comparison": comparison["context"]["context_id"],
-            }
+        origin = await self._context_by_id(context_id)
+        filters = origin["context"]["filters"]
+        baseline_scope = _scope({**filters, **baseline_filters})
+        comparison_scope = _scope({**filters, **comparison_filters})
+        snapshot_id = origin["context"]["snapshot_id"]
+        permitted = origin["evidence"].get("scope_validation", {})
+
+        def inherited(scope: Scope) -> dict[str, str]:
             return {
-                "context": origin["context"],
-                "baseline": baseline,
-                "comparison": comparison,
-                "decomposition": result,
-                "status": copy.deepcopy(self._status),
+                field: value for field, value in permitted.items() if getattr(scope, field) == value
             }
+
+        baseline = await self._get_context(
+            baseline_scope, snapshot_id, permitted_missing_event_filters=inherited(baseline_scope)
+        )
+        comparison = await self._get_context(
+            comparison_scope,
+            snapshot_id,
+            permitted_missing_event_filters=inherited(comparison_scope),
+        )
+        snapshot = self._snapshots[snapshot_id].snapshot
+        result = analytics.compare_periods(
+            snapshot,
+            baseline_scope,
+            comparison_scope,
+            dimension,
+            permitted_missing_event_filters=permitted,
+        )
+        result["metadata"] = {
+            key: origin["context"][key]
+            for key in ("dataset_version", "policy_version", "snapshot_id")
+        }
+        result["source_contexts"] = {
+            "baseline": baseline["context"]["context_id"],
+            "comparison": comparison["context"]["context_id"],
+        }
+        return {
+            "context": origin["context"],
+            "baseline": baseline,
+            "comparison": comparison,
+            "decomposition": result,
+            "status": copy.deepcopy(self._status),
+        }
 
     async def trace_records(
         self,
@@ -1029,133 +1116,140 @@ class AnalysisService:
             raise ValueError("source_row must be a positive integer")
         if defect_id is not None and source_row is not None:
             raise ValueError("Choose defect_id or source_row for a trace")
-        async with self._lock:
-            payload = await self._context_by_id(context_id)
-            snapshot = self._snapshots[payload["context"]["snapshot_id"]].snapshot
-            if not snapshot.raw_records:
-                raise SnapshotUnavailable(
-                    "Original HTTP rows are unavailable in this server; refresh the source to inspect raw lineage"
-                )
-            raw = [json.loads(row) for row in snapshot.raw_records]
-            if source_row is not None:
-                if source_row > len(raw):
-                    raise ValueError("source_row exceeds the received source rows")
-                defect_id = positive_integer(raw[source_row - 1].get("defect_id"))
-                identifiers = {defect_id} if defect_id is not None else set()
-            elif defect_id is not None:
-                identifiers = {defect_id}
-            else:
-                identifiers = {
-                    event.defect_id
-                    for event in analytics.filter_events(
-                        snapshot, _scope(payload["context"]["filters"])
-                    )[:limit]
-                }
-            scope = _scope(payload["context"]["filters"])
-            interpreted = scenario_snapshot(snapshot, scope.scenario)
-            selected_ids = {event.defect_id for event in analytics.filter_events(snapshot, scope)}
-            matches = [
-                {"source_row": index, "raw": row}
-                for index, row in enumerate(raw, start=1)
-                if positive_integer(row.get("defect_id")) in identifiers or index == source_row
-            ]
-            row_numbers = {row["source_row"] for row in matches}
-            product_ids = {positive_integer(row["raw"].get("product_id")) for row in matches}
-            master_rows = (
-                list(csv.DictReader(io.StringIO(snapshot.master_bytes.decode("utf-8-sig"))))
-                if snapshot.master_bytes
-                else []
+        payload = await self._context_by_id(context_id)
+        snapshot = self._snapshots[payload["context"]["snapshot_id"]].snapshot
+        if not snapshot.raw_records:
+            raise SnapshotUnavailable(
+                "Original HTTP rows are unavailable in this server; refresh the source to inspect raw lineage"
             )
-            return {
-                "context": payload["context"],
-                "raw_source_kind": "immutable in-memory rows from successful HTTP fetch",
-                "raw_records": matches[:limit],
-                "raw_match_count": len(matches),
-                "truncated": len(matches) > limit,
-                "canonical_records": [
-                    event.as_record() for event in snapshot.events if event.defect_id in identifiers
-                ][:limit],
-                "processed_records": [
-                    {**event.as_record(), "in_selected_scope": event.defect_id in selected_ids}
-                    for event in interpreted.events
-                    if event.defect_id in identifiers
-                ][:limit],
-                "master_lineage": [
-                    {
-                        "source_row": index,
-                        "raw": row,
-                        "processed": next(
-                            (
-                                asdict(product)
-                                for product in snapshot.products
-                                if product.product_id == positive_integer(row.get("product_id"))
-                            ),
-                            None,
-                        ),
-                        "normalization_audit": [
-                            asdict(entry)
-                            for entry in snapshot.audit
-                            if entry.source == "master" and entry.source_row == index
-                        ],
-                    }
-                    for index, row in enumerate(master_rows, start=2)
-                    if positive_integer(row.get("product_id")) in product_ids
-                ],
-                "normalization_audit": [
-                    asdict(entry)
-                    for entry in snapshot.audit
-                    if entry.source == "defects" and entry.source_row in row_numbers
-                ],
-                "scenario_audit": (
-                    [
-                        asdict(entry)
-                        for entry in interpreted.audit
-                        if entry.source == "defects"
-                        and entry.source_row in row_numbers
-                        and entry.code == "scenario_date_projection"
-                    ]
-                    if scope.scenario in {"ambiguous_dm", "year_2024"}
-                    else [
-                        {
-                            "source_row": event.source_row,
-                            "record_id": str(event.defect_id),
-                            "field": "repair_cost",
-                            "raw_value": str(event.repair_cost),
-                            "processed_value": None,
-                            "action": "scenario",
-                            "code": "scenario_excluded_cost_10",
-                            "policy_version": payload["context"]["policy_version"],
-                            "detail": SCENARIOS[scope.scenario]["assumption"],
-                        }
-                        for event in snapshot.events
-                        if event.defect_id in identifiers
-                        and event.repair_cost
-                        == SCENARIOS[scope.scenario]["parameters"]["repair_cost_equal"]
-                    ]
-                    if scope.scenario == "exclude_cost_10"
-                    else []
-                ),
-                "quality_scope": QUALITY_SCOPE,
-                "status": payload["status"],
+        raw = [json.loads(row) for row in snapshot.raw_records]
+        if source_row is not None:
+            if source_row > len(raw):
+                raise ValueError("source_row exceeds the received source rows")
+            defect_id = positive_integer(raw[source_row - 1].get("defect_id"))
+            identifiers = {defect_id} if defect_id is not None else set()
+        elif defect_id is not None:
+            identifiers = {defect_id}
+        else:
+            identifiers = {
+                event.defect_id
+                for event in analytics.filter_events(
+                    snapshot, _scope(payload["context"]["filters"])
+                )[:limit]
             }
+        scope = _scope(payload["context"]["filters"])
+        interpreted = scenario_snapshot(snapshot, scope.scenario)
+        selected_ids = {event.defect_id for event in analytics.filter_events(snapshot, scope)}
+        matches = [
+            {"source_row": index, "raw": row}
+            for index, row in enumerate(raw, start=1)
+            if positive_integer(row.get("defect_id")) in identifiers or index == source_row
+        ]
+        row_numbers = {row["source_row"] for row in matches}
+        product_ids = {positive_integer(row["raw"].get("product_id")) for row in matches}
+        master_rows = (
+            list(csv.DictReader(io.StringIO(snapshot.master_bytes.decode("utf-8-sig"))))
+            if snapshot.master_bytes
+            else []
+        )
+        return {
+            "context": payload["context"],
+            "raw_source_kind": "immutable in-memory rows from successful HTTP fetch",
+            "raw_records": matches[:limit],
+            "raw_match_count": len(matches),
+            "truncated": len(matches) > limit,
+            "canonical_records": [
+                event.as_record() for event in snapshot.events if event.defect_id in identifiers
+            ][:limit],
+            "processed_records": [
+                {**event.as_record(), "in_selected_scope": event.defect_id in selected_ids}
+                for event in interpreted.events
+                if event.defect_id in identifiers
+            ][:limit],
+            "master_lineage": [
+                {
+                    "source_row": index,
+                    "raw": row,
+                    "processed": next(
+                        (
+                            asdict(product)
+                            for product in snapshot.products
+                            if product.product_id == positive_integer(row.get("product_id"))
+                        ),
+                        None,
+                    ),
+                    "normalization_audit": [
+                        asdict(entry)
+                        for entry in snapshot.audit
+                        if entry.source == "master" and entry.source_row == index
+                    ],
+                }
+                for index, row in enumerate(master_rows, start=2)
+                if positive_integer(row.get("product_id")) in product_ids
+            ],
+            "normalization_audit": [
+                asdict(entry)
+                for entry in snapshot.audit
+                if entry.source == "defects" and entry.source_row in row_numbers
+            ],
+            "scenario_audit": (
+                [
+                    asdict(entry)
+                    for entry in interpreted.audit
+                    if entry.source == "defects"
+                    and entry.source_row in row_numbers
+                    and entry.code == "scenario_date_projection"
+                ]
+                if scope.scenario in {"ambiguous_dm", "year_2024"}
+                else [
+                    {
+                        "source_row": event.source_row,
+                        "record_id": str(event.defect_id),
+                        "field": "repair_cost",
+                        "raw_value": str(event.repair_cost),
+                        "processed_value": None,
+                        "action": "scenario",
+                        "code": "scenario_excluded_cost_10",
+                        "policy_version": payload["context"]["policy_version"],
+                        "detail": SCENARIOS[scope.scenario]["assumption"],
+                    }
+                    for event in snapshot.events
+                    if event.defect_id in identifiers
+                    and event.repair_cost
+                    == SCENARIOS[scope.scenario]["parameters"]["repair_cost_equal"]
+                ]
+                if scope.scenario == "exclude_cost_10"
+                else []
+            ),
+            "quality_scope": QUALITY_SCOPE,
+            "status": payload["status"],
+        }
 
     async def _export(self, context_id: str, name: str) -> bytes:
-        async with self._lock:
-            await self._context_by_id(context_id)
-            path = EvidenceLedger(self._contexts[context_id].directory).resolve_artifact(
-                "artifacts/" + name
-            )
+        await self._context_by_id(context_id)
+        return await asyncio.to_thread(self._export_bytes, self._contexts[context_id], name)
+
+    def _export_bytes(self, saved: _ContextReceipt, name: str) -> bytes:
+        try:
+            ledger = EvidenceLedger(saved.directory)
+            manifest_bytes = ledger.manifest_path.read_bytes()
+            if sha256(manifest_bytes) != saved.manifest_sha256:
+                raise ValueError("artifact manifest changed")
+            manifest = json.loads(manifest_bytes)
+            path = ledger.resolve_artifact("artifacts/" + name, manifest=manifest)
             content = path.read_bytes()
-            # Read and compare the same bytes that the HTTP response will contain.
-            manifest = EvidenceLedger(self._contexts[context_id].directory).artifacts()
+            # Compare the exact response bytes to the original manifest seal,
+            # including when files change after the preceding full verification.
             expected = next(
                 entry["sha256"] for entry in manifest if entry["path"] == "artifacts/" + name
             )
             if sha256(content) != expected:
-                raise EvidenceIntegrityError(
-                    "The requested export changed during integrity verification"
-                )
+                raise ValueError("artifact content changed")
             return content
+        except (ValueError, KeyError, TypeError, StopIteration, OSError) as error:
+            raise EvidenceIntegrityError(
+                "The requested export changed during integrity verification"
+            ) from error
 
     async def export_csv(self, context_id: str, locale: str | None = None) -> bytes:
         if locale is not None and locale not in {"en", "vi"}:

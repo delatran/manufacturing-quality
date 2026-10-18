@@ -299,12 +299,22 @@ class AnalystTools:
                         result = await asyncio.wait_for(
                             asyncio.shield(task), timeout=self.timeout_seconds
                         )
-                    except TimeoutError as error:
-                        self.sql.interrupt()
+                    except (TimeoutError, asyncio.CancelledError) as error:
+                        cancellation = error if isinstance(error, asyncio.CancelledError) else None
+                        # Keep the connection locked until the worker exits. Repeating
+                        # interrupt also covers cancellation before execute has started.
+                        while not task.done():
+                            self.sql.interrupt()
+                            try:
+                                await asyncio.wait({task}, timeout=0.05)
+                            except asyncio.CancelledError as cancelled:
+                                cancellation = cancelled
                         try:
-                            await task
+                            task.result()
                         except Exception:
                             pass
+                        if cancellation is not None:
+                            raise cancellation from None
                         raise TimeoutError("SQL execution exceeded its time limit") from error
                 elif name == "dataset_profiler":
                     result = await asyncio.to_thread(self._profile, arguments["path"])

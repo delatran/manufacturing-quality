@@ -10,6 +10,7 @@ from collections import Counter, defaultdict
 from collections.abc import Iterable
 from dataclasses import asdict, dataclass, replace
 from datetime import date, timedelta
+from fractions import Fraction
 from typing import Any
 
 import numpy as np
@@ -1018,12 +1019,13 @@ def _period_inputs(
     permitted_missing_event_filters: dict[str, str] | None,
 ) -> tuple[Any, ...]:
     """Validate and filter both periods once; reusable across comparison dimensions."""
-    validate_filters(
-        snapshot, baseline_scope, permitted_missing_event_filters=permitted_missing_event_filters
-    )
-    validate_filters(
-        snapshot, comparison_scope, permitted_missing_event_filters=permitted_missing_event_filters
-    )
+    for scope in (baseline_scope, comparison_scope):
+        inherited = {
+            field: value
+            for field, value in (permitted_missing_event_filters or {}).items()
+            if getattr(scope, field) == value
+        }
+        validate_filters(snapshot, scope, permitted_missing_event_filters=inherited)
     baseline_events = filter_events(snapshot, baseline_scope)
     comparison_events = filter_events(snapshot, comparison_scope)
     baseline_products = filter_products(snapshot, baseline_scope)
@@ -1151,9 +1153,35 @@ def compare_periods(
         else None
     )
     event_reconciles = sum(row["event_count_change"] for row in rows) == total_change
-    cost_reconciles = math.isclose(
-        math.fsum(row["known_repair_cost_change"] for row in rows), cost_change, abs_tol=1e-8
-    )
+
+    def exact_cost(events: list[Event]) -> Fraction:
+        # Binary float denominators are powers of two, so one common denominator
+        # preserves every retained value without repeated Fraction reductions.
+        ratios = [
+            event.repair_cost.as_integer_ratio()
+            for event in events
+            if event.repair_cost is not None
+        ]
+        denominator = max((divisor for _, divisor in ratios), default=1)
+        return Fraction(
+            sum(numerator * (denominator // divisor) for numerator, divisor in ratios), denominator
+        )
+
+    cost_reconciles = True
+    for side, events, groups, values in (
+        ("baseline", baseline_events, baseline_by_name, baseline_values),
+        ("comparison", comparison_events, comparison_by_name, comparison_values),
+    ):
+        whole_cost = exact_cost(events)
+        group_costs = {name: exact_cost(groups.get(name, [])) for name in names}
+        cost_reconciles = cost_reconciles and (
+            sum(group_costs.values(), Fraction()) == whole_cost
+            and values["known_repair_cost"] == round(float(whole_cost), 2)
+            and all(
+                row[side]["known_repair_cost"] == round(float(group_costs[row["name"]]), 2)
+                for row in rows
+            )
+        )
     if not event_reconciles or not cost_reconciles:
         raise AssertionError("Comparison contribution reconciliation failed")
     return {
@@ -1177,10 +1205,19 @@ def compare_periods(
                 else None
             ),
         },
+        "known_cost_reconciliation": {
+            "basis": "Exact sums of unrounded retained repair_cost values before display rounding.",
+            "display_decimal_places": 2,
+            "displayed_change_residual": round(
+                math.fsum(row["known_repair_cost_change"] for row in rows) - cost_change, 2
+            ),
+            "interpretation": "Displayed period costs and changes use independent two-decimal rounding. Displayed group changes may not add to the displayed total change; the residual is the group-change sum minus the total change. No rounding difference is assigned to an event or group.",
+        },
         "interpretation": "Comparison minus baseline. Group contributions are arithmetic contributions, not causes. Signed percentage contributions can exceed 100% when other groups offset them; a zero net change has no percentage decomposition.",
         "definitions": {
             "reference_intensity": REFERENCE_NOTE,
             "intensity_contribution": "Group eligible events divided by the complete period's reference output; these contributions add to the overall intensity change. Group-specific rates are reported separately inside each group's KPIs.",
+            "known_cost_contribution": "Cost reconciliation checks exact unrounded retained costs. Displayed group and total changes are rounded independently to two decimals, so their difference is reported as known_cost_reconciliation.displayed_change_residual rather than assigned to a group.",
         },
     }
 

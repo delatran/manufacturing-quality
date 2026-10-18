@@ -1,5 +1,11 @@
 # Rebuild Agent evaluation
 
+This page records historical development evaluations and their frozen execution
+profiles. Those profiles and approvals do not describe or authorize the current
+runtime. See the current [repository contract](../AGENTS.md) and
+[runtime configuration](../README.md#setup-and-run). The recorded results below
+do not establish live model quality for the current managed Agents API runtime.
+
 Bộ đánh giá này khóa tám tác vụ và mười hai lượt trước khi gọi API. Số học được tính bằng bộ đọc nguồn độc lập. Kết quả live chỉ được ghi nhận từ đường chạy ứng dụng, Agents SDK, công cụ backend và artifact đã đọc lại. Các phép thử lỗi dùng dữ liệu giả được báo riêng. Baseline live chưa chạy vì ngân sách cũ đã hết; không dùng kết quả cũ để nhận là cải thiện.
 
 Lần `post-v9` đã chạy đủ tám ca và mười hai lượt với Luna thật trên source V10, deadline ứng dụng 360 giây và giới hạn chờ 480 giây. Đánh giá độc lập chốt 6/8 tác vụ Passed: R02/R04/R05/R06/R07/R08; R01/R03 Failed. R01 câu đầu đúng nhưng follow-up timeout; R03 so sánh đầu đúng và Undo khôi phục giao diện, nhưng follow-up chưa được xác minh và không giao báo cáo cuối. Cả 39 trạng thái nội dung giữ nguyên bằng chứng, gồm các phần đúng nhưng chưa hoàn tất trong hai ca Failed; không dùng chúng để nhận là đạt 8/8. Ba mươi lỗi tự động do yêu cầu KPI ngoài phần tổng hợp chi phí được giữ nguyên, tách khỏi bốn lỗi thật về hoàn tất và giao tệp. Runtime kết thúc với exit 0, nguồn 45 tệp không đổi và tiến trình/cổng đã đóng; hai thông báo console vẫn được lưu, không nhận là dọn dẹp không lỗi. Phí token lần này là 0,150532575 USD; tổng chín lần thử là 0,750842455 USD qua 433 response, không còn usage chưa rõ hay khoản giữ ngân sách. Đây là các lần thử phát triển không mù, không phải bằng chứng cải thiện có kiểm soát. VH01 bàn giao tiếng Việt vẫn Not run và chưa được cấp lượt chạy.
@@ -10,7 +16,7 @@ limits, scoring rule and exclusions. The two pre-dispatch amendments document a
 Windows newline seal correction and a more accurate label for the in-progress
 working-tree manifest. Neither amendment changed a task or success criterion.
 
-The baseline observation records the running application's actual configuration:
+The baseline observation recorded the application's configuration at that time:
 `gpt-6-luna`, medium effort, no hosted tools, and zero remaining historical
 development allowance. The coordinator observed 559 passing tests, one skipped
 test and a successful frontend build. Live baseline tasks are `Not run`.
@@ -526,14 +532,15 @@ VH01 remains separately Not run and unreleased.
 
 ## Execution and independent verification
 
-The runner sends requests through the real FastAPI HTTP handlers using an ASGI
-transport. The production `Workspace` invokes the installed official Agents SDK
-runner and real OpenAI Responses API, with real backend tools. This verifies the
-server path; separate browser verification covers the rendered user interface.
-No model transport, tool result or report is replaced with a fixture in a live
-run. Hosted tracing, hosted search, hosted file storage, MCP, and arbitrary model
-code execution are disabled for the evaluated application. Local durable events
-retain the response identity, tools, arguments, results, errors and usage.
+The recorded attempts sent requests through the real FastAPI HTTP handlers using
+an ASGI transport. The production `Workspace` invoked the installed official
+Agents SDK runner and real OpenAI Responses API, with real backend tools. These
+observations verify the server path used by those attempts; separate browser
+verification covered the rendered user interface. No model transport, tool result
+or report was replaced with a fixture in a live run. Hosted tracing, hosted
+search, hosted file storage, MCP, and arbitrary model code execution were
+disabled for the evaluated application. Local durable events retained the
+response identity, tools, arguments, results, errors and usage.
 
 The standard-library oracle fetches the defect source through HTTP, parses the
 master CSV, and independently applies the declared duplicate, date, conflict,

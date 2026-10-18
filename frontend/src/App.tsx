@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { LayoutDashboard, Search } from 'lucide-react';
 import Dashboard from './Dashboard';
@@ -82,19 +82,22 @@ export default function App() {
       });
     return () => abort.abort();
   }, [filters, revision]);
-  function selectTab(next: Tab) {
-    scroll.current[tab] = window.scrollY;
-    if (next === 'agent') setAgentVisited(true);
-    setTab(next);
-    requestAnimationFrame(() =>
-      window.scrollTo({ top: scroll.current[next], behavior: 'instant' }),
-    );
-  }
-  function applyManualFilters(next: Filters) {
+  const selectTab = useCallback(
+    (next: Tab) => {
+      scroll.current[tab] = window.scrollY;
+      if (next === 'agent') setAgentVisited(true);
+      setTab(next);
+      requestAnimationFrame(() =>
+        window.scrollTo({ top: scroll.current[next], behavior: 'instant' }),
+      );
+    },
+    [tab],
+  );
+  const applyManualFilters = useCallback((next: Filters) => {
     scopePending.current = true;
     requestVersion.current += 1;
     setFilters(next);
-  }
+  }, []);
   function keyTabs(event: KeyboardEvent, index: number) {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
@@ -102,7 +105,7 @@ export default function App() {
     tabs.current[next]?.focus();
     selectTab(next === 0 ? 'dashboard' : 'agent');
   }
-  async function refresh() {
+  const refresh = useCallback(async () => {
     setRefreshing(true);
     setError('');
     setSourceChecked(false);
@@ -115,52 +118,64 @@ export default function App() {
     } finally {
       setRefreshing(false);
     }
-  }
-  function analyze(priority?: number) {
-    if (!data || loading || !canAnalyze) return;
-    const selected = data.analysis.recommendations.find((item) => item.priority === priority);
-    setPrefill({
-      id: Date.now(),
-      contextId: data.context.context_id,
-      contextSummary: contextSummary || '',
-      text: selected
-        ? t('ui.investigate_this_priority_in_the_selected_scope_value_verify_the_', {
-            value0: selected.title,
-          })
-        : t('ui.analyze_this_dashboard_view_value_explain_the_main_trends_where_p', {
-            value0: contextSummary,
-          }),
-    });
-    selectTab('agent');
-  }
-  async function applyUiCommand(command: UiCommand): Promise<boolean> {
-    if (
-      !isVisibleWorkspacePanel(command.panel) ||
-      scopePending.current ||
-      !commandMatchesContext(command, currentContextId.current)
-    )
-      return false;
-    const version = requestVersion.current;
-    if (command.context_id !== currentContextId.current) {
-      const result = await getDashboardContext(command.context_id);
+  }, [filters]);
+  const analyze = useCallback(
+    (priority?: number) => {
+      if (!data || loading || !canAnalyze) return;
+      const selected = data.analysis.recommendations.find((item) => item.priority === priority);
+      setPrefill({
+        id: Date.now(),
+        contextId: data.context.context_id,
+        contextSummary: contextSummary || '',
+        text: selected
+          ? t('ui.investigate_this_priority_in_the_selected_scope_value_verify_the_', {
+              value0: selected.title,
+            })
+          : t('ui.analyze_this_dashboard_view_value_explain_the_main_trends_where_p', {
+              value0: contextSummary,
+            }),
+      });
+      selectTab('agent');
+    },
+    [data, loading, canAnalyze, contextSummary, t, selectTab],
+  );
+  const applyUiCommand = useCallback(
+    async (command: UiCommand): Promise<boolean> => {
       if (
+        !isVisibleWorkspacePanel(command.panel) ||
         scopePending.current ||
-        !commandMatchesContext(command, currentContextId.current) ||
-        version !== requestVersion.current
+        !commandMatchesContext(command, currentContextId.current)
       )
         return false;
-      requestVersion.current += 1;
-      currentContextId.current = result.context.context_id;
-      adoptedFilters.current = JSON.stringify(result.context.filters);
-      setData(result);
-      setFilters(result.context.filters);
-      setLoading(false);
-      setError('');
-    }
-    setPanelRequest({ id: Date.now(), panel: command.panel });
+      const version = requestVersion.current;
+      if (command.context_id !== currentContextId.current) {
+        const result = await getDashboardContext(command.context_id);
+        if (
+          scopePending.current ||
+          !commandMatchesContext(command, currentContextId.current) ||
+          version !== requestVersion.current
+        )
+          return false;
+        requestVersion.current += 1;
+        currentContextId.current = result.context.context_id;
+        adoptedFilters.current = JSON.stringify(result.context.filters);
+        setData(result);
+        setFilters(result.context.filters);
+        setLoading(false);
+        setError('');
+      }
+      setPanelRequest({ id: Date.now(), panel: command.panel });
+      selectTab('dashboard');
+      return true;
+    },
+    [selectTab],
+  );
+  const openDashboard = useCallback(() => {
     selectTab('dashboard');
-    return true;
-  }
+    requestAnimationFrame(() =>
+      document.getElementById('dashboard-content')?.focus({ preventScroll: true }),
+    );
+  }, [selectTab]);
   return (
     <div className="app-shell">
       <a className="skip-link" href={tab === 'dashboard' ? '#dashboard-content' : '#agent-panel'}>
@@ -241,7 +256,7 @@ export default function App() {
           error={error}
           filters={filters}
           onApply={applyManualFilters}
-          onRefresh={() => void refresh()}
+          onRefresh={refresh}
           onAnalyze={analyze}
           canAnalyze={canAnalyze}
           inspectionRequest={panelRequest}
@@ -270,12 +285,7 @@ export default function App() {
               dashboardData={data}
               prefill={prefill}
               onUiCommand={applyUiCommand}
-              onOpenDashboard={() => {
-                selectTab('dashboard');
-                requestAnimationFrame(() =>
-                  document.getElementById('dashboard-content')?.focus({ preventScroll: true }),
-                );
-              }}
+              onOpenDashboard={openDashboard}
             />
           </Suspense>
         )}

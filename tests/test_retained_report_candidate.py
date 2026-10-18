@@ -7,8 +7,11 @@ import json
 import os
 import shutil
 import sys
+from contextlib import closing
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
+from urllib.parse import urlsplit
+from urllib.request import url2pathname
 
 import pytest
 from analyst.config import Settings
@@ -74,12 +77,41 @@ def offline_only(monkeypatch, tmp_path):
     connect = sqlite3.connect
 
     def temp_connect(database, *args, **kwargs):
-        from pathlib import Path
-
-        assert Path(database).resolve().is_relative_to(tmp_path.resolve())
+        path = Path(database)
+        if kwargs.get("uri") and isinstance(database, str) and database.startswith("file:"):
+            parsed = urlsplit(database)
+            assert parsed.netloc in ("", "localhost"), "Offline SQLite requires a local file"
+            path = Path(url2pathname(parsed.path))
+        assert path.resolve().is_relative_to(tmp_path.resolve()), (
+            "Offline SQLite access must stay inside the test directory"
+        )
         return connect(database, *args, **kwargs)
 
     monkeypatch.setattr(sqlite3, "connect", temp_connect)
+
+
+def test_offline_sqlite_guard_accepts_encoded_read_only_temp_uri(tmp_path):
+    import sqlite3
+
+    database = tmp_path / "read only # caf\u00e9.sqlite3"
+    with closing(sqlite3.connect(database)) as connection:
+        connection.execute("CREATE TABLE sentinel (value INTEGER)")
+        connection.execute("INSERT INTO sentinel VALUES (17)")
+        connection.commit()
+    with closing(sqlite3.connect(database.as_uri() + "?mode=ro", uri=True)) as connection:
+        assert connection.execute("SELECT value FROM sentinel").fetchone() == (17,)
+
+
+@pytest.mark.parametrize("form", ["path", "uri", "encoded_parent_uri"])
+def test_offline_sqlite_guard_rejects_outside_database(tmp_path, form):
+    import sqlite3
+
+    database = tmp_path.parent / "outside.sqlite3"
+    target = database if form == "path" else database.as_uri() + "?mode=ro"
+    if form == "encoded_parent_uri":
+        target = tmp_path.as_uri() + "/%2e%2e/outside.sqlite3?mode=ro"
+    with pytest.raises(AssertionError, match="must stay inside the test directory"):
+        sqlite3.connect(target, uri=form != "path")
 
 
 @pytest.fixture
@@ -172,6 +204,7 @@ def alter_saved(subject, sid, change):
 
 
 def undo_fixture(subject, sid):
+    subject._bind_ui_scope(sid, complete(async_context(CANONICAL)))
     rid, _ = subject.store.begin_run(sid, SCENARIO)
     original = {
         "command_id": "c" * 32,
@@ -185,8 +218,9 @@ def undo_fixture(subject, sid):
         "previous_panel": "dashboard",
         "reversible": True,
     }
-    subject.store.save_ui_command(sid, rid, original)
-    subject._save_command_state(sid, original)
+    subject.store.commit_ui_command(
+        sid, rid, original, expected_version=subject.store.investigation(sid)["version"]
+    )
     current = subject.store.investigation(sid)
     subject.store.save_investigation(
         sid,

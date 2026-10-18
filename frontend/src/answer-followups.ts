@@ -255,7 +255,7 @@ const copy = {
     ],
     chart: [
       'Giải thích biểu đồ',
-      'Giải thích cách đọc biểu đồ đã đăng ký trong câu trả lời này, gồm trục, đơn vị và giới hạn đã nêu. Không suy ra giá trị thiếu căn cứ từ bằng chứng hiện có.',
+      'Giải thích cách đọc biểu đồ đính kèm trong câu trả lời này, gồm trục, đơn vị và giới hạn đã nêu. Không suy đoán các giá trị thiếu căn cứ từ bằng chứng hiện có.',
     ],
     finding: [
       'Giải thích phát hiện',

@@ -45,6 +45,11 @@ def managed_trace(event: Any) -> tuple[str, dict[str, Any]] | None:
     item = dump(event)
     if not isinstance(item, dict):
         item = vars(event)
+    return _managed_trace(item)
+
+
+def _managed_trace(item: dict[str, Any]) -> tuple[str, dict[str, Any]] | None:
+    """Project an already normalized event without serializing its payload again."""
     kind = item.get("type", "")
     base = {"provider_api": "agents", "provider_event": kind}
     for key in (
@@ -595,7 +600,7 @@ class ManagedAgentsModel(AgentModel):
                 self.turn_id = raw["turn_id"]
             kind = raw.get("type", "")
             readiness = self._steering_phase(raw)
-            mapped = managed_trace(event)
+            mapped = _managed_trace(raw)
             if mapped:
                 if mapped[0] == "provider_phase":
                     mapped = (mapped[0], {**mapped[1], **readiness})
@@ -692,8 +697,7 @@ class ManagedAgentsModel(AgentModel):
                 await asyncio.sleep(0)
                 session = await self._read_retry(lambda: self.sessions.retrieve(self.session_id))
                 self._verify_session(session)
-                await self._read_retry(lambda session=session: self._verify_turn_boundary(session))
-                records = await self._read_retry(self._items)
+                records = await self._snapshot_items(session)
                 complete = [item for item in records if item.get("status") == "completed"]
                 await self._reconcile_snapshot(session, complete)
                 if session.status != "in_progress":
@@ -735,13 +739,31 @@ class ManagedAgentsModel(AgentModel):
             self._verify_session(session)
         return session
 
+    async def _snapshot_items(self, session: Any) -> list[dict]:
+        """Overlap independent durable reads, then require both before using any item."""
+        reads = (
+            asyncio.create_task(self._read_retry(lambda: self._verify_turn_boundary(session))),
+            asyncio.create_task(self._read_retry(self._items)),
+        )
+        try:
+            _, records = await asyncio.gather(*reads)
+            return records
+        finally:
+            # gather does not cancel siblings when one read raises. Join cleanup
+            # before returning or propagating the original error/cancellation.
+            for task in reads:
+                if not task.done():
+                    task.cancel()
+            await asyncio.gather(*reads, return_exceptions=True)
+
     async def _verify_turn_boundary(self, session: Any) -> None:
         """Read durable turn status after streaming or transport recovery."""
         page = await self.sessions.turns.list(self.session_id, order="desc", limit=1)
-        turns = [turn async for turn in page]
-        if not turns:
+        # SDK pages auto-paginate. The requested limit is a page size, so stop
+        # after the newest turn instead of retrieving all historical pages.
+        turn = await anext(aiter(page), None)
+        if turn is None:
             raise ResponseProtocolError("Managed session omitted its turn identity")
-        turn = turns[0]
         if turn.session_id != self.session_id:
             raise ResponseProtocolError("Managed turn belongs to a different session")
         if self._steering_root_turn_id not in {None, turn.id}:
@@ -765,6 +787,11 @@ class ManagedAgentsModel(AgentModel):
         page = await self.sessions.items.list(self.session_id, order="asc", limit=100)
         result = []
         async for item in page:
+            # Keep every page, but avoid copying payloads already reconciled by
+            # ID. SDK items expose this field before full JSON normalization.
+            identity = item.get("id") if isinstance(item, dict) else getattr(item, "id", None)
+            if identity in self._seen_items:
+                continue
             raw = dump(item)
             if raw.get("id") not in self._seen_items:
                 result.append(raw)
@@ -868,7 +895,11 @@ class ManagedAgentsModel(AgentModel):
                 service_tier=getattr(session.agent, "service_tier", "default"),
             )
             estimate_delta = max(0.0, cumulative_estimate - self._estimated_session_cost_usd)
-            self._estimated_session_cost_usd = cumulative_estimate
+            # Late cache details can reduce a best-effort cumulative estimate.
+            # Keep the accounted high-water mark so its later recovery is not counted twice.
+            self._estimated_session_cost_usd = max(
+                self._estimated_session_cost_usd, cumulative_estimate
+            )
         reservation = (
             self._session_limit_cents / 100
             if self._session_limit_cents is not None and not self._accounted_cap
@@ -1102,8 +1133,7 @@ class ManagedAgentsModel(AgentModel):
             async with self._steering_lock:
                 self._accepts_live_steering = False
                 session = await self._settled_session()
-                await self._read_retry(lambda: self._verify_turn_boundary(session))
-                records = await self._read_retry(self._items)
+                records = await self._snapshot_items(session)
                 recovered = recovered or bool(self._live_inputs)
                 items += self._live_inputs
                 self._live_inputs = []

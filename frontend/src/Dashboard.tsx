@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { applicationUrl } from './app-url';
 import {
   AlertCircle,
@@ -97,7 +97,7 @@ const fields: {
   },
 ];
 
-export default function Dashboard({
+export default memo(function Dashboard({
   data,
   loading,
   refreshing,
@@ -128,6 +128,7 @@ export default function Dashboard({
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [recordsExpanded, setRecordsExpanded] = useState(false);
   const [recordsDate, setRecordsDate] = useState<string>();
+  const clearRecordsDate = useCallback(() => setRecordsDate(undefined), []);
   const [previousScope, setPreviousScope] = useState<Filters>();
   const [evidencePriority, setEvidencePriority] = useState<number | null>(null);
   const filterToggle = useRef<HTMLButtonElement>(null);
@@ -1039,8 +1040,11 @@ export default function Dashboard({
                   </div>
                   <p>
                     {report.products.cost_pareto_product_count_80pct == null
-                      ? t('ui.no_known_repair_cost_in_this_view')
-                      : `${number(report.products.cost_pareto_product_count_80pct)} ${t('ui.products_account_for_80_of_known_linked_repair_costs')}`}
+                      ? t('ui.no_positive_linked_repair_cost_for_pareto')
+                      : t('ui.products_account_for_80_of_known_linked_repair_costs', {
+                          count: number(report.products.cost_pareto_product_count_80pct),
+                          total: number(kpis.cohort_product_count),
+                        })}
                   </p>
                 </details>
               </div>
@@ -1085,7 +1089,7 @@ export default function Dashboard({
                       key={data.context.context_id}
                       data={data}
                       dateFilter={recordsDate}
-                      onClearDate={() => setRecordsDate(undefined)}
+                      onClearDate={clearRecordsDate}
                     />
                   )}
                 </div>
@@ -1096,4 +1100,4 @@ export default function Dashboard({
       )}
     </main>
   );
-}
+});

@@ -287,6 +287,23 @@ def metric_unit(entry: dict[str, Any], path: str) -> dict[str, str] | None:
             "unit": "identifier",
             "definition": "A source identifier; not a measurement.",
         }
+    if numeric_role(entry, path) == "display_precision":
+        return {
+            "kind": "display_precision",
+            "metric": metric,
+            "unit": "decimal places",
+            "definition": "Display rounding precision for cost reconciliation; not an observed measurement.",
+        }
+    if (
+        entry.get("tool") == "analysis_compare"
+        and path == "$.decomposition.known_cost_reconciliation.displayed_change_residual"
+    ):
+        return {
+            "kind": "cost_diagnostic",
+            "metric": metric,
+            "unit": "local currency",
+            "definition": "Display rounding difference: the sum of independently rounded group cost changes minus the rounded total cost change; not an observed repair-cost total or event count.",
+        }
     parents = []
     for match in re.finditer(r"\.[A-Za-z_][A-Za-z_0-9]*|\[\d+\]", path):
         try:
@@ -646,8 +663,8 @@ def unit_note(claims: list[dict[str, Any]], ledger: EvidenceLedger | None, langu
         ),
         (
             "cost_diagnostic",
-            "Raw numeric cost diagnostics can include negative amounts and are not valid repair-cost totals.",
-            "Tổng số học chi phí thô có thể gồm giá trị âm và không phải tổng chi phí sửa chữa hợp lệ.",
+            "Cost diagnostics describe raw amounts (which can include negatives) or display rounding differences; they are not observed repair-cost totals.",
+            "Số liệu đối chiếu chi phí mô tả giá trị thô (có thể gồm số âm) hoặc chênh lệch do làm tròn khi hiển thị; đây không phải tổng chi phí sửa chữa quan sát được.",
         ),
         (
             "calendar_day_ordinal",
@@ -1056,13 +1073,19 @@ def display_errors(
             errors.append(
                 f"Claim {claim['id']} is a metadata unit scale, not an observed measurement; use an explicit unit-scale definition or cite the actual count/cost."
             )
+        if unit["kind"] == "display_precision" and (
+            event_units or percent or points or monetary_units
+        ):
+            errors.append(
+                f"Claim {claim['id']} is display rounding precision, not an observed measurement; cite the actual count or cost for that quantity."
+            )
         if unit["kind"] == "identifier" and (event_units or percent or points or monetary_units):
             errors.append(
                 f"Claim {claim['id']} is a source identifier, not an observed measurement; cite the actual count or cost for that quantity."
             )
         if unit["kind"] in {"cost", "policy_parameter", "cost_diagnostic"} and re.search(
             r"(?:\b(?:USD|VND|EUR|dollars?|đồng)\b|[$€])",
-            adjacent + before[max(0, (nearest.start() - 12)) : nearest.start()],
+            adjacent + " " + before[max(0, (nearest.start() - 12)) : nearest.start()],
             re.IGNORECASE,
         ):
             errors.append(

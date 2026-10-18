@@ -59,7 +59,7 @@ Start with the overview, pick a priority, and open its supporting evidence or fi
 | **Overview and priorities** | Four headline metrics, monthly sparklines, half-period comparisons, and three ranked priorities with evidence and recommended actions. |
 | **Trends and unusual days** | Monthly defect and Critical counts, top drivers of change, and daily counts against a January-based screening threshold. Click any flagged day to inspect its records. |
 | **Location and severity** | Severity breakdown across defect locations, the contingency table and chi-square / Cramér's V test, and volume by inspection method. |
-| **Lines and products** | Production lines and products ranked by event count or events per 1,000 reference units, plus within-line category comparisons to separate product mix from line effects. |
+| **Lines and products** | Production lines and products ranked by event count or events per 1,000 reference units, plus within-line category comparisons that describe product mix and line differences. |
 | **Repair costs** | Known repair cost by line, defect type, and severity, the repair cost distribution, and the products contributing most to recorded cost. |
 
 Filter by month, line, category, product, severity, defect type, location, and inspection method. **View evidence** jumps directly to the supporting chart or table, and **Inspect individual defect records** opens the cleaned event log with full traceability to raw HTTP rows and cleaning rules.
@@ -117,7 +117,7 @@ On macOS/Linux, run `sh scripts/check.sh`. This executes dependency lock checks,
 
 ## Case study analysis: Part 3
 
-Scope: January–June 2024 under canonical policy `canonical-v2`, dataset `dataset-4586b9cf07494f8c8481a2f8f8a578359fbab7c4c7435b06ccb7defef31fa515` and report snapshot `2b9bd4ef427437f7c79678cc`. The defect source was fetched over HTTP at `2026-10-17T17:58:26.052168+00:00`. Amounts are in **local currency (unspecified)**. Unrounded values, definitions and source receipts are in the [canonical snapshot](reports/canonical_snapshot.json); the dashboard shows the same numbers.
+Scope: January–June 2024 under canonical policy `canonical-v2`, dataset `dataset-4586b9cf07494f8c8481a2f8f8a578359fbab7c4c7435b06ccb7defef31fa515` and report snapshot `33cc3a616435735e314b5eb1`. The defect source was fetched over HTTP at `2026-10-18T20:02:23.655186+00:00`. Amounts are in **local currency (unspecified)**. Unrounded values, definitions and source receipts are in the [canonical snapshot](reports/canonical_snapshot.json); the dashboard shows the same numbers.
 
 ### Key findings
 
@@ -166,9 +166,9 @@ Every line increased. Line-3 grew fastest (31 → 74 events) and contributes 41.
 
 | Pattern | Evidence | Why it matters to the Production team |
 |---|---|---|
-| Category 4 has the highest defect intensity on every line | 4.592 vs 1.473 events per 1,000 reference units; 1.56–7.19× the rest of each line. Without the output denominator: 14.1 events per product vs 9.4–10.2 for other categories. These are low-volume products (512 units a month on average vs 991 plant-wide). | The problem travels with the product family, not the line, so a fix on one line will not be enough. Design, materials and changeover practice are the levers; line-by-line blame would miss them. |
-| Line-3 repairs cost much more | 685.69 vs 413.35 per known-cost repair (1.66×); for Category 4 alone, 701.74 on Line-3 vs 445.58 on other lines. | It is the largest cost lever (37.43% of known repair cost). Because the gap holds for the same product family, look at the line's repair routes and cost recording, not its product mix. |
-| Line rankings depend on the denominator | Line-4 has the most events (340); Line-3 has the highest intensity (2.2907 per 1,000 reference units). Category 2 is made only on Line-3; Category 3 is made only on Line-4. | Ranking lines on raw counts misleads. Where a category exists on only one line, line and product effects cannot be separated, so compare the same products across lines. |
+| Category 4 has the highest defect intensity on every line | 4.592 vs 1.473 events per 1,000 reference units; 1.56–7.19× the rest of each line. Without the output denominator: 14.1 events per product vs 9.4–10.2 for other categories. These are low-volume products (512 units a month on average vs 991 plant-wide). | The category has elevated reference intensity across the lines that make it. Shared design, materials and changeover practices are hypotheses to investigate; these descriptive comparisons do not separate product and line causes. Verify actual exposure and differences among products before choosing a corrective action. |
+| Line-3 repairs cost much more | 685.69 vs 413.35 per known-cost repair (1.66×); for Category 4 alone, 701.74 on Line-3 vs 445.58 on other lines. | This line accounts for the largest share of observed repair cost (37.43%). Investigate repair routes and cost recording alongside product mix: comparison within a category still leaves differences in products, failure types and severity unresolved. |
+| Line rankings depend on the denominator | Line-4 has the most events (340); Line-3 has the highest intensity (2.2907 per 1,000 reference units). Category 2 is made only on Line-3; Category 3 is made only on Line-4. | Raw counts describe logged workload. Where a category exists on only one line, these data cannot separate line and product effects. Use shared-category comparisons where available, check remaining product-mix differences and collect actual production and inspection exposure before assessing line performance. |
 | Repair cost does not track severity | Average cost per known-cost event: Minor 476.13, Moderate 490.25, Critical 489.14. By defect type, Functional averages 503.85 against 474.43–475.65. Known-cost median 488.45, p90 770.35. | Cost cannot stand in for severity: prioritise safety and function by Critical counts and use cost to target repair-process work. A flat cost profile also suggests checking with Finance how repair cost is recorded. |
 | A historical daily screen highlights unusual counts | 7 days exceed the January-based limit of 11.27 events a day (January mean 4.74): 2024-04-09, 2024-05-25, 2024-06-03, 2024-06-10, 2024-06-20, 2024-06-21, 2024-06-27. | The first historical breach is in April. This retrospective screen shows which dates to investigate; it is not a real-time alert or a confirmed process change. Operational alerts need a rolling baseline per line and category, reliable reporting and validation against confirmed incidents. |
 | Data capture has gaps | No events after day 28 in any month; 16/182 days empty; 22 unknown costs; 12 costs of exactly 10. | Fix reporting before automating alerts; otherwise month-end gaps look like improvement and cost totals stay incomplete. |
@@ -217,7 +217,7 @@ These are the same priorities the dashboard shows under “Top priorities for th
 #### Priority 3: Investigate repair cost per event on Line-3
 
 - **Evidence:** 685.69 per known-cost repair against 413.35 on the other lines (1.66×); 37.43% of known cost from 26.51% of events; the gap persists within Category 4 (701.74 vs 445.58).
-- **Action:** Break Line-3 repair cost into labour, parts, rework and external service with Maintenance; compare repair routes for the same products on other lines; confirm with Finance that every line records cost the same way.
+- **Action:** Break Line-3 repair cost into labour, parts, rework and external service with Maintenance; compare repair routes for comparable products in the same category on other lines and check remaining product-mix differences; confirm with Finance that every line records cost the same way.
 - **Owner:** Line-3 Team Leader (lead) with the Maintenance Lead and Finance.
 - **Success measure:** Line-3 average known repair cost per event against other lines, with cost coverage. Provisional target: close half of the 272.33-per-event gap within one quarter.
 

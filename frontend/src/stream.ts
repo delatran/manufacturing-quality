@@ -1,5 +1,94 @@
 import type { WorkspaceEvent } from './types';
 
+type EventBatchScheduler = (publish: () => void) => () => void;
+const scheduleEventBatch: EventBatchScheduler = (publish) => {
+  // A timer also publishes when the Agent panel is hidden. This only coalesces
+  // rendering work; every persisted event and its order remain in the history.
+  const timer = setTimeout(publish, 16);
+  return () => clearTimeout(timer);
+};
+const record = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === 'object' && !Array.isArray(value);
+function persistedEventId(value: unknown): number | undefined {
+  const id =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string' && /^[1-9]\d*$/.test(value)
+        ? Number(value)
+        : NaN;
+  return Number.isSafeInteger(id) && id > 0 ? id : undefined;
+}
+
+/** Receive one session's durable stream without rescanning its history on replay. */
+export function createSessionEventStream(
+  sessionId: string,
+  history: readonly WorkspaceEvent[],
+  onBatch: (events: WorkspaceEvent[]) => void,
+  schedule: EventBatchScheduler = scheduleEventBatch,
+) {
+  const ids = new Set<number>();
+  let cursor: number | undefined;
+  for (const event of history) {
+    const id = persistedEventId(event.id);
+    if (event.session_id !== sessionId || id === undefined) continue;
+    ids.add(id);
+    cursor = Math.max(cursor ?? 0, id);
+  }
+  let pending: WorkspaceEvent[] = [];
+  let cancelPublication: (() => void) | undefined;
+  let disposed = false;
+  const publish = () => {
+    cancelPublication = undefined;
+    if (disposed || !pending.length) return;
+    const batch = pending;
+    pending = [];
+    onBatch(batch);
+  };
+  return {
+    get cursor() {
+      return cursor;
+    },
+    receive(value: unknown): number {
+      if (disposed) return 0;
+      const incoming = record(value) && 'events' in value ? value.events : [value];
+      if (!Array.isArray(incoming)) throw new Error('An unreadable event was received');
+      // Validate the whole packet before advancing the reconnect cursor. A bad
+      // event must not hide the rest of a packet from a subsequent replay.
+      const packet = incoming.map((event: unknown) => {
+        if (!record(event)) throw new Error('An unreadable event was received');
+        const id = persistedEventId(event.id);
+        if (
+          id === undefined ||
+          event.session_id !== sessionId ||
+          typeof event.type !== 'string' ||
+          !event.type ||
+          typeof event.time !== 'string' ||
+          !record(event.data) ||
+          (event.run_id != null && typeof event.run_id !== 'string')
+        )
+          throw new Error('An unreadable event was received');
+        return { id, event: event as WorkspaceEvent };
+      });
+      let accepted = 0;
+      for (const { id, event } of packet) {
+        if (ids.has(id)) continue;
+        ids.add(id);
+        cursor = Math.max(cursor ?? 0, id);
+        pending.push(event);
+        accepted += 1;
+      }
+      if (accepted && !cancelPublication) cancelPublication = schedule(publish);
+      return accepted;
+    },
+    dispose() {
+      disposed = true;
+      cancelPublication?.();
+      cancelPublication = undefined;
+      pending = [];
+    },
+  };
+}
+
 // The raw event history stays intact. This projection only joins lifecycle updates.
 export function projectEvents(events: WorkspaceEvent[]): WorkspaceEvent[] {
   const eventIds = new Set<string>();

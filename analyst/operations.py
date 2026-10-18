@@ -566,6 +566,7 @@ class OperationsService:
         *,
         origin_report_id=None,
         content_evidence=None,
+        before_commit=None,
     ):
         context_id = payload["context"]["context_id"]
         source_key = (
@@ -574,6 +575,8 @@ class OperationsService:
             else sha256(canonical([context_id, source["kind"], source["key"]]))
         )
         with self._connect(write=True) as db:
+            if before_commit is not None:
+                before_commit()
             prior = db.execute(
                 "SELECT request_sha256,case_id FROM operation_requests WHERE key=?",
                 (idempotency_key,),
@@ -649,6 +652,7 @@ class OperationsService:
         actor: str = "user",
         authorized: bool = False,
         content_evidence: dict[str, Any] | None = None,
+        before_commit: Callable[[], None] | None = None,
     ) -> dict[str, Any]:
         _actor(actor, authorized)
         if not isinstance(values, dict):
@@ -696,6 +700,7 @@ class OperationsService:
             actor,
             origin_report_id=origin_report_id,
             content_evidence=proof,
+            before_commit=before_commit,
         )
 
     async def update_case(
@@ -707,6 +712,7 @@ class OperationsService:
         actor: str = "user",
         authorized: bool = False,
         content_evidence: dict[str, Any] | None = None,
+        before_commit: Callable[[], None] | None = None,
     ) -> dict[str, Any]:
         _actor(actor, authorized)
         changes = _fields(changes, partial=True)
@@ -735,6 +741,8 @@ class OperationsService:
                 if value != record[key]
             }
             evidence = _updated_content_evidence(record, changes, actor, proof, effective)
+            if before_commit is not None:
+                before_commit()
             if effective:
                 before = record["status"]
                 record.update(

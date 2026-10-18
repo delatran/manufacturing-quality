@@ -404,3 +404,113 @@ def test_denied_intent_never_calls_semantic_qa(tmp_path, monkeypatch):
         assert database_rows(operations) == before
 
     asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("operation", ["create", "update"])
+@pytest.mark.parametrize("arrival", ["during_review", "review_event"])
+def test_new_steering_invalidates_prewrite_approval(tmp_path, monkeypatch, operation, arrival):
+    async def scenario():
+        runtime, operations, ids = await make_runtime(tmp_path)
+        name, arguments = "operations_create_draft", draft(ids)
+        if operation == "update":
+            saved = (await runtime.operation(name, arguments))["case"]
+            runtime, _, _ = await make_runtime(tmp_path / "updater", "draft_update")
+            runtime.operations_service = operations
+            name = "operations_update_draft"
+            arguments = {
+                "case_id": saved["id"],
+                "expected_version": saved["version"],
+                "changes": [{"field": "description", "value": "Review the observed evidence."}],
+            }
+        runtime.prompt = "Save the proposed draft."
+        before = database_rows(operations)
+        requests = []
+
+        async def withdraw():
+            receipt = await runtime.steer(
+                "Do not save or change the draft. Explain the evidence only.",
+                instruction_id="withdraw-draft",
+            )
+            assert receipt["accepted"] is True
+            # Even when the Lead has consumed the update, an earlier QA verdict
+            # must not authorize the old proposal.
+            await runtime.model_steering("Lead Analyst")()
+            assert not runtime._steering_pending()
+
+        async def review(agent, text, **kwargs):
+            requests.append(json.loads(text))
+            if arrival == "during_review":
+                await withdraw()
+            return approved()
+
+        original_emit = runtime.emit
+
+        async def emit(kind, payload):
+            if kind == "draft_validation" and arrival == "review_event":
+                await withdraw()
+            await original_emit(kind, payload)
+
+        monkeypatch.setattr("analyst.runtime.Runner.run", review)
+        monkeypatch.setattr(runtime, "emit", emit)
+        result = json.loads(await runtime._call(name, arguments))["result"]
+        assert result["ok"] is False and result["write_occurred"] is False
+        assert "new instructions" in result["error"]
+        assert requests[0]["user_request"] == "Save the proposed draft."
+        assert runtime.steering_revision == 1
+        assert database_rows(operations) == before
+
+    asyncio.run(scenario())
+
+
+def test_steering_during_service_context_lookup_prevents_draft_commit(tmp_path, monkeypatch):
+    async def scenario():
+        runtime, operations, ids = await make_runtime(tmp_path)
+        before = database_rows(operations)
+        original_lookup = operations.analysis.context_by_id
+
+        async def context_by_id(context_id):
+            payload = await original_lookup(context_id)
+            receipt = await runtime.steer(
+                "Do not save this draft.", instruction_id="withdraw-during-context-lookup"
+            )
+            assert receipt["accepted"] is True
+            return payload
+
+        monkeypatch.setattr(operations.analysis, "context_by_id", context_by_id)
+        result = json.loads(await runtime._call("operations_create_draft", draft(ids)))["result"]
+        assert result["ok"] is False and result["write_occurred"] is False
+        assert "new instructions" in result["error"]
+        assert database_rows(operations) == before
+        reviewed = [
+            entry["result"]
+            for entry in runtime.toolkit.ledger.records()
+            if entry["tool"] == "draft_semantic_review" and entry["result"]["phase"] == "reviewed"
+        ]
+        assert reviewed and reviewed[-1]["verified"] is True
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("state", ["pending", "unresolved"])
+def test_unconsumed_steering_prevents_prewrite_review(tmp_path, monkeypatch, state):
+    async def scenario():
+        runtime, operations, ids = await make_runtime(tmp_path)
+        before = database_rows(operations)
+        await runtime.steer("Explain the evidence only.", instruction_id="new-request")
+        if state == "unresolved":
+            runtime._direct_steering["new-request"]["state"] = state
+
+        async def forbidden(*args, **kwargs):
+            raise AssertionError("Pending steering reached semantic QA")
+
+        monkeypatch.setattr("analyst.runtime.Runner.run", forbidden)
+        result = json.loads(await runtime._call("operations_create_draft", draft(ids)))["result"]
+        assert result["ok"] is False and result["write_occurred"] is False
+        expected_error = "unresolved admission" if state == "unresolved" else "new instructions"
+        assert expected_error in result["error"]
+        assert database_rows(operations) == before
+        assert not any(
+            entry["tool"] == "draft_semantic_review" for entry in runtime.toolkit.ledger.records()
+        )
+
+    asyncio.run(scenario())

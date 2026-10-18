@@ -154,6 +154,26 @@ async def request(model, input="Inspect current scope", tools=()):
     )
 
 
+def test_turn_boundary_reads_only_the_latest_turn():
+    class LatestTurnPage:
+        async def __aiter__(self):
+            yield Node(id="turn_real", session_id="sess_real", status="completed")
+            raise AssertionError("Historical turn pages must not be requested")
+
+    class LatestTurnSessions(Sessions):
+        async def list_turns(self, session_id, **kwargs):
+            assert session_id == "sess_real"
+            assert kwargs == {"order": "desc", "limit": 1}
+            return LatestTurnPage()
+
+    sessions = LatestTurnSessions([], [], [])
+    model, _ = model_for(sessions)
+    model.session_id = "sess_real"
+    asyncio.run(model._verify_turn_boundary(session()))
+    assert model.turn_id == "turn_real"
+    assert model._turn_status == "completed"
+
+
 @function_tool
 def inspect_scope(limit: int) -> str:
     """Inspect the frozen scope."""
@@ -1051,6 +1071,39 @@ def test_unbounded_usage_estimates_only_new_cumulative_tokens_at_continuation():
         model.budget["cost_usd"]
     )
     assert model.budget["managed_reserved_cost_usd"] == 0
+
+
+def test_late_cache_details_do_not_recharge_previously_accounted_session_cost():
+    model, events = model_for(Sessions([], [], []))
+    model.settings = replace(model.settings, unbounded_runs=True)
+    model.session_id, model.turn_id = "sess_real", "turn_real"
+    observations = [(1000, None), (1000, 1000), (2000, 1000), (3000, 1000)]
+    budgets, sdk_usage = [], []
+
+    async def run():
+        for index, (tokens, cached) in enumerate(observations):
+            snapshot = session()
+            snapshot.usage = Node(
+                input_tokens=tokens,
+                output_tokens=0,
+                input_tokens_details=Node(cached_tokens=cached),
+            )
+            model.budget["unresolved_generation_requests"] += 1
+            sdk_usage.append(await model._account_boundary(snapshot, str(index), time.monotonic()))
+            budgets.append(model.budget["cost_usd"])
+
+    asyncio.run(run())
+    assert budgets == pytest.approx([0.0001, 0.0001, 0.00011, 0.00021])
+    assert [row["estimated_session_token_cost_usd"] for row in model.usage] == pytest.approx(
+        [0.0001, 0.00001, 0.00011, 0.00021]
+    )
+    assert sum(row["estimated_token_cost_usd"] for row in model.usage) == pytest.approx(budgets[-1])
+    assert sum(usage.input_tokens for usage in sdk_usage) == 3000
+    assert sum(usage.output_tokens for usage in sdk_usage) == 0
+    assert model.budget["unresolved_generation_requests"] == 0
+    assert len([kind for kind, _ in events if kind == "usage"]) == len(observations)
+    assert all(row["usage_is_best_effort"] and not row["billing_settled"] for row in model.usage)
+    assert all(row["actual_cost_usd"] is None for row in model.usage)
 
 
 @pytest.mark.parametrize("output_model_name", ["ReportDraft", "QAReview"])

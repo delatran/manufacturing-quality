@@ -1,4 +1,5 @@
 import asyncio
+import threading
 
 import pytest
 from analyst.tools import AnalystTools
@@ -219,6 +220,108 @@ def test_visible_plan_preserves_selected_language(tmp_path, title):
             assert tools.todos == tasks
             assert receipt["result"]["items"] == tasks
         finally:
+            await tools.close()
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("stop", ["cancel", "timeout", "timeout_then_cancel"])
+def test_sql_worker_is_drained_before_releasing_connection(tmp_path, monkeypatch, stop):
+    async def run():
+        tools = AnalystTools(
+            tmp_path / "run", [], timeout_seconds=None if stop == "cancel" else 0.02
+        )
+        started, interrupted, release, finished = (threading.Event() for _ in range(4))
+        original_sql, original_query = tools.sql, tools._query
+
+        class Connection:
+            def __getattr__(self, name):
+                return getattr(original_sql, name)
+
+            def interrupt(self):
+                interrupted.set()
+                original_sql.interrupt()
+
+        def query(text):
+            if text == "SELECT 1 AS blocked":
+                started.set()
+                try:
+                    assert release.wait(5), "Test did not release the SQL worker"
+                    raise RuntimeError("Interrupted query")
+                finally:
+                    finished.set()
+            assert finished.is_set(), "A second query overlapped the cancelled worker"
+            return original_query(text)
+
+        monkeypatch.setattr(tools, "sql", Connection())
+        monkeypatch.setattr(tools, "_query", query)
+        first = asyncio.create_task(
+            tools.call("local_sql_engine", {"query": "SELECT 1 AS blocked"})
+        )
+        second = None
+        try:
+            assert await asyncio.to_thread(started.wait, 2)
+            if stop == "cancel":
+                first.cancel("owner stop")
+            assert await asyncio.to_thread(interrupted.wait, 2)
+            tools.timeout_seconds = None
+            second = asyncio.create_task(
+                tools.call("local_sql_engine", {"query": "SELECT 2 AS ready"})
+            )
+            if stop != "timeout":
+                first.cancel("repeated owner stop")
+            await asyncio.sleep(0)
+            assert tools._lock.locked() and not first.done() and not second.done()
+            release.set()
+            if stop == "timeout":
+                result = await first
+                assert result["result"]["ok"] is False
+                assert "SQL execution exceeded its time limit" in result["result"]["error"]
+            else:
+                with pytest.raises(asyncio.CancelledError):
+                    await first
+            assert finished.is_set()
+            assert (await second)["result"]["rows"] == [{"ready": 2}]
+        finally:
+            release.set()
+            await asyncio.gather(first, *([second] if second else []), return_exceptions=True)
+            await tools.close()
+
+    asyncio.run(run())
+
+
+def test_real_duckdb_query_stops_on_cancellation_and_connection_is_reusable(tmp_path, monkeypatch):
+    async def run():
+        tools = AnalystTools(tmp_path / "run", [], timeout_seconds=None)
+        started, finished = threading.Event(), threading.Event()
+        original_query = tools._query
+
+        def observed(query):
+            started.set()
+            try:
+                return original_query(query)
+            finally:
+                finished.set()
+
+        monkeypatch.setattr(tools, "_query", observed)
+        task = asyncio.create_task(
+            tools.call(
+                "local_sql_engine",
+                {"query": "SELECT SUM(i) AS total FROM range(1000000000000) t(i)"},
+            )
+        )
+        try:
+            assert await asyncio.to_thread(started.wait, 2)
+            task.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await asyncio.wait_for(task, timeout=5)
+            assert finished.is_set() and not tools._lock.locked()
+            assert (await tools.call("local_sql_engine", {"query": "SELECT 7 AS ready"}))["result"][
+                "rows"
+            ] == [{"ready": 7}]
+        finally:
+            tools.sql.interrupt()
+            await asyncio.gather(task, return_exceptions=True)
             await tools.close()
 
     asyncio.run(run())

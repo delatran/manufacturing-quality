@@ -141,14 +141,21 @@ class EvidenceLedger:
             previous = entry.get("entry_sha256")
         return errors
 
-    def verify_claims(self, claims: list[dict]) -> dict:
+    def verify_claims(self, claims: list[dict], *, entries: list[dict] | None = None) -> dict:
         """Claims require execution_id, path, value and optional absolute tolerance."""
-        errors = self.verify_integrity()
-        entries = {e["execution_id"]: e for e in self.records()}
+        records = self.records() if entries is None else entries
+        errors = self.verify_integrity(records)
+        by_id = {entry["execution_id"]: entry for entry in records}
+        numeric_indexes: dict[str, dict[str, Any]] = {}
         for index, claim in enumerate(claims):
-            entry = entries.get(claim.get("execution_id"))
-            values = {v["path"]: v["value"] for v in entry["numeric_values"]} if entry else {}
-            expected = values.get(claim.get("path"))
+            entry = by_id.get(claim.get("execution_id"))
+            if entry and entry["execution_id"] not in numeric_indexes:
+                numeric_indexes[entry["execution_id"]] = {
+                    value["path"]: value["value"] for value in entry["numeric_values"]
+                }
+            values = numeric_indexes[entry["execution_id"]] if entry else {}
+            path = claim.get("path")
+            expected = values.get(path) if isinstance(path, str) else None
             value = claim.get("value")
             tolerance = claim.get("tolerance", 0)
             if expected is None or not isinstance(value, (int, float)) or isinstance(value, bool):
@@ -231,12 +238,29 @@ class EvidenceLedger:
     def resolve_artifact(self, relative_path: str, *, manifest: list[dict] | None = None) -> Path:
         items = self.artifacts() if manifest is None else manifest
         entry = next((item for item in items if item["path"] == relative_path), None)
-        target = (self.run_dir / relative_path).resolve()
-        if (
-            not entry
-            or not target.is_relative_to((self.run_dir / "artifacts").resolve())
-            or not target.is_file()
-        ):
+        if entry is None:
+            raise FileNotFoundError("Artifact is not in the manifest")
+        return self._verified_artifact(entry, (self.run_dir / "artifacts").resolve())
+
+    def verify_artifacts(self, *, manifest: list[dict] | None = None) -> None:
+        """Verify the complete manifest without repeated root resolution or lookups.
+
+        Paths and file contents are checked anew on every call; only the resolved
+        artifact root is shared within this verification pass.
+        """
+        items = self.artifacts() if manifest is None else manifest
+        artifact_root = (self.run_dir / "artifacts").resolve()
+        seen: set[str] = set()
+        for entry in items:
+            relative_path = entry["path"]
+            if relative_path in seen:
+                raise ValueError("Artifact manifest contains a duplicate path")
+            seen.add(relative_path)
+            self._verified_artifact(entry, artifact_root)
+
+    def _verified_artifact(self, entry: dict, artifact_root: Path) -> Path:
+        target = (self.run_dir / entry["path"]).resolve()
+        if not target.is_relative_to(artifact_root) or not target.is_file():
             raise FileNotFoundError("Artifact is not in the manifest")
         if sha256(target.read_bytes()) != entry["sha256"]:
             raise ValueError("Artifact hash mismatch")

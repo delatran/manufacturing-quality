@@ -28,6 +28,7 @@ from pathlib import Path, PurePosixPath
 import certifi
 import httpx
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from .config import Settings
@@ -324,24 +325,39 @@ class PersistenceMiddleware:
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         durable_write = scope["type"] == "http" and scope.get("method") not in {"GET", "HEAD"}
+        response_started = False
 
         async def send_checkpointed(message: Message) -> None:
+            nonlocal response_started
             if message["type"] == "http.response.start":
+                # API mutations finish before producing their response. Persist
+                # them before even a success status can reach the caller.
+                if durable_write and self.bridge is not None:
+                    self.bridge.checkpoint()
                 message["headers"] = [
                     (name, value)
                     for name, value in message.get("headers", [])
                     if name.lower() != b"x-analyst-runtime"
                 ] + [(b"x-analyst-runtime", _RUNTIME_ID.encode("ascii"))]
-            if (
-                durable_write
-                and self.bridge is not None
-                and message["type"] == "http.response.body"
-                and not message.get("more_body")
-            ):
-                self.bridge.checkpoint()
+                response_started = True
             await send(message)
 
-        await self.app(scope, receive, send_checkpointed)
+        try:
+            await self.app(scope, receive, send_checkpointed)
+        except PersistenceUnavailable:
+            if scope["type"] != "http" or response_started:
+                raise
+            response = JSONResponse(
+                {
+                    "detail": {
+                        "code": "persistence_unavailable",
+                        "message": "Workspace storage is unavailable; further runs are paused.",
+                    }
+                },
+                status_code=503,
+                headers={"X-Analyst-Runtime": _RUNTIME_ID},
+            )
+            await response(scope, receive, send)
 
 
 def build_application() -> FastAPI:

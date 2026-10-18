@@ -74,14 +74,21 @@ async def recover_managed_sessions(
             "SELECT id,session_id FROM runs "
             "WHERE state IN ('interrupted','failed','cancelled') ORDER BY rowid"
         ).fetchall()
-    work = []
+    runs_by_session: dict[str, list[str]] = {}
     for row in rows:
-        events = [
-            event for event in store.events(row["session_id"]) if event["run_id"] == row["id"]
-        ]
-        pending, unknown = _pending_sessions(events)
-        if pending or unknown:
-            work.append((row["session_id"], row["id"], pending, unknown))
+        runs_by_session.setdefault(row["session_id"], []).append(row["id"])
+    work = []
+    for sid, run_ids in runs_by_session.items():
+        # Decode each conversation once, regardless of how many earlier runs
+        # were interrupted. Keep only the histories eligible for recovery.
+        events_by_run: dict[str, list[dict]] = {rid: [] for rid in run_ids}
+        for event in store.events(sid):
+            if event["run_id"] in events_by_run:
+                events_by_run[event["run_id"]].append(event)
+        for rid, events in events_by_run.items():
+            pending, unknown = _pending_sessions(events)
+            if pending or unknown:
+                work.append((sid, rid, pending, unknown))
     if not work:
         for sid in {row["session_id"] for row in rows}:
             _clear_recovery_stop(store, sid)
@@ -140,10 +147,11 @@ async def recover_managed_sessions(
                                 break
                             await asyncio.sleep(0.25)
                         page = await sessions.turns.list(identity, order="desc", limit=1)
-                        turns = [turn async for turn in page]
-                        if not turns or turns[0].session_id != identity:
+                        # limit=1 controls page size; consuming the whole SDK
+                        # iterator would fetch every historical turn as well.
+                        turn = await anext(aiter(page), None)
+                        if turn is None or turn.session_id != identity:
                             raise ValueError("Recovery omitted the session's durable turn")
-                        turn = turns[0]
                         payload.update(
                             status=session.status, turn_id=turn.id, turn_status=turn.status
                         )

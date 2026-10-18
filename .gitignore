@@ -24,6 +24,8 @@ playwright-report/
 artifacts/
 .runtime/
 /work/
+/.playwright-cli/
+/output/
 
 # Historical local evaluation output; retain protocols, oracles and fixtures.
 /evals/rebuild_results_*.json

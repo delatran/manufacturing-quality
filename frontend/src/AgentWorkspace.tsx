@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, FormEvent, KeyboardEvent } from 'react';
 import {
   ArrowDown,
@@ -13,7 +13,6 @@ import {
   X,
 } from 'lucide-react';
 import {
-  artifactUrl,
   createSession,
   getConfig,
   getDashboardContext,
@@ -22,20 +21,23 @@ import {
   request,
   socketUrl,
 } from './api';
-import EventView, { chartArtifact, friendlyError } from './EventView';
+import EventView, { friendlyError } from './EventView';
 import { createI18n, I18nScope, useI18n } from './i18n';
-import { applicationUrl } from './app-url';
-import { projectEvents } from './stream';
+import { createSessionEventStream } from './stream';
 import AgentFlow from './AgentFlow';
-import { projectAgentFlow } from './agent-flow';
-import type { FlowRun } from './agent-flow';
+import {
+  appendConversationState,
+  createConversationState,
+  eventsForReport,
+} from './conversation-state';
+import type { ConversationEntry } from './conversation-state';
+import type { Locale } from './i18n';
 import type { AppConfig, Session, WorkspaceEvent } from './types';
 import { parseUiCommand } from './workspace-state';
 import type { DashboardData } from './dashboard-types';
 import type { UiCommand } from './workspace-state';
 import AgentScope, { questionScope } from './AgentScope';
 import { conversationScrollPosition } from './conversation-scroll';
-import { conversationEventLanguage, conversationRunLanguages } from './conversation-language';
 import AnswerFollowups from './AnswerFollowups';
 import { answerSourceQuestion, eligibleAnswerFollowup } from './answer-followups';
 import {
@@ -175,237 +177,63 @@ const readDraft = (): Draft => {
   }
 };
 
-const conversationRun = (event: WorkspaceEvent) =>
-  JSON.stringify([event.session_id, event.run_id ?? null]);
-const hasField = (value: Record<string, unknown>, key: string) =>
-  Object.prototype.hasOwnProperty.call(value, key);
-const artifactRecord = (value: unknown): value is Record<string, unknown> =>
-  value !== null && typeof value === 'object' && !Array.isArray(value);
+export { projectConversation } from './conversation-projection';
 
-function chartIdentity(data: Record<string, unknown>): string | undefined {
-  const { path, sha256 } = data;
-  if (
-    typeof path !== 'string' ||
-    !path ||
-    path.includes('\\') ||
-    path.includes(':') ||
-    path.split('/').some((part) => !part || part === '.' || part === '..') ||
-    typeof sha256 !== 'string' ||
-    !/^[a-f0-9]{64}$/i.test(sha256)
-  )
-    return;
-  return JSON.stringify([path, sha256]);
-}
-
-function selectedChartUrls(report: WorkspaceEvent): Map<string, string> {
-  const selected = new Map<string, string>();
-  const delivery = report.data.delivery;
-  if (
-    !report.run_id ||
-    !artifactRecord(delivery) ||
-    delivery.version !== 1 ||
-    !Array.isArray(delivery.artifacts) ||
-    !Array.isArray(delivery.source_execution_ids) ||
-    delivery.source_execution_ids.some((id) => typeof id !== 'string' || !id.trim()) ||
-    !hasField(delivery, 'scope') ||
-    (delivery.scope !== null && !artifactRecord(delivery.scope))
-  )
-    return selected;
-  for (const item of delivery.artifacts) {
-    if (
-      !artifactRecord(item) ||
-      typeof item.name !== 'string' ||
-      !item.name.trim() ||
-      typeof item.mime_type !== 'string' ||
-      !item.mime_type.trim() ||
-      typeof item.size_bytes !== 'number' ||
-      !Number.isSafeInteger(item.size_bytes) ||
-      item.size_bytes < 0 ||
-      (hasField(item, 'kind') && typeof item.kind !== 'string')
-    )
-      return new Map();
-    const identity = chartIdentity(item);
-    const url = artifactUrl(item.url);
-    if (!identity || !url) return new Map();
-    try {
-      const address = new URL(url);
-      const expected = applicationUrl(
-        `/api/sessions/${report.session_id}/runs/${report.run_id}/artifacts/${item.path}`,
-      );
-      if (decodeURIComponent(address.pathname) !== expected || address.search || address.hash)
-        return new Map();
-      if (/\.(?:png|jpe?g|webp|svg|gif)$/i.test(item.name)) selected.set(identity, url);
-    } catch {
-      return new Map();
-    }
-  }
-  return selected;
-}
-
-function projectChartEvents(events: WorkspaceEvent[]): WorkspaceEvent[] {
-  const reports = new Set<string>();
-  const controlled = new Set<string>();
-  const selections = new Map<string, Map<string, string>>();
-  for (const event of events) {
-    const run = conversationRun(event);
-    if (
-      (event.type === 'run_started' || event.type === 'status') &&
-      hasField(event.data, 'artifact_delivery_version')
-    )
-      controlled.add(run);
-    if (event.type === 'artifact' && hasField(event.data, 'delivery_candidate'))
-      controlled.add(run);
-    if (event.type === 'artifact_group' && Array.isArray(event.data.items)) {
-      for (const item of event.data.items as WorkspaceEvent[]) {
-        if (hasField(item.data, 'delivery_candidate')) controlled.add(conversationRun(item));
-      }
-    }
-    if (event.type === 'message' && event.data.role === 'assistant') {
-      reports.add(run);
-      if (hasField(event.data, 'delivery')) {
-        controlled.add(run);
-        selections.set(run, selectedChartUrls(event));
-      } else selections.delete(run);
-    }
-  }
-  // Deduplicate artifact versions before selecting them, so an older matching hash
-  // cannot reappear after a newer event records different bytes at the same path.
-  const projected = projectEvents(events);
-  const allowed = new Set<WorkspaceEvent>();
-  const urls = new Map<string, Map<string, string>>();
-  for (const event of projected) {
-    const candidates =
-      event.type === 'artifact_group'
-        ? ((Array.isArray(event.data.items) ? event.data.items : []) as WorkspaceEvent[])
-        : event.type === 'artifact'
-          ? [event]
-          : [];
-    for (const item of candidates) {
-      const run = conversationRun(item);
-      if (run !== conversationRun(event) || !reports.has(run)) continue;
-      if (!chartArtifact(item)) continue;
-      // Legacy reports without either marker retain their earlier charts.
-      // A present empty, invalid or unsupported packet never falls back to inventory.
-      if (controlled.has(run)) {
-        const identity = chartIdentity(item.data);
-        const url = artifactUrl(item.data.url);
-        if (!identity || !url || selections.get(run)?.get(identity) !== url) continue;
-        const values = urls.get(run) || new Map<string, string>();
-        values.set(identity, url);
-        urls.set(run, values);
-      }
-      allowed.add(item);
-    }
-  }
-  return projected.flatMap((event) => {
-    if (event.type === 'artifact') return allowed.has(event) ? [event] : [];
-    if (event.type === 'artifact_group') {
-      const items = (
-        (Array.isArray(event.data.items) ? event.data.items : []) as WorkspaceEvent[]
-      ).filter((item) => allowed.has(item));
-      return items.length ? [{ ...event, data: { ...event.data, items } }] : [];
-    }
-    const run = conversationRun(event);
-    if (event.type === 'message' && event.data.role === 'assistant' && controlled.has(run)) {
-      // This field belongs only to the display copy, never the stored report.
-      // An older report cannot display new bytes registered at its former URL.
-      const ownSelection = selectedChartUrls(event);
-      const currentSelection = urls.get(run);
-      const chartUrls = [...ownSelection]
-        .filter(([identity, url]) => currentSelection?.get(identity) === url)
-        .map(([, url]) => url);
-      return [{ ...event, data: { ...event.data, chart_urls: chartUrls } }];
-    }
-    return [event];
-  });
-}
-
-// This is a display projection. Source events, reports and receipts are never changed.
-export function projectConversation(events: WorkspaceEvent[]): WorkspaceEvent[] {
-  const projected = projectChartEvents(events);
-  const result: WorkspaceEvent[] = [];
-  const activity = new Map<string, WorkspaceEvent>();
-  const charts = new Map<string, WorkspaceEvent[]>();
-  const lastReports = new Map<string, string | number>();
-  const embeddedImages = new Map<string, Set<string>>();
-  projected.forEach((event) => {
-    if (event.type !== 'message' || event.data.role !== 'assistant') return;
-    const run = conversationRun(event);
-    lastReports.set(run, event.id);
-    const images = embeddedImages.get(run) || new Set<string>();
-    const allowedUrls = event.data.chart_urls;
-    for (const match of String(event.data.text ?? event.data.content ?? '').matchAll(
-      /!\[[^\]]*\]\(<?([^\s)>]+)>?(?:\s+[^)]*)?\)/g,
-    )) {
-      const url = artifactUrl(match[1]);
-      if (
-        url &&
-        (!hasField(event.data, 'chart_urls') ||
-          (Array.isArray(allowedUrls) && allowedUrls.includes(url)))
-      )
-        images.add(url);
-    }
-    embeddedImages.set(run, images);
-  });
-  projected.forEach((event) => {
-    const run = conversationRun(event);
-    if (event.type === 'artifact_group' || event.type === 'artifact') {
-      const items =
-        event.type === 'artifact_group'
-          ? ((Array.isArray(event.data.items) ? event.data.items : []) as WorkspaceEvent[])
-          : [event];
-      for (const item of items) {
-        const itemRun = conversationRun(item);
-        const url = artifactUrl(item.data.url);
-        if (chartArtifact(item) && (!url || !embeddedImages.get(itemRun)?.has(url)))
-          charts.set(itemRun, [...(charts.get(itemRun) || []), item]);
-      }
-      return;
-    }
-    if (event.type === 'tool' || (event.type === 'status' && event.run_id)) {
-      if (
-        event.type === 'tool' &&
-        /^(?:memory_|todo_|knowledge_)/.test(String(event.data.name || ''))
-      )
-        return;
-      let group = activity.get(run);
-      if (!group) {
-        group = {
-          ...event,
-          id: 'activity-' + run,
-          type: 'activity',
-          data: { state: 'running', items: [] },
-        };
-        activity.set(run, group);
-        result.push(group);
-      }
-      if (event.type === 'status') group.data.state = event.data.state;
-      else (group.data.items as WorkspaceEvent[]).push(event);
-      return;
-    }
-    if (
-      event.type === 'message' ||
-      event.type === 'error' ||
-      (event.type === 'status' && event.data.state === 'queued')
-    )
-      result.push(event);
-  });
-  // Place chart previews after their report, without duplicating inline charts.
-  const conversation: WorkspaceEvent[] = [];
-  const appendCharts = (run: string) => {
-    conversation.push(...(charts.get(run) || []));
-    charts.delete(run);
-  };
-  result.forEach((event) => {
-    conversation.push(event);
-    if (event.type !== 'message' || event.data.role === 'user') return;
-    const run = conversationRun(event);
-    if (lastReports.get(run) !== event.id) return;
-    appendCharts(run);
-  });
-  charts.forEach((_, run) => appendCharts(run));
-  return conversation;
-}
+const ConversationEntryView = memo(function ConversationEntryView({
+  entry,
+  language,
+  disabled,
+  onFollowUp,
+}: {
+  entry: ConversationEntry;
+  language: Locale;
+  disabled: boolean;
+  onFollowUp: (report: WorkspaceEvent, prompt: string, language: Locale) => void;
+}) {
+  const responseI18n = createI18n(language);
+  const filters = entry.context?.data.filters;
+  return (
+    <I18nScope locale={language}>
+      <div
+        className="conversation-entry"
+        lang={language}
+        tabIndex={-1}
+        role="group"
+        aria-label={
+          entry.type === 'message'
+            ? entry.role === 'user'
+              ? responseI18n.t('ui.you')
+              : responseI18n.t('ui.quality_analyst_2')
+            : responseI18n.t('ui.analyst_conversation')
+        }
+      >
+        {entry.context && (
+          <p className="report-scope">
+            <span>{responseI18n.t('ui.based_on')}</span>
+            {filters && typeof filters === 'object'
+              ? responseI18n.scope(filters as Record<string, unknown>)
+              : responseI18n.t('ui.the_data_selected_for_this_analysis')}
+          </p>
+        )}
+        {entry.flow ? (
+          <AgentFlow run={entry.flow} language={language} />
+        ) : (
+          <EventView event={entry.event} language={language} />
+        )}
+        {entry.type === 'message' && entry.role === 'assistant' && (
+          <AnswerFollowups
+            report={entry.event}
+            question={entry.question}
+            language={language}
+            eligible={entry.eligible}
+            disabled={disabled}
+            onFollowUp={onFollowUp}
+          />
+        )}
+      </div>
+    </I18nScope>
+  );
+});
 
 export default function AgentWorkspace({
   visible,
@@ -432,7 +260,7 @@ export default function AgentWorkspace({
   const [initialDraft] = useState(readDraft);
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [events, setEvents] = useState<WorkspaceEvent[]>([]);
+  const [conversation, setConversation] = useState(createConversationState);
   const [text, setText] = useState(initialDraft.text);
   const [prefillContext, setPrefillContext] = useState<string | undefined>(initialDraft.contextId);
   const [answerReply, setAnswerReply] = useState<AnswerReply | undefined>(initialDraft.reply);
@@ -462,7 +290,6 @@ export default function AgentWorkspace({
   const [showLatest, setShowLatest] = useState(false);
   const [composerHeight, setComposerHeight] = useState(240);
   const socket = useRef<WebSocket | null>(null);
-  const cursor = useRef<string | number | undefined>(undefined);
   const composer = useRef<HTMLTextAreaElement>(null);
   const stream = useRef<HTMLDivElement>(null);
   const conversationTail = useRef<HTMLDivElement>(null);
@@ -472,72 +299,13 @@ export default function AgentWorkspace({
   const pendingRequest = useRef<PromptAdmission | null>(null);
   const pendingDraft = useRef<Draft | null>(null);
   const bootRetry = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const {
-    state,
-    active,
-    providerStopped,
-    lastRunStatus,
-    hasConversation,
-    lastQuestion,
-    runningActionValue: derivedActionValue,
-  } = useMemo(() => {
-    let lastStatusEv: WorkspaceEvent | undefined;
-    let lastRunStatusEv: WorkspaceEvent | undefined;
-    let hasMessage = false;
-    let lastQuestionEv: WorkspaceEvent | undefined;
-    let hasProviderStopped = false;
-
-    for (let i = events.length - 1; i >= 0; i--) {
-      const ev = events[i];
-      if (ev.type === 'status') {
-        if (!lastStatusEv) lastStatusEv = ev;
-        if (!lastRunStatusEv && ev.run_id) lastRunStatusEv = ev;
-        if (ev.data?.state === 'provider_stopped') hasProviderStopped = true;
-      }
-      if (ev.type === 'message') {
-        hasMessage = true;
-        if (!lastQuestionEv && ev.data?.role === 'user') lastQuestionEv = ev;
-      }
-    }
-
-    const currentState = String(lastStatusEv?.data.state || 'idle');
-    const isAct = !terminalStates.has(currentState);
-    const isProvStopped = currentState === 'provider_stopped' || hasProviderStopped;
-
-    let actionVal: unknown;
-    if (lastRunStatusEv?.run_id) {
-      for (let i = events.length - 1; i >= 0; i--) {
-        const ev = events[i];
-        if (
-          ev.run_id === lastRunStatusEv.run_id &&
-          ['run_started', 'status', 'analysis_context'].includes(ev.type) &&
-          typeof ev.data.action_intent === 'string'
-        ) {
-          actionVal = ev.data.action_intent;
-          break;
-        }
-      }
-    }
-
-    return {
-      lastStatus: lastStatusEv,
-      state: currentState,
-      active: isAct,
-      providerStopped: isProvStopped,
-      lastRunStatus: lastRunStatusEv,
-      hasConversation: hasMessage,
-      lastQuestion: lastQuestionEv,
-      runningActionValue: actionVal,
-    };
-  }, [events]);
-
-  const runContexts = useMemo(() => {
-    const contexts = new Map<string, WorkspaceEvent>();
-    events.forEach((event) => {
-      if (event.type === 'analysis_context' && event.run_id) contexts.set(event.run_id, event);
-    });
-    return contexts;
-  }, [events]);
+  const { lastRunStatus, hasConversation, lastQuestion, runContexts, visibleEvents } = conversation;
+  const state = String(conversation.lastStatus?.data.state || 'idle');
+  const active = !terminalStates.has(state);
+  const providerStopped = conversation.providerStopped;
+  const derivedActionValue = lastRunStatus?.run_id
+    ? conversation.actionIntents.get(lastRunStatus.run_id)
+    : undefined;
   const runningContextEvent = lastRunStatus?.run_id
     ? runContexts.get(lastRunStatus.run_id)
     : undefined;
@@ -563,14 +331,16 @@ export default function AgentWorkspace({
   const mock = config
     ? ['mock', 'simulation', 'simulated', 'offline'].includes(config.mode?.toLowerCase())
     : false;
-  const visibleEvents = useMemo(() => projectConversation(events), [events]);
-  const runLanguages = useMemo(
-    () => conversationRunLanguages(events, session?.runs),
-    [events, session?.runs],
+  const replyAvailable = answerReplyAvailable(
+    answerReply,
+    session,
+    answerReply
+      ? eventsForReport(conversation, {
+          session_id: answerReply.sessionId,
+          run_id: answerReply.run_id,
+        })
+      : conversation.events,
   );
-  const replyAvailable = answerReplyAvailable(answerReply, session, events);
-  // The full provider timeline is projected from the same stored history.
-  const flowRuns = useMemo<Map<string, FlowRun>>(() => projectAgentFlow(events), [events]);
   const selectedScope = questionScope({
     dashboardContextId: contextId,
     capturedContextId: prefillContext,
@@ -592,6 +362,12 @@ export default function AgentWorkspace({
   const capturedViewDiffers = selectedScope.captured;
   const scopeUnavailable = selectedScope.unavailable;
   const scopeLoading = selectedScope.loading;
+  // Running status can arrive before its context. Wait for the recorded scope
+  // so server admission can match it; an explicit saved null remains unscoped.
+  const promptScopeUnavailable =
+    active && !answerReply
+      ? !lastRunStatus?.run_id || runningContextId === undefined
+      : scopeUnavailable || scopeLoading || !selectedContext;
   const selectedSummary = capturedViewDiffers
     ? scopeUnavailable
       ? t('ui.captured_scope_unavailable')
@@ -626,13 +402,16 @@ export default function AgentWorkspace({
         ? dashboardData
         : undefined;
   const activeKpis = activeData?.analysis.kpis;
-  function summaryFor(context?: WorkspaceEvent, language = locale) {
-    const contextI18n = createI18n(language);
-    const filters = context?.data.filters;
-    return filters && typeof filters === 'object'
-      ? contextI18n.scope(filters as Record<string, unknown>)
-      : contextI18n.t('ui.the_data_selected_for_this_analysis');
-  }
+  const summaryFor = useCallback(
+    (context?: WorkspaceEvent, language = locale) => {
+      const contextI18n = createI18n(language);
+      const filters = context?.data.filters;
+      return filters && typeof filters === 'object'
+        ? contextI18n.scope(filters as Record<string, unknown>)
+        : contextI18n.t('ui.the_data_selected_for_this_analysis');
+    },
+    [locale],
+  );
 
   const suggestions = suppliedSuggestions || [
     {
@@ -710,8 +489,7 @@ export default function AgentWorkspace({
         saveSession(current.id);
         setConfig(configuration);
         setSession(current);
-        setEvents(current.events || []);
-        cursor.current = current.events?.at(-1)?.id;
+        setConversation(createConversationState(current.events || [], current.runs));
         setError('');
       } catch {
         if (disposed) return;
@@ -732,79 +510,71 @@ export default function AgentWorkspace({
     let disposed = false;
     let timer: ReturnType<typeof setTimeout>;
     let attempt = 0;
+    const eventStream = createSessionEventStream(session.id, session.events || [], (batch) => {
+      if (disposed) return;
+      setConversation((previous) => appendConversationState(previous, batch));
+      batch.forEach((event) => {
+        if (event.type === 'ui_command') {
+          const command = parseUiCommand(event.data);
+          if (command && uiCommandHandler.current) {
+            void applyCommand(command)
+              .then((applied) => {
+                if (disposed) return;
+                setCommandFeedback(applied ? 'applied' : 'stale');
+                if (applied) setLastCommand(command.action === 'undo' ? undefined : command);
+              })
+              .catch(() => {
+                if (!disposed) setCommandFeedback('failed');
+              });
+          }
+        }
+        if (event.type === 'status' && terminalStates.has(String(event.data.state)))
+          setCancelling(false);
+        if (promptAcknowledges(event, pendingRequest.current)) {
+          pendingPrompt.current = null;
+          pendingRequest.current = null;
+          pendingDraft.current = null;
+          setAwaitingPrompt(null);
+        }
+        if (event.type === 'error' && !event.run_id && pendingPrompt.current) {
+          const unsent = pendingPrompt.current;
+          const original = pendingDraft.current;
+          pendingPrompt.current = null;
+          pendingRequest.current = null;
+          pendingDraft.current = null;
+          setText((previous) => previous || unsent);
+          setAwaitingPrompt(null);
+          if (original) {
+            setPrefillContext(original.contextId);
+            setAnswerReply(original.reply);
+          }
+        }
+      });
+    });
     const connect = () => {
       if (disposed) return;
-      const ws = new WebSocket(socketUrl(session.id, cursor.current));
+      const ws = new WebSocket(socketUrl(session.id, eventStream.cursor));
       socket.current = ws;
       ws.onopen = () => {
-        if (disposed) return;
+        if (disposed || socket.current !== ws) return;
         attempt = 0;
         setConnection('connected');
         setError((previous) => (/^Connection|An unreadable/.test(previous) ? '' : previous));
       };
       ws.onmessage = (message) => {
+        if (disposed || socket.current !== ws) return;
         try {
-          const value = JSON.parse(message.data) as
-            WorkspaceEvent | { type: string; events: WorkspaceEvent[] };
-          const incoming = 'events' in value ? value.events : [value as WorkspaceEvent];
-          const valid = incoming.filter(
-            (event) => event.id !== undefined && event.type && event.data,
-          );
-          if (!valid.length) return;
-          cursor.current = valid.at(-1)?.id;
-          setEvents((previous) => {
-            const ids = new Set(previous.map((event) => String(event.id)));
-            return [
-              ...previous,
-              ...valid.filter((event) => {
-                const id = String(event.id);
-                if (ids.has(id)) return false;
-                ids.add(id);
-                return true;
-              }),
-            ];
-          });
-          valid.forEach((event) => {
-            if (event.type === 'ui_command') {
-              const command = parseUiCommand(event.data);
-              if (command && uiCommandHandler.current) {
-                void applyCommand(command)
-                  .then((applied) => {
-                    setCommandFeedback(applied ? 'applied' : 'stale');
-                    if (applied) setLastCommand(command.action === 'undo' ? undefined : command);
-                  })
-                  .catch(() => setCommandFeedback('failed'));
-              }
-            }
-            if (event.type === 'status' && terminalStates.has(String(event.data.state)))
-              setCancelling(false);
-            if (promptAcknowledges(event, pendingRequest.current)) {
-              pendingPrompt.current = null;
-              pendingRequest.current = null;
-              pendingDraft.current = null;
-              setAwaitingPrompt(null);
-            }
-            if (event.type === 'error' && !event.run_id && pendingPrompt.current) {
-              const unsent = pendingPrompt.current;
-              const original = pendingDraft.current;
-              pendingPrompt.current = null;
-              pendingRequest.current = null;
-              pendingDraft.current = null;
-              setText((previous) => previous || unsent);
-              setAwaitingPrompt(null);
-              if (original) {
-                setPrefillContext(original.contextId);
-                setAnswerReply(original.reply);
-              }
-            }
-          });
+          eventStream.receive(JSON.parse(message.data));
         } catch {
           setError('An unreadable event was received');
         }
       };
-      ws.onerror = () => ws.close();
+      ws.onerror = () => {
+        if (!disposed && socket.current === ws) ws.close();
+      };
       ws.onclose = () => {
-        if (disposed) return;
+        if (disposed || socket.current !== ws) return;
+        socket.current = null;
         setConnection('reconnecting');
         if (pendingPrompt.current) setDeliveryUncertain(true);
         timer = setTimeout(connect, Math.min(1000 * 2 ** attempt++, 10000));
@@ -813,8 +583,10 @@ export default function AgentWorkspace({
     connect();
     return () => {
       disposed = true;
+      eventStream.dispose();
       clearTimeout(timer);
       socket.current?.close();
+      socket.current = null;
     };
   }, [session, applyCommand]);
   useEffect(() => {
@@ -903,12 +675,11 @@ export default function AgentWorkspace({
       !prompt ||
       !session ||
       awaitingPrompt ||
+      pendingPrompt.current ||
       providerStopped ||
       aiUnavailable ||
       !replyAvailable ||
-      (active && !answerReply
-        ? !lastRunStatus?.run_id
-        : scopeUnavailable || scopeLoading || !selectedContext) ||
+      promptScopeUnavailable ||
       socket.current?.readyState !== WebSocket.OPEN
     )
       return;
@@ -966,9 +737,20 @@ export default function AgentWorkspace({
     setAnswerReply(undefined);
     composer.current?.focus();
   }
-  function followUp(report: WorkspaceEvent, prompt: string, language: 'en' | 'vi') {
-    if (!eligibleAnswerFollowup(report, events, session?.runs) || awaitingPrompt) return;
-    const context = report.run_id ? runContexts.get(report.run_id) : undefined;
+  const committedConversation = useRef({ conversation, awaitingPrompt });
+  useLayoutEffect(() => {
+    committedConversation.current = { conversation, awaitingPrompt };
+  }, [conversation, awaitingPrompt]);
+  const followUp = useCallback((report: WorkspaceEvent, prompt: string, language: 'en' | 'vi') => {
+    const current = committedConversation.current;
+    const ownEvents = eventsForReport(current.conversation, report);
+    if (
+      current.awaitingPrompt ||
+      pendingPrompt.current ||
+      !eligibleAnswerFollowup(report, ownEvents, current.conversation.savedRuns)
+    )
+      return;
+    const context = report.run_id ? current.conversation.runContexts.get(report.run_id) : undefined;
     const id = context?.data.context_id;
     if (typeof id !== 'string' || !report.run_id || typeof report.id !== 'number') return;
     setText(prompt);
@@ -978,10 +760,10 @@ export default function AgentWorkspace({
       run_id: report.run_id,
       message_id: report.id,
       language,
-      question: answerSourceQuestion(report, questionForAnswer(report, events)),
+      question: answerSourceQuestion(report, questionForAnswer(report, ownEvents)),
     });
     composer.current?.focus();
-  }
+  }, []);
 
   useEffect(() => {
     if (!session || !contextId) return;
@@ -1043,6 +825,22 @@ export default function AgentWorkspace({
           : active
             ? 'running'
             : 'connected';
+  const followupsDisabled =
+    Boolean(awaitingPrompt) || providerStopped || aiUnavailable || connection !== 'connected';
+  const conversationEntries = useMemo(
+    () =>
+      conversation.entries.map((entry) => (
+        <ConversationEntryView
+          key={String(entry.event.id)}
+          entry={entry}
+          language={entry.language ?? locale}
+          disabled={followupsDisabled}
+          onFollowUp={followUp}
+        />
+      )),
+    [conversation.entries, locale, followupsDisabled, followUp],
+  );
+
   return (
     <div
       className={'workspace agent-workspace ' + (hasConversation ? 'has-conversation' : 'is-empty')}
@@ -1214,63 +1012,7 @@ export default function AgentWorkspace({
           </p>
         )}
         <div className="event-stream" ref={stream}>
-          {visibleEvents.map((event) => {
-            // Show the provider timeline for each run alongside its report and files.
-            const flow =
-              event.type === 'activity' && event.run_id ? flowRuns.get(event.run_id) : undefined;
-            const language = conversationEventLanguage(event, runLanguages, locale);
-            const responseI18n = createI18n(language);
-            return (
-              <I18nScope key={String(event.id)} locale={language}>
-                <div
-                  className="conversation-entry"
-                  lang={language}
-                  tabIndex={-1}
-                  role="group"
-                  aria-label={
-                    event.type === 'message'
-                      ? event.data.role === 'user'
-                        ? responseI18n.t('ui.you')
-                        : responseI18n.t('ui.quality_analyst_2')
-                      : responseI18n.t('ui.analyst_conversation')
-                  }
-                >
-                  {event.type === 'message' &&
-                    event.data.role !== 'user' &&
-                    event.run_id &&
-                    runContexts.has(event.run_id) && (
-                      <p className="report-scope">
-                        <span>{responseI18n.t('ui.based_on')}</span>
-                        {summaryFor(runContexts.get(event.run_id), language)}
-                      </p>
-                    )}
-                  {flow ? (
-                    <AgentFlow run={flow} language={language} />
-                  ) : (
-                    <EventView event={event} language={language} />
-                  )}
-                  {event.type === 'message' && event.data.role === 'assistant' && (
-                    <AnswerFollowups
-                      report={event}
-                      question={questionForAnswer(event, events)}
-                      language={language}
-                      eligible={
-                        eligibleAnswerFollowup(event, events, session?.runs) &&
-                        Boolean(event.run_id && runContexts.has(event.run_id))
-                      }
-                      disabled={
-                        Boolean(awaitingPrompt) ||
-                        providerStopped ||
-                        aiUnavailable ||
-                        connection !== 'connected'
-                      }
-                      onFollowUp={followUp}
-                    />
-                  )}
-                </div>
-              </I18nScope>
-            );
-          })}
+          {conversationEntries}
           {awaitingPrompt && (
             <article className="message user-message pending-message" tabIndex={-1}>
               <div className="event-label">
@@ -1472,9 +1214,7 @@ export default function AgentWorkspace({
                   providerStopped ||
                   aiUnavailable ||
                   !replyAvailable ||
-                  (active && !answerReply
-                    ? !lastRunStatus?.run_id
-                    : scopeUnavailable || scopeLoading || !selectedContext) ||
+                  promptScopeUnavailable ||
                   connection !== 'connected'
                 }
                 aria-label={sendLabel}

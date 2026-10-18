@@ -1,0 +1,345 @@
+// Browser verifier: import this module from the Vite origin, then call
+// runDashboardRequestVerification(). Fetch is replaced only for this isolated run.
+import { act, useLayoutEffect } from 'react';
+import { createRoot } from 'react-dom/client';
+import Dashboard from '../src/Dashboard';
+import { ProductRanking } from '../src/DashboardCharts';
+import { Records } from '../src/DashboardRecords';
+import RecordTrace from '../src/RecordTrace';
+import { I18nScope, createI18n } from '../src/i18n';
+import { initialFilters } from '../src/dashboard-types';
+import type { DashboardData, Filters, RecordsData } from '../src/dashboard-types';
+import type { Locale } from '../src/i18n';
+
+type PendingRequest = {
+  url: URL;
+  signal?: AbortSignal | null;
+  resolve: (response: Response) => void;
+};
+
+function check(condition: unknown, message: string): asserts condition {
+  if (!condition) throw new Error(message);
+}
+
+// Only the Records fields are needed; these are synthetic UI states, not source evidence.
+function fixture(context: string): DashboardData {
+  return {
+    context: { context_id: context },
+    links: { records: `/api/dashboard/contexts/${context}/records` },
+  } as DashboardData;
+}
+
+function records(id: number, page = 1): RecordsData {
+  return {
+    page,
+    page_count: 3,
+    page_size: 20,
+    total: 60,
+    rows: [
+      {
+        defect_id: id,
+        defect_date: '2024-01-03',
+        product_id: 1,
+        product_name: 'Product A',
+        production_line: 'Line-1',
+        severity: 'Minor',
+        defect_type: 'Surface',
+        defect_location: 'Component',
+        inspection_method: 'Manual',
+        repair_cost: 1,
+        cost_status: 'known',
+      },
+    ],
+  } as RecordsData;
+}
+
+export async function runDashboardRequestVerification() {
+  const host = document.createElement('div');
+  document.body.append(host);
+  const root = createRoot(host);
+  const originalFetch = window.fetch;
+  const environment = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean };
+  const previousActEnvironment = environment.IS_REACT_ACT_ENVIRONMENT;
+  environment.IS_REACT_ACT_ENVIRONMENT = true;
+  const requests: PendingRequest[] = [];
+  const commits: string[] = [];
+  const en = createI18n('en');
+  const stableNoop = () => {};
+  window.fetch = (input, init) =>
+    new Promise<Response>((resolve) => {
+      requests.push({ url: new URL(String(input), location.href), signal: init?.signal, resolve });
+    });
+
+  function CommitProbe() {
+    useLayoutEffect(() => {
+      commits.push(host.textContent ?? '');
+    });
+    return null;
+  }
+  const renderRecords = async (data: DashboardData, dateFilter?: string) => {
+    await act(async () => {
+      root.render(
+        <I18nScope locale="en">
+          <Records data={data} dateFilter={dateFilter} />
+          <CommitProbe />
+        </I18nScope>,
+      );
+    });
+  };
+  const settle = async (request: PendingRequest, value: unknown, status = 200) => {
+    await act(async () => {
+      request.resolve(new Response(JSON.stringify(value), { status }));
+    });
+  };
+  const click = async (label: string) => {
+    const button = [...host.querySelectorAll('button')].find(
+      (item) => item.getAttribute('aria-label') === label || item.textContent === label,
+    );
+    check(button && !button.disabled, `An enabled button exists: ${label}`);
+    await act(async () => {
+      button.focus();
+      button.click();
+    });
+  };
+  try {
+    const data = fixture('scope-a');
+    const before = JSON.stringify(data);
+    await renderRecords(data);
+    check(Number(requests.length) === 1, 'The initial scope requests exactly one page');
+    await settle(requests[0], records(101));
+    await click(en.t('ui.next_records_page'));
+    check(Number(requests.length) === 2, 'Moving to page two requests exactly one page');
+    check(requests[1].url.searchParams.get('page') === '2', 'The second request is page two');
+    await settle(requests[1], records(102, 2));
+
+    const beforeDate = requests.length;
+    await renderRecords(data, '2024-01-03');
+    check(
+      requests.length === beforeDate + 1,
+      `Changing the exact-date scope requests page one once; observed ${requests.length - beforeDate}`,
+    );
+    const dated = requests.at(-1)!;
+    check(dated.url.searchParams.get('page') === '1', 'A different date starts on page one');
+    check(dated.url.searchParams.get('defect_date') === '2024-01-03', 'The date reaches the API');
+    check(!host.textContent?.includes('#102'), 'The old page is hidden while the new date loads');
+    await settle(dated, records(103));
+    await click(en.t('ui.next_records_page'));
+    await settle(requests.at(-1)!, records(104, 2));
+
+    const beforeClear = requests.length;
+    await renderRecords(data);
+    check(requests.length === beforeClear + 1, 'Clearing the date requests page one once');
+    await settle(requests.at(-1)!, records(105));
+    const beforeSort = requests.length;
+    const sort = host.querySelector('select');
+    check(sort, 'Records provides its sorting control');
+    await act(async () => {
+      sort.value = 'repair_cost';
+      sort.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    check(requests.length === beforeSort + 1, 'Changing sorting requests only the selected sort');
+    check(
+      !host.textContent?.includes('#105'),
+      'The previous sort is hidden until replacement arrives',
+    );
+    const obsoleteSort = requests.at(-1)!;
+    await renderRecords(fixture('scope-b'));
+    check(obsoleteSort.signal?.aborted, 'Switching scopes cancels the obsolete sort request');
+    const currentScope = requests.at(-1)!;
+    await settle(currentScope, records(201));
+    await settle(obsoleteSort, records(999));
+    check(host.textContent?.includes('#201'), 'The current scope remains visible');
+    check(!host.textContent?.includes('#999'), 'An aborted late response cannot replace the scope');
+
+    await click(en.t('ui.next_records_page'));
+    await settle(requests.at(-1)!, { detail: 'Synthetic records failure' }, 503);
+    check(
+      host.textContent?.includes('Synthetic records failure'),
+      'A failed page provides its error',
+    );
+    await click(en.t('ui.retry_records'));
+    check(!host.textContent?.includes('Synthetic records failure'), 'Retry clears the old failure');
+    await settle(requests.at(-1)!, records(202, 2));
+    check(host.textContent?.includes('#202'), 'Retry displays the requested page');
+
+    const beforeErrorScope = requests.length;
+    await renderRecords(fixture('scope-c'));
+    await settle(requests.at(-1)!, { detail: 'Old scope failure' }, 503);
+    const commitIndex = commits.length;
+    await renderRecords(fixture('scope-d'));
+    check(
+      commits.slice(commitIndex).every((text) => !text.includes('Old scope failure')),
+      'The new scope never commits an error belonging to the previous scope',
+    );
+    check(requests.length === beforeErrorScope + 2, 'Each replacement scope issues one request');
+    check(JSON.stringify(data) === before, 'Browsing records does not mutate the input context');
+
+    const tracePayload = (defectId: number) => ({
+      raw_records: [],
+      canonical_records: [{ defect_id: defectId }],
+      processed_records: [],
+      normalization_audit: [
+        { field: 'defect_id', raw_value: `raw-${defectId}`, processed_value: defectId },
+      ],
+      scenario_audit: [
+        { field: 'scenario', raw_value: `scenario-${defectId}`, processed_value: 'selected' },
+      ],
+      truncated: false,
+    });
+    const renderTrace = async (defectId: number) => {
+      await act(async () => {
+        root.render(
+          <I18nScope locale="en">
+            <RecordTrace
+              url="/api/dashboard/contexts/trace-fixture/trace"
+              defectId={defectId}
+              onClose={stableNoop}
+            />
+            <CommitProbe />
+          </I18nScope>,
+        );
+      });
+    };
+    await renderTrace(501);
+    await settle(requests.at(-1)!, tracePayload(501));
+    const beforeTraceChange = commits.length;
+    await renderTrace(502);
+    check(
+      commits.slice(beforeTraceChange).every((text) => !text.includes('"defect_id": 501')),
+      'Changing the trace never commits canonical data from the previous record',
+    );
+    const obsoleteTrace = requests.at(-1)!;
+    await renderTrace(503);
+    check(obsoleteTrace.signal?.aborted, 'Switching records cancels the obsolete trace request');
+    await settle(requests.at(-1)!, tracePayload(503));
+    await settle(obsoleteTrace, tracePayload(502));
+    check(host.textContent?.includes('"defect_id": 503'), 'The current trace remains visible');
+    check(
+      !host.textContent?.includes('"defect_id": 502'),
+      'An aborted trace cannot replace the selection',
+    );
+    const audit = host.querySelector('.record-trace tbody');
+    check(audit?.querySelectorAll('tr').length === 2, 'Both audit sources remain in the table');
+    check(
+      audit.textContent?.includes('raw-503') && audit.textContent?.includes('scenario-503'),
+      'Changing the selected record replaces the memoized field-decision rows',
+    );
+    check(
+      !audit.textContent?.includes('raw-501') && !audit.textContent?.includes('scenario-502'),
+      'Old or aborted field decisions cannot remain in the selected trace',
+    );
+
+    const focusData = fixture('trace-focus');
+    focusData.links.trace = '/api/dashboard/contexts/trace-focus/trace';
+    await renderRecords(focusData);
+    await settle(requests.at(-1)!, records(601));
+    const opener = host.querySelector<HTMLButtonElement>('.trace-button');
+    check(opener, 'The first page has a trace opener');
+    await click(en.t('ui.trace_record'));
+    await settle(requests.at(-1)!, tracePayload(601));
+    check(
+      document.activeElement === host.querySelector('.record-trace'),
+      'Opening a trace moves keyboard focus into its panel',
+    );
+    await click(en.t('ui.close_record_trace'));
+    check(document.activeElement === opener, 'Closing restores focus to a connected opener');
+    await click(en.t('ui.trace_record'));
+    await settle(requests.at(-1)!, tracePayload(601));
+    await click(en.t('ui.next_records_page'));
+    await settle(requests.at(-1)!, records(602, 2));
+    check(!opener.isConnected, 'Paging removes the original trace opener');
+    await click(en.t('ui.close_record_trace'));
+    check(
+      document.activeElement === host.querySelector('.table-scroll'),
+      `Closing after paging returns focus to the records region, not ${document.activeElement?.tagName}`,
+    );
+
+    const rankingData = {
+      analysis: {
+        kpis: { cohort_product_count: 1 },
+        products: { top: [], all: [], pareto_product_count_80pct: 1 },
+      },
+    } as unknown as DashboardData;
+    const renderRanking = async (locale: Locale, data = rankingData) => {
+      await act(async () => {
+        root.render(
+          <I18nScope locale={locale}>
+            <ProductRanking data={data} />
+          </I18nScope>,
+        );
+      });
+    };
+    await renderRanking('en');
+    await click(en.t('ui.event_count'));
+    check(
+      host.textContent?.includes('1 of 1 products in this scope account for at least 80%'),
+      'Event Pareto uses the selected backend cohort count',
+    );
+    await renderRanking('vi');
+    check(
+      host.textContent?.includes('1 trên 1 mã sản phẩm trong phạm vi này chiếm ít nhất 80%'),
+      'Event Pareto preserves the cohort and selected ranking across locale changes',
+    );
+    await renderRanking('vi', {
+      ...rankingData,
+      analysis: {
+        ...rankingData.analysis,
+        kpis: { ...rankingData.analysis.kpis, cohort_product_count: 7 },
+        products: { ...rankingData.analysis.products, pareto_product_count_80pct: 2 },
+      },
+    });
+    check(
+      host.textContent?.includes('2 trên 7 mã sản phẩm trong phạm vi này chiếm ít nhất 80%'),
+      'Event Pareto updates when the backend cohort changes',
+    );
+
+    let filterReads = 0;
+    const filters = new Proxy(initialFilters, {
+      get(target, key: keyof typeof initialFilters) {
+        filterReads++;
+        return target[key];
+      },
+    });
+    const renderDashboard = async (locale: Locale = 'en', appliedFilters: Filters = filters) => {
+      await act(async () => {
+        root.render(
+          <I18nScope locale={locale}>
+            <Dashboard
+              loading={false}
+              refreshing={false}
+              error=""
+              filters={appliedFilters}
+              onApply={stableNoop}
+              onRefresh={stableNoop}
+              onAnalyze={stableNoop}
+            />
+          </I18nScope>,
+        );
+      });
+    };
+    await renderDashboard();
+    filterReads = 0;
+    for (let index = 0; index < 5; index++) await renderDashboard();
+    check(
+      filterReads === 0,
+      `Unchanged parent updates should skip Dashboard; observed ${filterReads} filter reads`,
+    );
+    const unchangedDashboardFilterReads = filterReads;
+    await renderDashboard('vi');
+    check(
+      host.querySelector('h1')?.textContent === createI18n('vi').t('ui.dashboard_title'),
+      'A locale change still updates the memoized Dashboard',
+    );
+    await renderDashboard('vi', { ...initialFilters, start_month: '2024-02' });
+    check(
+      host.querySelector('.scope-summary strong')?.textContent?.includes('Tháng 2/2024'),
+      'A new filter scope still updates the memoized Dashboard',
+    );
+    return { requests: requests.length, unchangedDashboardFilterReads, passed: true };
+  } finally {
+    await act(async () => root.unmount());
+    host.remove();
+    window.fetch = originalFetch;
+    environment.IS_REACT_ACT_ENVIRONMENT = previousActEnvironment;
+  }
+}

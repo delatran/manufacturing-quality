@@ -12,6 +12,7 @@ import json
 import os
 import sys
 from collections.abc import Sequence
+from contextlib import suppress
 from pathlib import Path
 from typing import Any
 
@@ -143,54 +144,61 @@ class PythonSession:
     async def execute(self, code: str) -> dict[str, Any]:
         validate_code(code)
         async with self.lock:
-            process = await self._start()
-            stdin, stdout = process.stdin, process.stdout
-            if stdin is None or stdout is None:
-                raise RuntimeError("Python worker pipes are unavailable")
-            stdin.write((json.dumps({"code": code}) + "\n").encode())
-            await stdin.drain()
-            reader = asyncio.create_task(stdout.readline())
+            reader = None
             try:
-                import time
+                # A cancelled or failed write can already have dispatched code.
+                # Cover the complete exchange so its output cannot be mistaken
+                # for the next cell's result. None preserves unbounded runs.
+                async with asyncio.timeout(self.timeout_seconds):
+                    process = await self._start()
+                    stdin, stdout = process.stdin, process.stdout
+                    if stdin is None or stdout is None:
+                        raise RuntimeError("Python worker pipes are unavailable")
+                    stdin.write((json.dumps({"code": code}) + "\n").encode())
+                    await stdin.drain()
+                    monitor = None
+                    if self.memory_mb is not None:
+                        with suppress(ImportError):
+                            import psutil
 
-                started = time.monotonic()
-                while not reader.done():
-                    if (
-                        self.timeout_seconds is not None
-                        and time.monotonic() - started > self.timeout_seconds
-                    ):
-                        raise TimeoutError(
-                            "Python execution exceeded its time limit; session reset"
-                        )
-                    try:
-                        import psutil
-
-                        if (
-                            self.memory_mb is not None
-                            and psutil.Process(process.pid).memory_info().rss
-                            > self.memory_mb * 1024 * 1024
-                        ):
-                            raise MemoryError(
-                                "Python execution exceeded its memory limit; session reset"
-                            )
-                    except ImportError:
-                        pass
-                    await asyncio.wait({reader}, timeout=0.1)
-                line = reader.result()
+                            monitor = psutil.Process(process.pid)
+                    if monitor is None or self.memory_mb is None:
+                        line = await stdout.readline()
+                    else:
+                        reader = asyncio.create_task(stdout.readline())
+                        while not reader.done():
+                            if monitor.memory_info().rss > self.memory_mb * 1024 * 1024:
+                                raise MemoryError(
+                                    "Python execution exceeded its memory limit; session reset"
+                                )
+                            await asyncio.wait({reader}, timeout=0.1)
+                        line = reader.result()
                 if not line:
                     raise RuntimeError("Python worker exited; session state was reset")
                 return json.loads(line)
-            except BaseException:
-                reader.cancel()
-                await self.close()
+            except BaseException as error:
+                if reader is not None:
+                    reader.cancel()
+                try:
+                    # Kill before awaiting reader cleanup so a repeated Stop
+                    # cannot leave the child executing an abandoned cell.
+                    await self.close()
+                finally:
+                    if reader is not None:
+                        await asyncio.gather(reader, return_exceptions=True)
+                if isinstance(error, TimeoutError):
+                    raise TimeoutError(
+                        "Python execution exceeded its time limit; session reset"
+                    ) from error
                 raise
 
     async def close(self) -> None:
         process = self.process
-        if process and process.returncode is None:
-            process.kill()
-            await process.wait()
         self.process = None
+        if process and process.returncode is None:
+            with suppress(ProcessLookupError):
+                process.kill()
+            await process.wait()
 
     async def configure(self, run_dir: str | Path, input_paths: Sequence[str | Path]) -> None:
         """Switch output scope without discarding already computed Python variables."""
@@ -201,27 +209,33 @@ class PythonSession:
             self.input_paths = [str(Path(path).resolve()) for path in input_paths]
             process = self.process
             if process and process.returncode is None:
-                stdin, stdout = process.stdin, process.stdout
-                if stdin is None or stdout is None:
-                    raise RuntimeError("Python worker pipes are unavailable")
-                command = {
-                    "configure": {
-                        "artifact_dir": str(self.artifact_dir),
-                        "input_paths": self.input_paths,
-                    }
-                }
-                stdin.write((json.dumps(command) + "\n").encode())
-                await stdin.drain()
-                response = json.loads(
-                    await asyncio.wait_for(stdout.readline(), self.timeout_seconds)
-                )
-                if not response.get("ok"):
-                    raise RuntimeError("Could not switch Python run scope")
+                try:
+                    async with asyncio.timeout(self.timeout_seconds):
+                        stdin, stdout = process.stdin, process.stdout
+                        if stdin is None or stdout is None:
+                            raise RuntimeError("Python worker pipes are unavailable")
+                        command = {
+                            "configure": {
+                                "artifact_dir": str(self.artifact_dir),
+                                "input_paths": self.input_paths,
+                            }
+                        }
+                        stdin.write((json.dumps(command) + "\n").encode())
+                        await stdin.drain()
+                        response = json.loads(await stdout.readline())
+                        if not response.get("ok"):
+                            raise RuntimeError("Could not switch Python run scope")
+                except BaseException:
+                    # Scope admission or its acknowledgement is uncertain. A
+                    # fresh worker must start in the requested scope next time.
+                    await self.close()
+                    raise
 
 
 def _worker(config: dict[str, Any]) -> None:
     import contextlib
     import io
+    import tempfile
 
     # Isolated Python ignores PYTHONIOENCODING. The pipe protocol is UTF-8
     # regardless of the Windows console code page or the owner's locale.
@@ -322,6 +336,14 @@ def _worker(config: dict[str, Any]) -> None:
             if "configure" in command:
                 artifact = Path(command["configure"]["artifact_dir"]).resolve()
                 inputs = {Path(path).resolve() for path in command["configure"]["input_paths"]}
+                # Libraries such as openpyxl reuse tempfile's cached directory.
+                # Move temporary writes with the artifact scope before ACK; the
+                # parent discards this worker if any part of setup fails.
+                temporary = artifact / ".tmp"
+                temporary.mkdir(exist_ok=True)
+                for name in ("TMPDIR", "TEMP", "TMP"):
+                    os.environ[name] = str(temporary)
+                tempfile.tempdir = None
                 namespace["ARTIFACT_DIR"] = str(artifact)
                 namespace["INPUT_PATHS"] = [str(path) for path in inputs]
                 os.chdir(artifact)

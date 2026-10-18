@@ -513,7 +513,7 @@ def bounded_result(
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     projection = source_projection(entry) if projection is None else projection
     projection_bytes = len(canonical(projection).encode("utf-8")) if projection else 0
-    for page_size in (5, 3, 1):
+    for page_size in range(5, 0, -1):
         value, omitted = focused_result(entry, page_size, projection=projection)
         numbers = {
             number["path"]: number

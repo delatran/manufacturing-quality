@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import re
 from calendar import month_abbr, month_name
+from collections.abc import Callable
+from datetime import date
 from typing import Any
 
 from .evidence import canonical
@@ -91,9 +93,14 @@ def unit_scale_descriptor(entry: dict[str, Any], path: str) -> dict[str, Any] | 
 
 
 def numeric_role(entry: dict[str, Any], path: str) -> str:
-    """Distinguish declared identities, parameters and unit scales from measures."""
+    """Distinguish declared identities and numeric settings from measures."""
     if entry.get("execution_kind") not in {"bounded_analysis", "canonical_receipt_import"}:
         return "measurement"
+    if (
+        entry.get("tool") == "analysis_compare"
+        and path == "$.decomposition.known_cost_reconciliation.display_decimal_places"
+    ):
+        return "display_precision"
     if unit_scale_descriptor(entry, path) is not None:
         return "unit_scale"
     if path.rpartition(".")[2] in {"product_id", "defect_id"} or re.fullmatch(
@@ -184,10 +191,60 @@ def source_contexts(entry: dict[str, Any], path: str = "") -> list[dict[str, Any
     return contexts
 
 
-def typed_calendar_text(
-    text: str, entries: dict[str, dict[str, Any]]
-) -> tuple[str, list[dict[str, Any]]]:
-    """Bind a whole natural calendar range before partial date labels are masked."""
+def _half_period_ranges(entry: dict[str, Any]) -> set[tuple[str, str]]:
+    """Read only an enabled query's exact, contiguous partition of its frozen scope."""
+    result = entry.get("result")
+    if (
+        entry.get("tool") != "analysis_query"
+        or entry.get("execution_kind") != "bounded_analysis"
+        or not isinstance(result, dict)
+        or result.get("ok") is not True
+    ):
+        return set()
+    analysis = result.get("analysis")
+    halves = analysis.get("period_halves") if isinstance(analysis, dict) else None
+    if not isinstance(halves, dict) or halves.get("enabled") is not True:
+        return set()
+    first, second = halves.get("first"), halves.get("second")
+    if not isinstance(first, dict) or not isinstance(second, dict):
+        return set()
+    first_months, second_months = first.get("months"), second.get("months")
+    if (
+        not isinstance(first_months, list)
+        or not isinstance(second_months, list)
+        or not first_months
+        or len(first_months) != len(second_months)
+    ):
+        return set()
+    contexts = source_contexts(entry)
+    if len(contexts) != 1:
+        return set()
+    scope = contexts[0]["filters"]
+    months = first_months + second_months
+    if months[0] != scope.get("start_month") or months[-1] != scope.get("end_month"):
+        return set()
+    positions = []
+    for month in months:
+        if not isinstance(month, str) or not re.fullmatch(r"\d{4}-\d{2}", month):
+            return set()
+        try:
+            value = date.fromisoformat(month + "-01")
+        except ValueError:
+            return set()
+        positions.append(value.year * 12 + value.month)
+    if any(last != first + 1 for first, last in zip(positions, positions[1:], strict=False)):
+        return set()
+    return {(first_months[0], first_months[-1]), (second_months[0], second_months[-1])}
+
+
+def calendar_text_checker(
+    entries: dict[str, dict[str, Any]],
+) -> Callable[[str], tuple[str, list[dict[str, Any]]]]:
+    """Prepare calendar matching from one audit's frozen evidence snapshot.
+
+    The returned checker holds only derived periods and patterns, never the
+    ledger or its mutable entries. A new audit must prepare a new checker.
+    """
     periods = {
         (scope["start_month"], scope["end_month"])
         for entry in entries.values()
@@ -197,6 +254,8 @@ def typed_calendar_text(
         and re.fullmatch(r"\d{4}-(?:0[1-9]|1[0-2])", str(scope.get("end_month", "")))
         and scope["start_month"] <= scope["end_month"]
     }
+    for entry in entries.values():
+        periods.update(_half_period_ranges(entry))
     months = {
         word.casefold(): index
         for index in range(1, 13)
@@ -215,89 +274,105 @@ def typed_calendar_text(
             re.IGNORECASE,
         ),
     )
-    issues = []
 
-    def replace(match: re.Match[str]) -> str:
-        numeric = match["first"].isdigit()
-        first = int(match["first"]) if numeric else months[match["first"].casefold()]
-        last = int(match["last"]) if numeric else months[match["last"].casefold()]
-        start_year = match.groupdict().get("first_year") or match["year"]
-        period = (f"{start_year}-{first:02}", f"{match['year']}-{last:02}")
-        wrong_quantity = bool(
-            re.search(
-                r"(?:\b(?:event\s+count|count|repair\s+cost|cost)|số\s+sự\s+kiện|chi\s+phí)\s*(?:is|equals?|=|là|bằng)\s*$",
-                text[: match.start()],
-                re.IGNORECASE,
+    def check(text: str) -> tuple[str, list[dict[str, Any]]]:
+        issues: list[dict[str, Any]] = []
+
+        def replace(match: re.Match[str]) -> str:
+            numeric = match["first"].isdigit()
+            first = int(match["first"]) if numeric else months[match["first"].casefold()]
+            last = int(match["last"]) if numeric else months[match["last"].casefold()]
+            start_year = match.groupdict().get("first_year") or match["year"]
+            period = (f"{start_year}-{first:02}", f"{match['year']}-{last:02}")
+            wrong_quantity = bool(
+                re.search(
+                    r"(?:\b(?:event\s+count|count|repair\s+cost|cost)|số\s+sự\s+kiện|chi\s+phí)\s*(?:is|equals?|=|là|bằng)\s*$",
+                    text[: match.start()],
+                    re.IGNORECASE,
+                )
+                or re.match(
+                    r"\s*(?:local currency|USD|VND|EUR|dollars?|đồng|nội tệ)\b",
+                    text[match.end() :],
+                    re.IGNORECASE,
+                )
+                or numeric
+                and re.match(
+                    r"\s*(?:events?|counts?|rows?|sự kiện)\b",
+                    text[match.end() :],
+                    re.IGNORECASE,
+                )
             )
-            or re.match(
-                r"\s*(?:local currency|USD|VND|EUR|dollars?|đồng|nội tệ)\b",
-                text[match.end() :],
-                re.IGNORECASE,
-            )
-            or numeric
-            and re.match(
-                r"\s*(?:events?|counts?|rows?|sự kiện)\b",
-                text[match.end() :],
-                re.IGNORECASE,
-            )
+            if (
+                not 1 <= first <= 12
+                or not 1 <= last <= 12
+                or period not in periods
+                or wrong_quantity
+            ):
+                issues.append(
+                    {
+                        "kind": "unsupported_calendar_label",
+                        "label": match[0],
+                        "reason": "A calendar range labels a period, not a measured count or cost."
+                        if wrong_quantity
+                        else "The whole range must match an explicit frozen source period.",
+                        "available_periods": [list(value) for value in sorted(periods)],
+                    }
+                )
+            # Invalid ranges are also removed from the numeric projection, but their
+            # explicit error prevents a partial date label or equal count passing.
+            return " source-bound calendar range "
+
+        for pattern in patterns:
+            text = pattern.sub(replace, text)
+
+        def replace_months(match: re.Match[str]) -> str:
+            first, last = int(match["first"]), int(match["last"])
+            matches = [
+                period
+                for period in periods
+                if period[0][:4] == period[1][:4]
+                and int(period[0][5:]) == first
+                and int(period[1][5:]) == last
+            ]
+            if (
+                len(matches) != 1
+                or re.match(
+                    r"\s*(?:events?|counts?|rows?|sự kiện)\b", text[match.end() :], re.IGNORECASE
+                )
+                or re.search(
+                    r"(?:\b(?:count|repair\s+cost|cost)|số\s+sự\s+kiện|chi\s+phí)\s*"
+                    r"(?:is|equals?|=|là|bằng)\s*$",
+                    text[: match.start()],
+                    re.IGNORECASE,
+                )
+            ):
+                issues.append(
+                    {
+                        "kind": "unsupported_calendar_label",
+                        "label": match[0],
+                        "reason": "A yearless month range must identify one explicit frozen source period.",
+                        "available_periods": [list(value) for value in sorted(periods)],
+                    }
+                )
+            return " source-bound calendar range "
+
+        text = re.sub(
+            r"(?<!\w)tháng\s+(?P<first>\d{1,2})\s*(?:-|–|\bđến\b)\s*"
+            r"(?:tháng\s+)?(?P<last>\d{1,2})(?![\d/])",
+            replace_months,
+            text,
+            flags=re.IGNORECASE,
         )
-        if not 1 <= first <= 12 or not 1 <= last <= 12 or period not in periods or wrong_quantity:
-            issues.append(
-                {
-                    "kind": "unsupported_calendar_label",
-                    "label": match[0],
-                    "reason": "A calendar range labels a period, not a measured count or cost."
-                    if wrong_quantity
-                    else "The whole range must match an explicit frozen source period.",
-                    "available_periods": [list(value) for value in sorted(periods)],
-                }
-            )
-        # Invalid ranges are also removed from the numeric projection, but their
-        # explicit error prevents a partial date label or equal count passing.
-        return " source-bound calendar range "
+        return text, issues
 
-    for pattern in patterns:
-        text = pattern.sub(replace, text)
+    return check
 
-    def replace_months(match: re.Match[str]) -> str:
-        first, last = int(match["first"]), int(match["last"])
-        matches = [
-            period
-            for period in periods
-            if period[0][:4] == period[1][:4]
-            and int(period[0][5:]) == first
-            and int(period[1][5:]) == last
-        ]
-        if (
-            len(matches) != 1
-            or re.match(
-                r"\s*(?:events?|counts?|rows?|sự kiện)\b", text[match.end() :], re.IGNORECASE
-            )
-            or re.search(
-                r"(?:\b(?:count|repair\s+cost|cost)|số\s+sự\s+kiện|chi\s+phí)\s*"
-                r"(?:is|equals?|=|là|bằng)\s*$",
-                text[: match.start()],
-                re.IGNORECASE,
-            )
-        ):
-            issues.append(
-                {
-                    "kind": "unsupported_calendar_label",
-                    "label": match[0],
-                    "reason": "A yearless month range must identify one explicit frozen source period.",
-                    "available_periods": [list(value) for value in sorted(periods)],
-                }
-            )
-        return " source-bound calendar range "
 
-    text = re.sub(
-        r"(?<!\w)tháng\s+(?P<first>\d{1,2})\s*(?:-|–|\bđến\b)\s*"
-        r"(?:tháng\s+)?(?P<last>\d{1,2})(?![\d/])",
-        replace_months,
-        text,
-        flags=re.IGNORECASE,
-    )
-    return text, issues
+def typed_calendar_text(
+    text: str, entries: dict[str, dict[str, Any]]
+) -> tuple[str, list[dict[str, Any]]]:
+    """Bind a whole natural calendar range before partial date labels are masked."""
+    return calendar_text_checker(entries)(text)
 
 
 _REPAIR_CRITERION = (

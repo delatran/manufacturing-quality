@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Expand, Minimize2, X } from 'lucide-react';
+import { Expand, Maximize2, Minimize2, X } from 'lucide-react';
 import type { Locale } from './i18n';
 
 export default function AnswerChart({
@@ -48,7 +48,7 @@ export default function AnswerChart({
         }}
       >
         <Expand size={15} aria-hidden="true" />
-        {vi ? 'Xem biểu đồ lớn' : 'Expand chart'}
+        {vi ? 'Phóng to biểu đồ' : 'Expand chart'}
       </button>
       {open &&
         portalRoot &&
@@ -67,7 +67,11 @@ export default function AnswerChart({
             <div className="answer-chart-header">
               <h2 id={titleId}>{alt}</h2>
               <button type="button" onClick={() => setActualSize((value) => !value)}>
-                <Minimize2 size={16} aria-hidden="true" />
+                {actualSize ? (
+                  <Minimize2 size={16} aria-hidden="true" />
+                ) : (
+                  <Maximize2 size={16} aria-hidden="true" />
+                )}
                 {actualSize
                   ? vi
                     ? 'Vừa màn hình'

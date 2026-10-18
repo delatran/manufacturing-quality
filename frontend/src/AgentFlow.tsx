@@ -83,6 +83,10 @@ function extractRationale(command: string | undefined): string | undefined {
 }
 
 type MicroKpi = { label: string; value: string };
+const microKpiFormatters = {
+  en: new Intl.NumberFormat('en-US', { maximumFractionDigits: 20 }),
+  vi: new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 20 }),
+};
 
 function formatKpiLabel(key: string, locale: string): string {
   const viLabels: Record<string, string> = {
@@ -118,10 +122,10 @@ function formatKpiLabel(key: string, locale: string): string {
   return key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function extractMicroKpis(step: FlowCall, locale: string): MicroKpi[] {
-  if (step.status !== 'completed' || !step.output) return [];
+function extractMicroKpis(status: FlowCall['status'], output: string, locale: string): MicroKpi[] {
+  if (status !== 'completed' || !output) return [];
   try {
-    const data = JSON.parse(step.output);
+    const data = JSON.parse(output);
     if (!data || typeof data !== 'object' || data.ok === false) return [];
     const source = data.kpis && typeof data.kpis === 'object' ? data.kpis : data;
     // Only explicit business counts have an unambiguous display unit here.
@@ -130,9 +134,7 @@ function extractMicroKpis(step: FlowCall, locale: string): MicroKpi[] {
       .filter((key) => typeof source[key] === 'number' && Number.isFinite(source[key]))
       .map((key) => ({
         label: formatKpiLabel(key, locale),
-        value: new Intl.NumberFormat(locale === 'vi' ? 'vi-VN' : 'en-US', {
-          maximumFractionDigits: 20,
-        }).format(source[key]),
+        value: microKpiFormatters[locale === 'vi' ? 'vi' : 'en'].format(source[key]),
       }));
   } catch {
     return [];
@@ -334,7 +336,11 @@ function CallStep({ step }: { step: FlowCall }) {
   const [receiptOpen, setReceiptOpen] = useState(false);
   const length = duration(step.durationMs);
   const rationale = step.rationale || extractRationale(step.command);
-  const microKpis = extractMicroKpis(step, locale);
+  // Streaming reprojects the whole run, including unchanged completed receipts.
+  const microKpis = useMemo(
+    () => extractMicroKpis(step.status, step.output, locale),
+    [step.status, step.output, locale],
+  );
 
   return (
     <li className={'flow-step is-call status-' + step.status}>
