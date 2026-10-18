@@ -235,6 +235,7 @@ class PythonSession:
 def _worker(config: dict[str, Any]) -> None:
     import contextlib
     import io
+    import mimetypes
     import tempfile
 
     # Isolated Python ignores PYTHONIOENCODING. The pipe protocol is UTF-8
@@ -251,6 +252,10 @@ def _worker(config: dict[str, Any]) -> None:
 
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
+
+    # Workbook readers initialize MIME metadata lazily from system files on
+    # POSIX. Resolve it before cell guards without admitting those paths later.
+    mimetypes.init()
 
     artifact = Path(config["artifact_dir"]).resolve()
     inputs = {Path(path).resolve() for path in config["input_paths"]}

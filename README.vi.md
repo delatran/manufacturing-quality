@@ -117,7 +117,7 @@ Trên macOS/Linux dùng `sh scripts/check.sh`. Lệnh này kiểm tra lockfile d
 
 ## Phân tích đề bài: Part 3
 
-Phạm vi: tháng 1–6/2024 theo canonical policy `canonical-v2`, dataset `dataset-4586b9cf07494f8c8481a2f8f8a578359fbab7c4c7435b06ccb7defef31fa515` và snapshot báo cáo `33cc3a616435735e314b5eb1`. Dữ liệu lỗi được lấy qua HTTP lúc `2026-10-18T20:02:23.655186+00:00`. Tiền tệ là **local currency (chưa xác định loại tiền)**. Số chưa làm tròn, định nghĩa và bằng chứng nguồn nằm trong [snapshot chuẩn](reports/canonical_snapshot.json); dashboard hiển thị đúng các số này.
+Phạm vi: tháng 1–6/2024 theo canonical policy `canonical-v2`, dataset `dataset-4586b9cf07494f8c8481a2f8f8a578359fbab7c4c7435b06ccb7defef31fa515` và snapshot báo cáo `5fb4c047808c71233216b53a`. Dữ liệu lỗi được lấy qua HTTP lúc `2026-10-18T21:11:49.395606+00:00`. Tiền tệ là **local currency (chưa xác định loại tiền)**. Số chưa làm tròn, định nghĩa và bằng chứng nguồn nằm trong [snapshot chuẩn](reports/canonical_snapshot.json); dashboard hiển thị đúng các số này.
 
 ### Phát hiện chính
 
@@ -232,7 +232,7 @@ Khi dùng hằng ngày, dashboard tĩnh vẫn bắt team Production tự phát h
 | Câu hỏi đào sâu vẫn cần người phân tích. | Tab Agent điều tra câu hỏi bằng đúng các metric của backend và đối chiếu mọi con số với receipt của công cụ. Đây là bản prototype: cần OpenAI key và bộ kiểm thử live chưa đạt toàn bộ ([AUDIT.md](AUDIT.md)). | Làm Agent đủ nhanh và ổn định cho dùng hằng ngày, sau đó để nó tự soạn bản điều tra cho mỗi cảnh báo để người phụ trách duyệt. |
 | Phát hiện không tự trở thành hành động. | Các khuyến nghị nêu hành động và vai trò phụ trách đề xuất. Giao diện hiện không có trình quản lý công việc theo dõi; bản ghi backend không chứng minh công việc đã được giao hay hoàn thành. | Theo dõi hành động khắc phục dùng chung, có hạn chót, escalation và đo trước/sau trên cùng định nghĩa. |
 | Dữ liệu đến muộn và thiếu. | Lấy dữ liệu qua HTTP và làm mới thủ công; lần làm mới lỗi hoặc dữ liệu cũ đều được gắn nhãn. | Nguồn MES/ERP có giám sát độ mới, bắt buộc ghi nhận đến cuối tháng và đủ chi phí. |
-| Tỷ lệ còn dựa trên giả định. | Cường độ tham chiếu dùng monthly_output cố định. Phép tính scenario ở backend và bảng so sánh trong báo cáo kiểm tra giả định về ngày và chi phí; Dashboard không có bộ điều khiển thử giả định. | Sản lượng thực và số đơn vị được kiểm theo sản phẩm, ca và lô, cùng máy và công đoạn, để chuyển cường độ thành tỷ lệ lỗi thật và kiểm chứng nguyên nhân. |
+| Tỷ lệ còn dựa trên giả định. | Cường độ tham chiếu dùng monthly_output cố định. Kịch bản ở backend và báo cáo này kiểm tra giả định về ngày và chi phí. Dashboard không có bảng thử giả định thủ công riêng; WebMCP có thể áp dụng các kịch bản ngày và chi phí hiện có qua bộ lọc Dashboard, kèm nhãn kịch bản hiển thị rõ. | Sản lượng thực và số đơn vị được kiểm theo sản phẩm, ca và lô, cùng máy và công đoạn, để chuyển cường độ thành tỷ lệ lỗi thật và kiểm chứng nguyên nhân. |
 
 Người phụ trách là vai trò đề xuất và mục tiêu là tạm thời; chưa có việc nào được giao và chưa đo được kết quả thực tế tại nhà máy.
 

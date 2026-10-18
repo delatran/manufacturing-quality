@@ -44,6 +44,14 @@ import {
 import { Records } from './DashboardRecords';
 import { shortMonth } from './dashboard-format';
 import type { Recommendation, IconComponent, Delta } from './dashboard-display-types';
+import {
+  buildDashboardWebMcpTools,
+  dashboardExportTarget,
+  fetchDashboardExport,
+  useCommittedDashboardState,
+} from './dashboard-webmcp';
+import type { DashboardExportKind, DashboardExportState, DashboardPanel } from './dashboard-webmcp';
+import { commitUi, throwIfAborted, useWebMcpTools } from './webmcp';
 
 const fields: {
   key: keyof Filters;
@@ -109,6 +117,7 @@ export default memo(function Dashboard({
   onAnalyze,
   canAnalyze = false,
   inspectionRequest,
+  visible = true,
 }: {
   data?: DashboardData;
   loading: boolean;
@@ -121,6 +130,7 @@ export default memo(function Dashboard({
   onAnalyze: (priority?: number) => void;
   canAnalyze?: boolean;
   inspectionRequest?: { id: number; panel: WorkspacePanel };
+  visible?: boolean;
 }) {
   const { t, tr, prose, number, percent, month, date, sourceLabel, download, locale } =
     useDashboardLanguage();
@@ -135,6 +145,164 @@ export default memo(function Dashboard({
   const recordsSection = useRef<HTMLElement>(null);
   const pendingRecordFilters = useRef<Filters | undefined>(undefined);
   const pendingScopeReturn = useRef<Filters | undefined>(undefined);
+  const [exportState, setExportState] = useState<DashboardExportState>();
+  const pendingExport = useRef<symbol | undefined>(undefined);
+  const getWebMcpState = useCommittedDashboardState({
+    data,
+    visible,
+    loading,
+    refreshing,
+    error,
+    locale,
+    recordsExpanded,
+    recordsDate,
+    evidencePriority,
+    exportState,
+  });
+
+  async function openDashboardPanel(
+    panel: DashboardPanel,
+    details: { priority?: number; defectDate?: string; setDate: boolean },
+    signal?: AbortSignal,
+  ) {
+    const expectedContext = getWebMcpState().data?.context.context_id;
+    await commitUi(() => {
+      if (panel === 'records') {
+        if (details.setDate) setRecordsDate(details.defectDate);
+        openRecords();
+      }
+      if (panel === 'evidence') setEvidencePriority(details.priority ?? 0);
+    }, signal);
+    const committed = getWebMcpState();
+    if (
+      !committed.visible ||
+      committed.loading ||
+      committed.refreshing ||
+      committed.data?.context.context_id !== expectedContext
+    )
+      throw new Error('The Dashboard changed before the requested section could be focused.');
+    const ids: Record<DashboardPanel, string> = {
+      overview: 'section-overview',
+      trend: 'section-trend',
+      warnings: 'section-warning',
+      location: 'section-location',
+      hotspots: 'section-hotspots',
+      cost: 'section-cost',
+      records: 'records-section',
+      evidence: 'scope-evidence',
+      exports: 'section-share',
+    };
+    const target = document.getElementById(ids[panel]);
+    if (!target || target.closest('[hidden]'))
+      throw new Error('The requested Dashboard section is no longer visible.');
+    await commitUi(() => {
+      if (target instanceof HTMLDetailsElement) target.open = true;
+      target.tabIndex = -1;
+      target.focus({ preventScroll: true });
+      target.scrollIntoView({ block: 'start' });
+    }, signal);
+  }
+
+  async function requestDashboardExport(
+    kind: DashboardExportKind,
+    contextId: string,
+    signal?: AbortSignal,
+  ) {
+    const current = getWebMcpState();
+    const bound = current.data;
+    if (
+      !bound ||
+      bound.context.context_id !== contextId ||
+      !current.visible ||
+      current.loading ||
+      current.refreshing
+    )
+      throw new Error(
+        'The Dashboard changed or is updating. Read the current view before exporting.',
+      );
+    dashboardExportTarget(bound, kind, current.locale, window.location.origin);
+    throwIfAborted(signal);
+    if (pendingExport.current)
+      throw new Error('A Dashboard download request is already in progress.');
+    const exportOperation = Symbol('dashboard-export');
+    pendingExport.current = exportOperation;
+    let requested = false;
+    try {
+      await openDashboardPanel('exports', { setDate: false }, signal);
+      await commitUi(
+        () => setExportState({ context_id: contextId, kind, status: 'preparing' }),
+        signal,
+      );
+      const result = await fetchDashboardExport(
+        bound,
+        kind,
+        current.locale,
+        window.location.origin,
+        signal,
+      );
+      const latest = getWebMcpState();
+      if (
+        latest.data?.context.context_id !== contextId ||
+        !latest.visible ||
+        latest.loading ||
+        latest.refreshing ||
+        latest.locale !== current.locale
+      )
+        throw new Error(
+          'The Dashboard changed while preparing the download. No file download was requested.',
+        );
+      await commitUi(() => {
+        const url = URL.createObjectURL(result.blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = result.receipt.filename;
+        anchor.hidden = true;
+        document.body.append(anchor);
+        try {
+          anchor.click();
+          requested = true;
+          setExportState({
+            context_id: contextId,
+            kind,
+            status: 'requested',
+            receipt: result.receipt,
+          });
+          if (pendingExport.current === exportOperation) pendingExport.current = undefined;
+        } finally {
+          anchor.remove();
+          window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
+        }
+      }, signal);
+      return result.receipt;
+    } catch (failure) {
+      if (!requested) {
+        try {
+          if (getWebMcpState().data?.context.context_id === contextId)
+            await commitUi(() =>
+              setExportState({
+                context_id: contextId,
+                kind,
+                status: 'failed',
+                error: failure instanceof Error ? failure.message : String(failure),
+              }),
+            );
+        } catch {
+          // A closed or replaced view must not receive a late export status.
+        }
+      }
+      throw failure;
+    } finally {
+      if (pendingExport.current === exportOperation) pendingExport.current = undefined;
+    }
+  }
+
+  useWebMcpTools(
+    buildDashboardWebMcpTools(getWebMcpState, {
+      openPanel: openDashboardPanel,
+      requestExport: requestDashboardExport,
+    }),
+    visible,
+  );
   useEffect(() => {
     const expected = pendingScopeReturn.current;
     if (
@@ -516,7 +684,29 @@ export default memo(function Dashboard({
       </section>
       {data && (
         <div className="dashboard-utilities" aria-label={t('ui.dashboard_utilities')}>
-          <details className="export-menu" id="section-share">
+          <details
+            className="export-menu"
+            id="section-share"
+            onClick={(event) => {
+              // Native links remain usable in browsers without the export receipt APIs.
+              if (!globalThis.crypto?.subtle || typeof URL.createObjectURL !== 'function') return;
+              if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+              const anchor = event.target instanceof Element ? event.target.closest('a') : null;
+              if (!anchor) return;
+              const kind =
+                anchor.href === new URL(download(data.links.export_csv), window.location.href).href
+                  ? 'filtered_csv'
+                  : data.links.quality_workbook &&
+                      anchor.href ===
+                        new URL(applicationUrl(data.links.quality_workbook), window.location.href)
+                          .href
+                    ? 'quality_workbook'
+                    : undefined;
+              if (!kind) return;
+              event.preventDefault();
+              void requestDashboardExport(kind, data.context.context_id).catch(() => {});
+            }}
+          >
             <summary>{t('ui.dashboard_exports')}</summary>
             <div className="export-menu-content">
               <p>{t('ui.dashboard_share_caption')}</p>
@@ -539,6 +729,21 @@ export default memo(function Dashboard({
                   />
                 )}
               </div>
+              {exportState?.context_id === data.context.context_id && (
+                <p
+                  className="refresh-feedback"
+                  role={exportState.status === 'failed' ? 'alert' : 'status'}
+                >
+                  {exportState.status === 'preparing'
+                    ? t('ui.dashboard_export_preparing')
+                    : exportState.status === 'failed'
+                      ? t('ui.dashboard_export_failed')
+                      : t('ui.dashboard_export_requested', {
+                          filename: exportState.receipt?.filename ?? '',
+                          bytes: number(exportState.receipt?.byte_length ?? 0),
+                        })}
+                </p>
+              )}
               <div className="source-check">
                 <span>{t('ui.last_source_check')}</span>
                 <time dateTime={data.status.last_attempt_at || data.context.fetched_at}>
@@ -1090,6 +1295,8 @@ export default memo(function Dashboard({
                       data={data}
                       dateFilter={recordsDate}
                       onClearDate={clearRecordsDate}
+                      visible={visible}
+                      available={!loading && !refreshing}
                     />
                   )}
                 </div>

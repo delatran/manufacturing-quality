@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import re
 import sqlite3
 import threading
 import uuid
@@ -22,6 +23,12 @@ _RUNS_QUERY = (
 )
 _EVENTS_QUERY = "SELECT * FROM events WHERE session_id=? AND id>? ORDER BY id"
 _UPLOADS_QUERY = "SELECT * FROM uploads WHERE session_id=? ORDER BY rowid"
+_ADMITTED_INSTRUCTION = (
+    "(steering.client_request_id IS NULL OR EXISTS ("
+    "SELECT 1 FROM prompt_requests WHERE prompt_requests.session_id=steering.session_id "
+    "AND prompt_requests.client_request_id=steering.client_request_id "
+    "AND prompt_requests.state='accepted'))"
+)
 
 
 def _finite_json_float(value: str) -> float:
@@ -54,6 +61,18 @@ def normalize_action_intent(value: str = "none") -> str:
 
 def utc_now() -> str:
     return datetime.now(UTC).isoformat()
+
+
+class PromptRequestConflict(ValueError):
+    """A caller reused a durable request identity for different input."""
+
+
+def validate_client_request_id(value: Any) -> str:
+    if not isinstance(value, str) or not re.fullmatch(
+        r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", value
+    ):
+        raise ValueError("client_request_id must be a canonical lowercase UUID")
+    return value
 
 
 class SessionStore:
@@ -108,6 +127,13 @@ class SessionStore:
             );
             CREATE INDEX IF NOT EXISTS steering_session ON steering(session_id, state, id);
             CREATE INDEX IF NOT EXISTS costs_run ON costs(run_id);
+            CREATE TABLE IF NOT EXISTS prompt_requests (
+                session_id TEXT NOT NULL, client_request_id TEXT NOT NULL,
+                request TEXT NOT NULL, receipt TEXT NOT NULL,
+                state TEXT NOT NULL CHECK(state IN ('reserved','accepted','rejected','uncertain')),
+                effects_started INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY(session_id, client_request_id)
+            );
         """)
         # Additive migrations preserve existing local conversations.
         reservation_columns = {
@@ -145,12 +171,17 @@ class SessionStore:
             )
         if "reply_to" not in steering_columns:
             self.db.execute("ALTER TABLE steering ADD COLUMN reply_to TEXT")
+        if "client_request_id" not in steering_columns:
+            self.db.execute("ALTER TABLE steering ADD COLUMN client_request_id TEXT")
         self.db.commit()
 
     def close(self) -> None:
         with self._lock:
             self.db.close()
             self._closed = True
+
+    def _checkpoint(self) -> None:
+        """CloudSessionStore synchronously snapshots admission before paid work."""
 
     def create_session(self) -> dict[str, Any]:
         sid = uuid.uuid4().hex
@@ -164,6 +195,99 @@ class SessionStore:
             found = self.db.execute("SELECT 1 FROM sessions WHERE id=?", (sid,)).fetchone()
         if found is None:
             raise KeyError(sid)
+
+    def reserve_prompt_request(
+        self, sid: str, client_request_id: str, request: dict[str, Any]
+    ) -> tuple[bool, dict[str, Any]]:
+        """Claim once across connections before any admission side effect."""
+        self.require_session(sid)
+        validate_client_request_id(client_request_id)
+        encoded = json.dumps(
+            request, sort_keys=True, ensure_ascii=False, separators=(",", ":"), allow_nan=False
+        )
+        receipt = {
+            "client_request_id": client_request_id,
+            "session_id": sid,
+            "status": "reserved",
+            "run_id": None,
+            "action": "steer" if request.get("steer_run_id") else "start",
+            "request": request,
+            "request_sha256": hashlib.sha256(encoded.encode("utf-8")).hexdigest(),
+            "created_at": utc_now(),
+            "replayed": False,
+        }
+        # A unique database key arbitrates even when another process has its
+        # own Python lock. Never replace a winning reservation or its payload.
+        with self._lock, self.db:
+            inserted = self.db.execute(
+                "INSERT INTO prompt_requests(session_id,client_request_id,request,receipt,state) "
+                "VALUES (?,?,?,?,'reserved') ON CONFLICT(session_id,client_request_id) DO NOTHING",
+                (sid, client_request_id, encoded, json.dumps(receipt, ensure_ascii=False)),
+            ).rowcount
+            row = self.db.execute(
+                "SELECT request,receipt FROM prompt_requests "
+                "WHERE session_id=? AND client_request_id=?",
+                (sid, client_request_id),
+            ).fetchone()
+            if row["request"] != encoded:
+                raise PromptRequestConflict(
+                    "This client_request_id already belongs to different prompt input"
+                )
+        self._checkpoint()
+        return bool(inserted), json.loads(row["receipt"])
+
+    def prompt_request(self, sid: str, client_request_id: str) -> dict[str, Any]:
+        self.require_session(sid)
+        validate_client_request_id(client_request_id)
+        with self._lock:
+            row = self.db.execute(
+                "SELECT receipt FROM prompt_requests WHERE session_id=? AND client_request_id=?",
+                (sid, client_request_id),
+            ).fetchone()
+        if row is None:
+            raise KeyError(client_request_id)
+        return json.loads(row["receipt"])
+
+    def mark_prompt_request_effects(self, sid: str, client_request_id: str, **details: Any) -> None:
+        """Record uncertainty before writing input or contacting a runtime."""
+        with self._lock, self.db:
+            receipt = {**self.prompt_request(sid, client_request_id), **details}
+            self.db.execute(
+                "UPDATE prompt_requests SET effects_started=1,receipt=? "
+                "WHERE session_id=? AND client_request_id=? AND state='reserved'",
+                (json.dumps(receipt, ensure_ascii=False), sid, client_request_id),
+            )
+        self._checkpoint()
+
+    def prompt_request_has_effects(self, sid: str, client_request_id: str) -> bool:
+        with self._lock:
+            row = self.db.execute(
+                "SELECT effects_started FROM prompt_requests "
+                "WHERE session_id=? AND client_request_id=?",
+                (sid, client_request_id),
+            ).fetchone()
+        if row is None:
+            raise KeyError(client_request_id)
+        return bool(row["effects_started"])
+
+    def finish_prompt_request(
+        self, sid: str, client_request_id: str, status: str, result: dict[str, Any]
+    ) -> dict[str, Any]:
+        if status not in {"accepted", "rejected", "uncertain"}:
+            raise ValueError("Invalid prompt admission result")
+        with self._lock, self.db:
+            receipt = self.prompt_request(sid, client_request_id)
+            if receipt["status"] != "reserved":
+                return receipt
+            receipt.update(result, status=status)
+            self.db.execute(
+                "UPDATE prompt_requests SET state=?,receipt=? "
+                "WHERE session_id=? AND client_request_id=? AND state='reserved'",
+                (status, json.dumps(receipt, ensure_ascii=False), sid, client_request_id),
+            )
+            receipt = self.prompt_request(sid, client_request_id)
+        self._checkpoint()
+        return receipt
 
     def runs(self, sid: str) -> list[dict[str, Any]]:
         with self._lock:
@@ -484,12 +608,14 @@ class SessionStore:
         language: str = "en",
         action_intent: str = "none",
         reply_to: dict[str, Any] | None = None,
+        *,
+        client_request_id: str | None = None,
     ) -> None:
         language = normalize_language(language)
         action_intent = normalize_action_intent(action_intent)
         with self._lock, self.db:
             self.db.execute(
-                "INSERT INTO steering(session_id,text,analysis_context_id,language,action_intent,reply_to) VALUES (?,?,?,?,?,?)",
+                "INSERT INTO steering(session_id,text,analysis_context_id,language,action_intent,reply_to,client_request_id) VALUES (?,?,?,?,?,?,?)",
                 (
                     sid,
                     text,
@@ -497,6 +623,7 @@ class SessionStore:
                     language,
                     action_intent,
                     json.dumps(reply_to, sort_keys=True) if reply_to is not None else None,
+                    client_request_id,
                 ),
             )
 
@@ -525,6 +652,7 @@ class SessionStore:
         with self._lock, self.db:
             rows = self.db.execute(
                 f"SELECT id,text FROM steering WHERE session_id=? AND {condition} "
+                f"AND {_ADMITTED_INSTRUCTION} "
                 "AND (target_run_id IS NULL OR target_run_id=?) "
                 "AND analysis_context_id IS ? AND language=? AND action_intent=? "
                 f"AND reply_to IS ?{selection} ORDER BY id",
@@ -551,6 +679,7 @@ class SessionStore:
         text: str,
         *,
         applied: bool,
+        client_request_id: str | None = None,
     ) -> int:
         """Persist same-run input without adding a future-run queue entry."""
         with self._lock, self.db:
@@ -562,8 +691,8 @@ class SessionStore:
             if run is None:
                 raise ValueError("This analysis has finished; send a new question instead")
             cursor = self.db.execute(
-                "INSERT INTO steering(session_id,text,state,run_id,target_run_id,analysis_context_id,language,action_intent) "
-                "VALUES (?,?,?,?,?,?,?,?)",
+                "INSERT INTO steering(session_id,text,state,run_id,target_run_id,analysis_context_id,language,action_intent,client_request_id) "
+                "VALUES (?,?,?,?,?,?,?,?,?)",
                 (
                     sid,
                     text,
@@ -573,6 +702,7 @@ class SessionStore:
                     run["analysis_context_id"],
                     run["language"],
                     run["action_intent"],
+                    client_request_id,
                 ),
             )
             assert cursor.lastrowid is not None
@@ -594,7 +724,8 @@ class SessionStore:
     def next_queued_run(self, sid: str) -> dict | None:
         with self._lock:
             row = self.db.execute(
-                "SELECT id,analysis_context_id,language,action_intent,reply_to FROM steering WHERE session_id=? AND state='queued' ORDER BY id LIMIT 1",
+                "SELECT id,analysis_context_id,language,action_intent,reply_to FROM steering "
+                f"WHERE session_id=? AND state='queued' AND {_ADMITTED_INSTRUCTION} ORDER BY id LIMIT 1",
                 (sid,),
             ).fetchone()
         if row is None:
@@ -610,7 +741,9 @@ class SessionStore:
         with self._lock:
             return (
                 self.db.execute(
-                    "SELECT 1 FROM steering WHERE session_id=? AND state='queued' LIMIT 1", (sid,)
+                    "SELECT 1 FROM steering WHERE session_id=? AND state='queued' "
+                    f"AND {_ADMITTED_INSTRUCTION} LIMIT 1",
+                    (sid,),
                 ).fetchone()
                 is not None
             )
@@ -679,9 +812,22 @@ class SessionStore:
 
     def recover_interrupted(self) -> list[dict]:
         with self._lock:
+            pending = self.db.execute(
+                "SELECT session_id,client_request_id FROM prompt_requests WHERE state='reserved'"
+            ).fetchall()
             rows = self.db.execute(
                 "SELECT id,session_id,language FROM runs WHERE state='running'"
             ).fetchall()
+        for request in pending:
+            self.finish_prompt_request(
+                request["session_id"],
+                request["client_request_id"],
+                "uncertain",
+                {
+                    "code": "admission_interrupted",
+                    "message": "The app restarted before admission was confirmed. This request will not be replayed automatically.",
+                },
+            )
         events = []
         for row in rows:
             self.finish_run(row["id"], "interrupted")

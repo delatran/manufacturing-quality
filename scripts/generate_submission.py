@@ -729,8 +729,8 @@ def render_analysis(report: dict[str, Any], language: str) -> str:
                     "Tỷ lệ còn dựa trên giả định.",
                 ),
                 pick(
-                    "Reference intensity uses static monthly_output. Backend scenario calculations and the comparison in this report test date and cost assumptions; the Dashboard has no what-if controls.",
-                    "Cường độ tham chiếu dùng monthly_output cố định. Phép tính scenario ở backend và bảng so sánh trong báo cáo kiểm tra giả định về ngày và chi phí; Dashboard không có bộ điều khiển thử giả định.",
+                    "Reference intensity uses static monthly_output. Backend scenarios and this report test date and cost assumptions. The Dashboard has no dedicated manual what-if panel; WebMCP can apply its existing date and cost scenarios through the Dashboard filters, with a visible scenario badge.",
+                    "Cường độ tham chiếu dùng monthly_output cố định. Kịch bản ở backend và báo cáo này kiểm tra giả định về ngày và chi phí. Dashboard không có bảng thử giả định thủ công riêng; WebMCP có thể áp dụng các kịch bản ngày và chi phí hiện có qua bộ lọc Dashboard, kèm nhãn kịch bản hiển thị rõ.",
                 ),
                 pick(
                     "Actual output and inspected units by product, shift and lot, plus machine and process step, to turn intensities into defect rates and test causes.",

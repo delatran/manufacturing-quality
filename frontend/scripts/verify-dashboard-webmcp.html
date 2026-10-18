@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Isolated Dashboard WebMCP verification</title>
+  <body>
+    <h1>Isolated Dashboard WebMCP verification</h1>
+    <p>
+      The registry, HTTP data and download click are synthetic. This does not test native WebMCP or
+      a saved file.
+    </p>
+    <button id="run" type="button">Run isolated verification</button>
+    <pre id="result" role="status">Not run.</pre>
+    <button id="regression" type="button">Run existing records and trace regressions</button>
+    <pre id="regression-result" role="status">Not run.</pre>
+    <script type="module">
+      import { runDashboardWebMcpVerification } from './verify-dashboard-webmcp-browser.tsx';
+      import {
+        runDashboardRequestVerification,
+        profileDashboardTrace,
+      } from './verify-dashboard-performance.tsx';
+      document.querySelector('#run').addEventListener('click', async (event) => {
+        event.currentTarget.disabled = true;
+        const result = document.querySelector('#result');
+        result.textContent = 'Running...';
+        try {
+          result.textContent = JSON.stringify(await runDashboardWebMcpVerification(), null, 2);
+        } catch (error) {
+          result.textContent = JSON.stringify(
+            { passed: false, error: error.message, stack: error.stack },
+            null,
+            2,
+          );
+        }
+        document.querySelector('#run').disabled = false;
+      });
+      document.querySelector('#regression').addEventListener('click', async (event) => {
+        event.currentTarget.disabled = true;
+        const result = document.querySelector('#regression-result');
+        const descriptor = Object.getOwnPropertyDescriptor(document, 'modelContext');
+        Object.defineProperty(document, 'modelContext', { configurable: true, value: undefined });
+        result.textContent = 'Running...';
+        try {
+          const requests = await runDashboardRequestVerification();
+          const small = await profileDashboardTrace({ rawCount: 1, auditCount: 6 });
+          const large = await profileDashboardTrace({ rawCount: 20, auditCount: 2000 });
+          result.textContent = JSON.stringify(
+            { passed: true, synthetic: true, requests, small, large },
+            null,
+            2,
+          );
+        } catch (error) {
+          result.textContent = JSON.stringify(
+            { passed: false, error: error.message, stack: error.stack },
+            null,
+            2,
+          );
+        } finally {
+          if (descriptor) Object.defineProperty(document, 'modelContext', descriptor);
+          else delete document.modelContext;
+          document.querySelector('#regression').disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>

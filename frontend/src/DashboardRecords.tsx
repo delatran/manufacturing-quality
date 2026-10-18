@@ -5,20 +5,20 @@ import { useDashboardLanguage } from './dashboard-language';
 import RecordTrace from './RecordTrace';
 import type { DashboardData, RecordsData } from './dashboard-types';
 import { Panel } from './DashboardLayout';
-
-const sortOptions = [
-  'defect_date',
-  'defect_id',
-  'product_name',
-  'production_line',
-  'severity',
-  'repair_cost',
-] as const;
+import {
+  buildDashboardRecordsTools,
+  recordSortOptions as sortOptions,
+  useCommittedDashboardState,
+} from './dashboard-webmcp';
+import type { DashboardTraceState } from './dashboard-webmcp';
+import { useWebMcpTools } from './webmcp';
 
 type RecordsProps = {
   data: DashboardData;
   dateFilter?: string;
   onClearDate?: () => void;
+  visible?: boolean;
+  available?: boolean;
 };
 
 export const Records = memo(function Records(props: RecordsProps) {
@@ -50,6 +50,8 @@ function ScopedRecords({
   onSort,
   direction,
   onDirection,
+  visible = true,
+  available = true,
 }: RecordsProps & {
   sort: string;
   onSort: (value: string) => void;
@@ -60,6 +62,7 @@ function ScopedRecords({
 
   const [page, setPage] = useState(1);
   const [tracedEvent, setTracedEvent] = useState<number>();
+  const [traceState, setTraceState] = useState<DashboardTraceState>();
   const recordsRegion = useRef<HTMLDivElement>(null);
   const closeTrace = useCallback(() => setTracedEvent(undefined), []);
   const [result, setResult] = useState<{
@@ -73,6 +76,33 @@ function ScopedRecords({
   const records = currentResult?.records;
   const error = currentResult?.error;
   const loading = currentResult === undefined;
+  const getWebMcpState = useCommittedDashboardState({
+    data,
+    visible,
+    available,
+    dateFilter,
+    page,
+    sort,
+    direction,
+    reload,
+    requestKey,
+    records,
+    error,
+    loading,
+    tracedEvent,
+    traceState,
+  });
+  useWebMcpTools(
+    buildDashboardRecordsTools(getWebMcpState, {
+      setView: (view) => {
+        onSort(view.sort);
+        onDirection(view.direction);
+        setPage(view.page);
+      },
+      openTrace: setTracedEvent,
+    }),
+    visible,
+  );
   useEffect(() => {
     const controller = new AbortController();
     getRecords(data.links.records, page, sort, direction, controller.signal, dateFilter)
@@ -227,6 +257,8 @@ function ScopedRecords({
           defectId={tracedEvent}
           onClose={closeTrace}
           fallbackFocusRef={recordsRegion}
+          contextId={data.context.context_id}
+          onStateChange={setTraceState}
         />
       )}
       <div className="pagination">

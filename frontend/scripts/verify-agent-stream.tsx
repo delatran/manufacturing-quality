@@ -9,6 +9,8 @@ import { initialFilters } from '../src/dashboard-types';
 import type { DashboardData } from '../src/dashboard-types';
 import type { Session, WorkspaceEvent } from '../src/types';
 import type { UiCommand } from '../src/workspace-state';
+import { canonicalPromptRequest, pendingPromptStorageKey } from '../src/agent-prompt-requests';
+import type { PromptRequest } from '../src/agent-prompt-requests';
 
 function check(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -48,13 +50,31 @@ export async function runAgentStreamVerification() {
   const draftKey = 'analyst.workspace.draft.v2';
   const savedSession = localStorage.getItem(sessionKey);
   const savedDraft = localStorage.getItem(draftKey);
+  const savedPending = localStorage.getItem(pendingPromptStorageKey);
   const environment = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean };
   const previousActEnvironment = environment.IS_REACT_ACT_ENVIRONMENT;
   environment.IS_REACT_ACT_ENVIRONMENT = true;
   localStorage.setItem(sessionKey, sessionId);
   localStorage.removeItem(draftKey);
+  localStorage.removeItem(pendingPromptStorageKey);
   const sockets: FixtureSocket[] = [];
   const sent: Record<string, unknown>[] = [];
+  const receiptEvent = (id: number, prompt: Record<string, unknown>, runId?: string) =>
+    event(
+      id,
+      'prompt_receipt',
+      {
+        client_request_id: prompt.client_request_id,
+        session_id: sessionId,
+        status: 'accepted',
+        run_id: runId ?? null,
+        action: prompt.steer_run_id ? 'steer' : 'start',
+        request: canonicalPromptRequest(prompt as PromptRequest),
+        request_sha256: 'a'.repeat(64),
+        replayed: false,
+      },
+      runId,
+    );
   const commands: string[] = [];
   let historicalReportReads = 0;
   const events: WorkspaceEvent[] = [];
@@ -221,16 +241,7 @@ export async function runAgentStreamVerification() {
       host.querySelector('.pending-message'),
       'Replaying an identical older question cannot acknowledge a new prompt.',
     );
-    await act(async () =>
-      sockets[0].receive(
-        event(51, 'message', {
-          role: 'user',
-          text: 'Repeated question',
-          analysis_context_id: context.context_id,
-          language: 'en',
-        }),
-      ),
-    );
+    await act(async () => sockets[0].receive(receiptEvent(51, sent[0])));
     await settle();
     check(
       !host.querySelector('.pending-message'),
@@ -335,7 +346,7 @@ export async function runAgentStreamVerification() {
       sent[1].language === 'en' && sent[1].analysis_context_id === context.context_id,
       'The source language and immutable context survive the page locale change.',
     );
-    await act(async () => sockets[1].receive(event(57, 'message', { ...sent[1], role: 'user' })));
+    await act(async () => sockets[1].receive(receiptEvent(57, sent[1])));
     await settle();
     check(!host.querySelector('.pending-message'), 'The follow-up admission is acknowledged.');
 
@@ -386,9 +397,7 @@ export async function runAgentStreamVerification() {
         sent[2].language === 'en',
       'Steering keeps the run context and language despite a different Dashboard and page locale.',
     );
-    await act(async () =>
-      sockets[1].receive(event(60, 'message', { ...sent[2], role: 'user' }, earlyRun)),
-    );
+    await act(async () => sockets[1].receive(receiptEvent(60, sent[2], earlyRun)));
     await settle();
     check(
       !host.querySelector('.pending-message') && !host.querySelector('textarea')?.disabled,
@@ -413,7 +422,7 @@ export async function runAgentStreamVerification() {
         sent[3].language === 'en',
       'The queued question retains its selected answer identity, scope, and language.',
     );
-    await act(async () => sockets[1].receive(event(61, 'message', { ...sent[3], role: 'user' })));
+    await act(async () => sockets[1].receive(receiptEvent(61, sent[3])));
     await settle();
     check(!host.querySelector('.pending-message'), 'Queued admission is acknowledged.');
 
@@ -448,9 +457,7 @@ export async function runAgentStreamVerification() {
         'Restored steering preserves a recorded context or explicit null and its language.',
       );
       await act(async () =>
-        restoredSocket.receive(
-          event(63, 'message', { ...restoredPrompt, role: 'user' }, restoredRunId),
-        ),
+        restoredSocket.receive(receiptEvent(63, restoredPrompt!, restoredRunId)),
       );
       await settle();
       check(
@@ -487,6 +494,8 @@ export async function runAgentStreamVerification() {
     else localStorage.setItem(sessionKey, savedSession);
     if (savedDraft === null) localStorage.removeItem(draftKey);
     else localStorage.setItem(draftKey, savedDraft);
+    if (savedPending === null) localStorage.removeItem(pendingPromptStorageKey);
+    else localStorage.setItem(pendingPromptStorageKey, savedPending);
     environment.IS_REACT_ACT_ENVIRONMENT = previousActEnvironment;
   }
 }

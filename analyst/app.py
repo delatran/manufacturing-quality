@@ -12,6 +12,7 @@ from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager, suppress
 from dataclasses import replace
 from datetime import UTC, datetime
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any
 from urllib.parse import quote
@@ -43,7 +44,12 @@ from .localization import (
     request_language,
     translate_text,
 )
-from .store import SessionStore, normalize_action_intent
+from .store import (
+    PromptRequestConflict,
+    SessionStore,
+    normalize_action_intent,
+    validate_client_request_id,
+)
 
 if TYPE_CHECKING:
     from .dashboard import AnalysisService
@@ -70,6 +76,7 @@ class Workspace:
         self.listeners: dict[str, set[asyncio.Queue[dict[str, Any]]]] = {}
         self.tasks: dict[str, asyncio.Task[None]] = {}
         self.active_run_ids: dict[str, str] = {}
+        self.scheduled_run_ids: set[str] = set()
         self.active_runtimes: dict[str, Any] = {}
         self.steering_closed: set[str] = set()
         self.toolkits: dict[str, AnalystTools] = {}
@@ -445,6 +452,40 @@ class Workspace:
             active.cancel()
         return {"cancel_requested": requested, "run_id": current_run}
 
+    def _reconcile_unstarted_run(self, sid: str, rid: str, task: asyncio.Task[None]) -> None:
+        # asyncio cancellation before a coroutine's first step cannot execute
+        # its cleanup. Keyed admission already created this durable run row.
+        if rid not in self.scheduled_run_ids:
+            return
+        self.scheduled_run_ids.discard(rid)
+        if not task.cancelled():
+            return
+        cancelled = sid in self.user_cancelled
+        self.user_cancelled.discard(sid)
+        state = "cancelled" if cancelled else "interrupted"
+        self.store.finish_run(rid, state)
+        if self.active_run_ids.get(sid) == rid:
+            self.active_run_ids.pop(sid)
+        language = self.store.run_language(rid)
+        event = self.store.emit(
+            sid,
+            rid,
+            "status",
+            {
+                "state": state,
+                "language": language,
+                "label": translate_text(
+                    "Analysis cancelled; saved evidence is retained"
+                    if cancelled
+                    else "The app is stopping; saved evidence is retained",
+                    language,
+                ),
+            },
+        )
+        for queue in tuple(self.listeners.get(sid, set())):
+            with suppress(asyncio.QueueFull):
+                queue.put_nowait(event)
+
     async def emit(
         self, sid: str, rid: str | None, kind: str, data: dict[str, Any]
     ) -> dict[str, Any]:
@@ -688,6 +729,108 @@ class Workspace:
         action_intent: str = "none",
         steer_run_id: str | None = None,
         reply_to: dict[str, Any] | None = None,
+        client_request_id: str | None = None,
+        request_origin: str = "ui",
+    ) -> dict[str, Any]:
+        self.store.require_session(sid)
+        if not isinstance(request_origin, str) or request_origin not in {"ui", "webmcp"}:
+            raise ValueError("request_origin must be 'ui' or 'webmcp'")
+        if client_request_id is None:
+            if request_origin == "webmcp":
+                raise ValueError("WebMCP prompt submission requires client_request_id")
+            return await self._admit_prompt(
+                sid, text, analysis_context_id, language, action_intent, steer_run_id, reply_to
+            )
+        validate_client_request_id(client_request_id)
+        if not isinstance(text, str) or not text.strip():
+            raise ValueError("Enter a prompt")
+        if analysis_context_id is not None and (
+            not isinstance(analysis_context_id, str)
+            or not re.fullmatch(r"[a-f0-9]{16,64}", analysis_context_id)
+        ):
+            raise ValueError("Invalid dashboard context for this prompt")
+        if steer_run_id is not None and (
+            not isinstance(steer_run_id, str) or not re.fullmatch(r"[a-f0-9]{32}", steer_run_id)
+        ):
+            raise ValueError("Invalid active analysis for this detail")
+        if reply_to is not None and (
+            not isinstance(reply_to, dict)
+            or set(reply_to) != {"run_id", "message_id"}
+            or not isinstance(reply_to["run_id"], str)
+            or not re.fullmatch(r"[a-f0-9]{32}", reply_to["run_id"])
+            or type(reply_to["message_id"]) is not int
+            or reply_to["message_id"] <= 0
+        ):
+            raise ValueError("Invalid answer reference for this follow-up")
+        request = {
+            "text": text.strip(),
+            "analysis_context_id": analysis_context_id,
+            "language": normalize_language(language),
+            "action_intent": normalize_action_intent(action_intent),
+            "steer_run_id": steer_run_id,
+            "reply_to": dict(reply_to) if reply_to is not None else None,
+            "request_origin": request_origin,
+        }
+        # Only structural validation precedes this lookup. A completed run,
+        # provider stop, missing key or unavailable snapshot must not hide a
+        # previously recorded admission, nor cause the paid action to replay.
+        claimed, receipt = self.store.reserve_prompt_request(sid, client_request_id, request)
+        if not claimed:
+            receipt = {**receipt, "replayed": True}
+        else:
+            try:
+                result = await self._admit_prompt(
+                    sid,
+                    request["text"],
+                    analysis_context_id,
+                    language,
+                    action_intent,
+                    steer_run_id,
+                    reply_to,
+                    client_request_id=client_request_id,
+                )
+            except BaseException as error:
+                effects = self.store.prompt_request_has_effects(sid, client_request_id)
+                rejected = not effects and isinstance(error, (ValueError, SourceError))
+                message = (
+                    str(error)
+                    if rejected
+                    else "Admission could not be confirmed. The saved request will not be replayed automatically."
+                )
+                if self.settings.api_key:
+                    message = message.replace(self.settings.api_key, "[redacted]")
+                receipt = self.store.finish_prompt_request(
+                    sid,
+                    client_request_id,
+                    "rejected" if rejected else "uncertain",
+                    {
+                        "code": "admission_rejected" if rejected else "admission_unconfirmed",
+                        "message": message,
+                    },
+                )
+                if not isinstance(error, Exception):
+                    raise
+            else:
+                receipt = self.store.finish_prompt_request(
+                    sid,
+                    client_request_id,
+                    "accepted",
+                    {**result, "action": "steer" if result.get("steering") else "start"},
+                )
+        await self.emit(sid, receipt.get("run_id"), "prompt_receipt", receipt)
+        return receipt
+
+    async def _admit_prompt(
+        self,
+        sid: str,
+        text: str,
+        analysis_context_id: str | None = None,
+        language: str = "en",
+        action_intent: str = "none",
+        steer_run_id: str | None = None,
+        reply_to: dict[str, Any] | None = None,
+        *,
+        client_request_id: str | None = None,
     ) -> dict[str, Any]:
         self.store.require_session(sid)
         previous_language = self.store.latest_user_language(sid)
@@ -812,6 +955,10 @@ class Workspace:
             )
             if same_run and active_rid is not None:
                 self._steering_target(sid, active_rid)
+            if client_request_id is not None:
+                self.store.mark_prompt_request_effects(
+                    sid, client_request_id, run_id=active_rid if same_run else None
+                )
             await self.emit(
                 sid,
                 active_rid if same_run else None,
@@ -824,6 +971,7 @@ class Workspace:
                     "action_intent": action_intent,
                     **({"steer_run_id": active_rid} if same_run else {}),
                     **({"reply_to": reply_to} if reply_to is not None else {}),
+                    **({"client_request_id": client_request_id} if client_request_id else {}),
                 },
             )
             if active and not active.done():
@@ -847,9 +995,20 @@ class Workspace:
                     runtime = self.active_runtimes.get(sid)
                     steer = getattr(runtime, "steer", None)
                     instruction_row = self.store.record_run_instruction(
-                        sid, active_rid, text, applied=callable(steer)
+                        sid,
+                        active_rid,
+                        text,
+                        applied=callable(steer),
+                        client_request_id=client_request_id,
                     )
                     instruction_id = f"steering-{active_rid}-{instruction_row}"
+                    if client_request_id is not None:
+                        self.store.mark_prompt_request_effects(
+                            sid,
+                            client_request_id,
+                            run_id=active_rid,
+                            instruction_id=instruction_id,
+                        )
                     await self.emit(
                         sid,
                         active_rid,
@@ -859,7 +1018,13 @@ class Workspace:
                     steering_delivery = (active_rid, instruction_row, instruction_id, steer)
                 else:
                     self.store.queue_instruction(
-                        sid, text, analysis_context_id, language, action_intent, reply_to
+                        sid,
+                        text,
+                        analysis_context_id,
+                        language,
+                        action_intent,
+                        reply_to,
+                        client_request_id=client_request_id,
                     )
                     await self.emit(
                         sid,
@@ -890,10 +1055,35 @@ class Workspace:
                 self.active_contexts[sid] = analysis_context_id
                 self.active_languages[sid] = language
                 self.active_action_intents[sid] = action_intent
+                prepared_run = None
+                if client_request_id is not None:
+                    prepared_run = self.store.begin_run(
+                        sid, analysis_context_id, language, action_intent
+                    )
+                    self.store.mark_prompt_request_effects(
+                        sid, client_request_id, run_id=prepared_run[0]
+                    )
+                    self.active_run_ids[sid] = prepared_run[0]
                 self.tasks[sid] = asyncio.create_task(
-                    self._run(sid, text, analysis_context_id, language, action_intent, reply_to)
+                    self._run(
+                        sid,
+                        text,
+                        analysis_context_id,
+                        language,
+                        action_intent,
+                        reply_to,
+                        prepared_run=prepared_run,
+                    )
                 )
-                return {"queued": False}
+                if prepared_run is not None:
+                    self.scheduled_run_ids.add(prepared_run[0])
+                    self.tasks[sid].add_done_callback(
+                        partial(self._reconcile_unstarted_run, sid, prepared_run[0])
+                    )
+                return {
+                    "queued": False,
+                    **({"run_id": prepared_run[0]} if prepared_run is not None else {}),
+                }
         # Provider admission can take arbitrarily long. The target and durable
         # input are already captured; other sessions and terminal cleanup must
         # remain free to acquire the workspace admission lock while it runs.
@@ -1132,14 +1322,20 @@ class Workspace:
         action_intent: str = "none",
         reply_to: dict[str, Any] | None = None,
         queued_instruction_id: int | None = None,
+        *,
+        prepared_run: tuple[str, Path] | None = None,
     ) -> None:
+        if prepared_run is not None:
+            self.scheduled_run_ids.discard(prepared_run[0])
         from .memory import AnalystMemory
         from .runtime import AnalystRuntime
         from .tools import AnalystTools
 
         language = normalize_language(language)
         action_intent = normalize_action_intent(action_intent)
-        rid, directory = self.store.begin_run(sid, analysis_context_id, language, action_intent)
+        rid, directory = prepared_run or self.store.begin_run(
+            sid, analysis_context_id, language, action_intent
+        )
         self.active_run_ids[sid] = rid
         self.ui_bindings[rid] = analysis_context_id
         self.active_contexts[sid] = analysis_context_id
@@ -1811,6 +2007,16 @@ def create_app(
         except KeyError as error:
             raise HTTPException(404, "Session not found") from error
 
+    @application.get("/api/sessions/{sid}/prompt-requests/{client_request_id}")
+    def get_prompt_request(sid: str, client_request_id: str, response: Response) -> dict[str, Any]:
+        try:
+            response.headers["Cache-Control"] = "no-store"
+            return workspace.store.prompt_request(sid, client_request_id)
+        except KeyError as error:
+            raise HTTPException(404, "Session or prompt request not found") from error
+        except ValueError as error:
+            raise HTTPException(422, str(error)) from error
+
     @application.get("/api/sessions/{sid}/investigation/export.json")
     async def export_investigation(
         sid: str, version: int = Query(..., ge=0), language: str = "en"
@@ -1927,12 +2133,50 @@ def create_app(
             await file.close()
         return {"files": accepted}
 
+    def validate_prompt_body(body: Any, *, websocket: bool = False) -> None:
+        if not isinstance(body, dict):
+            raise ValueError("Prompt payload must be an object")
+        if body.get("client_request_id") is not None or body.get("request_origin") == "webmcp":
+            allowed = {
+                "text",
+                "analysis_context_id",
+                "language",
+                "locale",
+                "action_intent",
+                "steer_run_id",
+                "reply_to",
+                "client_request_id",
+                "request_origin",
+            }
+            if websocket:
+                allowed.add("type")
+            if set(body) - allowed:
+                raise ValueError("Unsupported prompt payload fields")
+
+    def prompt_error(error: ValueError, body: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "code": "idempotency_conflict"
+            if isinstance(error, PromptRequestConflict)
+            else "invalid_prompt",
+            "message": str(error),
+            **(
+                {"client_request_id": body["client_request_id"]}
+                if "client_request_id" in body
+                else {}
+            ),
+        }
+
     @application.post("/api/sessions/{sid}/prompt")
     async def prompt_http(sid: str, request: Request) -> dict[str, Any]:
         body = await request.json()
         if not isinstance(body, dict):
             raise HTTPException(422, "Prompt payload must be an object")
-        if settings.agent_mode == "unavailable" and workspace.runtime_factory is None:
+        if (
+            body.get("client_request_id") is None
+            and body.get("request_origin", "ui") == "ui"
+            and settings.agent_mode == "unavailable"
+            and workspace.runtime_factory is None
+        ):
             raise HTTPException(
                 503,
                 {
@@ -1942,14 +2186,19 @@ def create_app(
                 },
             )
         try:
+            validate_prompt_body(body)
             return await workspace.prompt(
                 sid,
-                str(body.get("text", "")),
+                body.get("text", "")
+                if body.get("client_request_id") is not None
+                else str(body.get("text", "")),
                 body.get("analysis_context_id"),
                 request_language(body),
                 body.get("action_intent", "none"),
                 body.get("steer_run_id"),
                 body.get("reply_to"),
+                body.get("client_request_id"),
+                body.get("request_origin", "ui"),
             )
         except SourceError as error:
             raise HTTPException(
@@ -1958,7 +2207,11 @@ def create_app(
         except KeyError as error:
             raise HTTPException(404, "Session not found") from error
         except ValueError as error:
-            raise HTTPException(422, str(error)) from error
+            keyed = "client_request_id" in body or body.get("request_origin") == "webmcp"
+            raise HTTPException(
+                409 if isinstance(error, PromptRequestConflict) else 422,
+                prompt_error(error, body) if keyed else str(error),
+            ) from error
 
     @application.websocket("/api/sessions/{sid}/ws")
     async def stream(websocket: WebSocket, sid: str) -> None:
@@ -1992,22 +2245,35 @@ def create_app(
         async def receive() -> None:
             while True:
                 message = await websocket.receive_json()
+                if not isinstance(message, dict):
+                    await workspace.emit(
+                        sid,
+                        None,
+                        "error",
+                        {"code": "invalid_prompt", "message": "Prompt payload must be an object"},
+                    )
+                    continue
                 if message.get("type") == "prompt":
                     # A received instruction belongs to its durable run. Losing
                     # the browser transport must not interrupt provider admission.
                     with anyio.CancelScope(shield=True):
                         try:
+                            validate_prompt_body(message, websocket=True)
                             await workspace.prompt(
                                 sid,
-                                str(message.get("text", "")),
+                                message.get("text", "")
+                                if message.get("client_request_id") is not None
+                                else str(message.get("text", "")),
                                 message.get("analysis_context_id"),
                                 request_language(message),
                                 message.get("action_intent", "none"),
                                 message.get("steer_run_id"),
                                 message.get("reply_to"),
+                                message.get("client_request_id"),
+                                message.get("request_origin", "ui"),
                             )
                         except ValueError as error:
-                            await workspace.emit(sid, None, "error", {"message": str(error)})
+                            await workspace.emit(sid, None, "error", prompt_error(error, message))
 
         try:
             async with anyio.create_task_group() as connection:

@@ -50,6 +50,37 @@ _MEASURE_ORDER = (
     "known_repair_cost_change",
     "reference_intensity_change",
 )
+_DECOMPOSITION = (
+    r"decomposition\.(?:production_line|category|product_id|defect_type|"
+    r"defect_location|severity|inspection_method)"
+)
+_COST_RECONCILIATION_PATHS = {
+    tool: re.compile(
+        prefix + r"\.known_cost_reconciliation\.(display_decimal_places|displayed_change_residual)"
+    )
+    for tool, prefix in {
+        "analysis_query": r"\$\.analysis\." + _DECOMPOSITION,
+        "dashboard_context": r"\$\." + _DECOMPOSITION,
+        "dashboard_compare_scope": r"\$\." + _DECOMPOSITION,
+        "analysis_compare": r"\$\.(?:decomposition|(?:baseline|comparison)\.analysis\."
+        + _DECOMPOSITION
+        + r")",
+        "scenario_compare": r"\$\.(?:canonical|selected)\.analysis\." + _DECOMPOSITION,
+    }.items()
+}
+
+
+def cost_reconciliation_field(entry: dict[str, Any], path: str) -> str | None:
+    """Keep canonical rounding metadata typed in every original report wrapper."""
+    tool = entry.get("tool")
+    if not isinstance(tool, str) or entry.get("execution_kind") not in {
+        "bounded_analysis",
+        "canonical_receipt_import",
+    }:
+        return None
+    pattern = _COST_RECONCILIATION_PATHS.get(tool)
+    match = pattern.fullmatch(path) if pattern is not None else None
+    return match[1] if match else None
 
 
 def source_at(value: Any, path: str) -> Any:
@@ -96,10 +127,7 @@ def numeric_role(entry: dict[str, Any], path: str) -> str:
     """Distinguish declared identities and numeric settings from measures."""
     if entry.get("execution_kind") not in {"bounded_analysis", "canonical_receipt_import"}:
         return "measurement"
-    if (
-        entry.get("tool") == "analysis_compare"
-        and path == "$.decomposition.known_cost_reconciliation.display_decimal_places"
-    ):
+    if cost_reconciliation_field(entry, path) == "display_decimal_places":
         return "display_precision"
     if unit_scale_descriptor(entry, path) is not None:
         return "unit_scale"

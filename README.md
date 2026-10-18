@@ -117,7 +117,7 @@ On macOS/Linux, run `sh scripts/check.sh`. This executes dependency lock checks,
 
 ## Case study analysis: Part 3
 
-Scope: January–June 2024 under canonical policy `canonical-v2`, dataset `dataset-4586b9cf07494f8c8481a2f8f8a578359fbab7c4c7435b06ccb7defef31fa515` and report snapshot `33cc3a616435735e314b5eb1`. The defect source was fetched over HTTP at `2026-10-18T20:02:23.655186+00:00`. Amounts are in **local currency (unspecified)**. Unrounded values, definitions and source receipts are in the [canonical snapshot](reports/canonical_snapshot.json); the dashboard shows the same numbers.
+Scope: January–June 2024 under canonical policy `canonical-v2`, dataset `dataset-4586b9cf07494f8c8481a2f8f8a578359fbab7c4c7435b06ccb7defef31fa515` and report snapshot `5fb4c047808c71233216b53a`. The defect source was fetched over HTTP at `2026-10-18T21:11:49.395606+00:00`. Amounts are in **local currency (unspecified)**. Unrounded values, definitions and source receipts are in the [canonical snapshot](reports/canonical_snapshot.json); the dashboard shows the same numbers.
 
 ### Key findings
 
@@ -232,7 +232,7 @@ Used every day, a static dashboard still leaves the Production team to notice ch
 | Follow-up questions need an analyst. | The Agent tab investigates questions with the same backend metrics and checks every number against tool receipts. It is a prototype: it needs an OpenAI key and its live acceptance suite has not fully passed ([AUDIT.md](AUDIT.md)). | Make it fast and reliable enough for daily use, then let it draft the investigation behind each alert automatically for a person to review. |
 | An insight does not become an action. | Recommendations describe proposed actions and owners. The current interface has no follow-up task manager; backend records alone do not establish that an action was assigned or completed. | Shared corrective-action tracking with due dates, escalation and before/after measurement on the same definitions. |
 | Data arrives late and incomplete. | HTTP fetch with manual refresh; stale or failed refreshes are labelled. | An MES/ERP feed with freshness monitoring, enforced month-end logging and cost capture. |
-| Rates rest on assumptions. | Reference intensity uses static monthly_output. Backend scenario calculations and the comparison in this report test date and cost assumptions; the Dashboard has no what-if controls. | Actual output and inspected units by product, shift and lot, plus machine and process step, to turn intensities into defect rates and test causes. |
+| Rates rest on assumptions. | Reference intensity uses static monthly_output. Backend scenarios and this report test date and cost assumptions. The Dashboard has no dedicated manual what-if panel; WebMCP can apply its existing date and cost scenarios through the Dashboard filters, with a visible scenario badge. | Actual output and inspected units by product, shift and lot, plus machine and process step, to turn intensities into defect rates and test causes. |
 
 Owners are proposed roles and targets are provisional; no assignment has been sent and no plant outcome has been measured.
 

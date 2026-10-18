@@ -1,10 +1,14 @@
 """Failed worker exchanges cannot leak a response into the next execution."""
 
 import asyncio
+import json
+import subprocess
+import sys
 from types import SimpleNamespace
 
 import pytest
-from analyst.execution import PythonSession
+from analyst import execution
+from analyst.execution import PythonSession, analysis_environment
 
 
 class WorkerProcess:
@@ -210,3 +214,55 @@ def test_failed_library_scope_setup_discards_worker_before_retrying_new_scope(tm
             await worker.close()
 
     asyncio.run(run())
+
+
+def test_workbook_mime_metadata_is_initialized_before_file_guards(tmp_path):
+    metadata = tmp_path / "system-mime.types"
+    metadata.write_text("application/x-example example\n", encoding="utf-8")
+    artifact = tmp_path / "artifacts"
+    artifact.mkdir()
+    config = {
+        "artifact_dir": str(artifact),
+        "input_paths": [],
+        "memory_mb": None,
+        "output_bytes": 100_000,
+    }
+    # Reproduce POSIX's external MIME database on every platform. The synthetic
+    # metadata is never admitted as a dataset or an artifact.
+    launcher = (
+        "import mimetypes, runpy, sys; "
+        "mimetypes.knownfiles = [sys.argv.pop(1)]; "
+        "sys.argv = sys.argv[1:]; runpy.run_path(sys.argv[0], run_name='__main__')"
+    )
+    commands = [
+        {
+            "code": "pd.DataFrame({'value': [41]}).to_excel("
+            "ARTIFACT_DIR + '/table.xlsx', engine='openpyxl', index=False)\n"
+            "result = int(pd.read_excel(ARTIFACT_DIR + '/table.xlsx').value.sum())"
+        },
+        {"code": f"result = open({str(metadata)!r}).read()"},
+    ]
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-I",
+            "-c",
+            launcher,
+            str(metadata),
+            execution.__file__,
+            "--worker",
+            json.dumps(config),
+        ],
+        input="".join(json.dumps(command) + "\n" for command in commands),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        cwd=artifact,
+        env=analysis_environment(artifact),
+        timeout=30,
+        check=True,
+    )
+    first, denied = [json.loads(line) for line in completed.stdout.splitlines()]
+    assert first["ok"] and first["value"] == 41, first
+    assert not denied["ok"] and "PermissionError" in denied["error"]
+    assert metadata.read_text(encoding="utf-8") == "application/x-example example\n"

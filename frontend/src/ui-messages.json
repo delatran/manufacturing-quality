@@ -1,5 +1,17 @@
 {
   "messages": {
+    "ui.dashboard_export_preparing": {
+      "en": "Preparing the Dashboard download...",
+      "vi": "Đang chuẩn bị tệp tải xuống từ Dashboard..."
+    },
+    "ui.dashboard_export_requested": {
+      "en": "Download requested: {filename} ({bytes} bytes). Check the browser downloads to confirm it was saved.",
+      "vi": "Đã yêu cầu tải: {filename} ({bytes} byte). Kiểm tra mục tải xuống của trình duyệt để xác nhận tệp đã được lưu."
+    },
+    "ui.dashboard_export_failed": {
+      "en": "The download could not be prepared. Check the current Dashboard view and try again.",
+      "vi": "Chưa chuẩn bị được tệp tải xuống. Kiểm tra phạm vi Dashboard hiện tại rồi thử lại."
+    },
     "ui.agent_steer_current_work": {
       "en": "Add instructions to this analysis",
       "vi": "Bổ sung hướng dẫn cho phân tích này"

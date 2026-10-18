@@ -1,17 +1,9 @@
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import { X } from 'lucide-react';
 import { request } from './api';
 import { useI18n } from './i18n';
-
-type Trace = {
-  raw_records: { source_row: number; raw: Record<string, unknown> }[];
-  canonical_records: Record<string, unknown>[];
-  processed_records: Record<string, unknown>[];
-  normalization_audit: Record<string, unknown>[];
-  scenario_audit: Record<string, unknown>[];
-  truncated: boolean;
-};
+import type { DashboardRecordTrace as Trace, DashboardTraceState } from './dashboard-webmcp';
 
 // Source values stay unchanged when only the surrounding interface language changes.
 const TraceJson = memo(function TraceJson({ value }: { value: unknown }) {
@@ -54,11 +46,15 @@ export default memo(function RecordTrace({
   defectId,
   onClose,
   fallbackFocusRef,
+  contextId,
+  onStateChange,
 }: {
   url: string;
   defectId: number;
   onClose: () => void;
   fallbackFocusRef?: RefObject<HTMLElement | null>;
+  contextId?: string;
+  onStateChange?: (state: DashboardTraceState) => void;
 }) {
   const { t, label, number } = useI18n();
   const [result, setResult] = useState<{ key: string; trace?: Trace; error?: string }>();
@@ -84,6 +80,8 @@ export default memo(function RecordTrace({
     const abort = new AbortController();
     void request<Trace>(`${url}?defect_id=${defectId}`, { signal: abort.signal })
       .then((value) => {
+        if (contextId && value.context && value.context.context_id !== contextId)
+          throw new Error('The trace response does not match the current Dashboard context.');
         if (!abort.signal.aborted) setResult({ key: requestKey, trace: value });
       })
       .catch((failure: unknown) => {
@@ -94,7 +92,16 @@ export default memo(function RecordTrace({
           });
       });
     return () => abort.abort();
-  }, [url, defectId, requestKey]);
+  }, [url, defectId, requestKey, contextId]);
+  useLayoutEffect(() => {
+    onStateChange?.({
+      url,
+      defectId,
+      status: trace ? 'ready' : error ? 'error' : 'loading',
+      trace,
+      error,
+    });
+  }, [url, defectId, trace, error, onStateChange]);
   return (
     <section
       ref={panel}

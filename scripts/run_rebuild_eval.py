@@ -1080,6 +1080,8 @@ async def run_live(args):
         mode="live",
         model="gpt-6-luna",
         reasoning_effort="medium",
+        # This historical protocol declares finite budgets and must opt into them.
+        unbounded_runs=False,
         state_dir=str(output / "workspace"),
         dev_api_budget_usd=available,
         max_cost_usd_per_run=limits["per_turn_usd"],

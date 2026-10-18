@@ -42,6 +42,8 @@ export default function AnswerChart({
         ref={trigger}
         aria-haspopup="dialog"
         aria-expanded={open}
+        aria-controls={open ? `${titleId}-dialog` : undefined}
+        data-answer-chart-src={src}
         onClick={() => {
           setActualSize(false);
           setOpen(true);
@@ -54,7 +56,9 @@ export default function AnswerChart({
         portalRoot &&
         createPortal(
           <dialog
+            id={`${titleId}-dialog`}
             className="answer-chart-dialog"
+            data-answer-chart-dialog=""
             ref={dialog}
             aria-labelledby={titleId}
             lang={language}
@@ -83,6 +87,7 @@ export default function AnswerChart({
               <button
                 type="button"
                 ref={closeButton}
+                data-answer-chart-close=""
                 onClick={() => setOpen(false)}
                 aria-label={vi ? 'Đóng biểu đồ' : 'Close chart'}
               >

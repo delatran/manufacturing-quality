@@ -12,6 +12,7 @@ from html import escape
 from typing import Any
 
 from .claim_feedback import (
+    cost_reconciliation_field,
     numeric_role,
     policy_parameter_usage,
     reference_context,
@@ -294,10 +295,7 @@ def metric_unit(entry: dict[str, Any], path: str) -> dict[str, str] | None:
             "unit": "decimal places",
             "definition": "Display rounding precision for cost reconciliation; not an observed measurement.",
         }
-    if (
-        entry.get("tool") == "analysis_compare"
-        and path == "$.decomposition.known_cost_reconciliation.displayed_change_residual"
-    ):
+    if cost_reconciliation_field(entry, path) == "displayed_change_residual":
         return {
             "kind": "cost_diagnostic",
             "metric": metric,

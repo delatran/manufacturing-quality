@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import json
+from dataclasses import fields
+
 import pytest
+from analyst.case_study.analytics import Scope
 from analyst.claim_feedback import numeric_role
 from analyst.report_output import metric_unit, with_unit_note
 from analyst.runtime import ReportDraft, audit_report
@@ -97,3 +101,82 @@ async def test_rounding_difference_does_not_invent_a_currency(actual6, language)
     audit = audit_report(report, actual6.tools.ledger)
     assert not audit["verified"], audit
     assert any("currency is unsupported" in error for error in audit["errors"])
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("language", ["en", "vi"])
+@pytest.mark.parametrize(
+    ("tool", "prefix"),
+    [
+        ("analysis_query", "$.analysis.decomposition.production_line"),
+        ("dashboard_context", "$.decomposition.production_line"),
+        ("dashboard_compare_scope", "$.decomposition.production_line"),
+        ("analysis_compare", "$.baseline.analysis.decomposition.production_line"),
+        ("analysis_compare", "$.comparison.analysis.decomposition.production_line"),
+        ("scenario_compare", "$.canonical.analysis.decomposition.production_line"),
+        ("scenario_compare", "$.selected.analysis.decomposition.production_line"),
+    ],
+)
+async def test_nested_rounding_metadata_retains_roles_after_detail_navigation(
+    actual6, language, tool, prefix
+):
+    empty_filters = {field.name: None for field in fields(Scope)}
+    if tool == "analysis_compare":
+        receipt_id = actual6.comparison["receipt_id"]
+    else:
+        arguments = (
+            {"section": "decomposition", "filters": empty_filters}
+            if tool == "analysis_query"
+            else {"scenario": "exclude_cost_10"}
+            if tool == "scenario_compare"
+            else {"filters": empty_filters}
+            if tool == "dashboard_compare_scope"
+            else {}
+        )
+        response = json.loads(await actual6.runtime._call(tool, arguments))
+        assert response["status"] == "completed", response
+        receipt_id = response["receipt_id"]
+    detail = json.loads(
+        await actual6.runtime._call(
+            "evidence_detail",
+            {
+                "receipt_id": receipt_id,
+                "path": prefix + ".known_cost_reconciliation",
+                "offset": 0,
+                "limit": 20,
+            },
+        )
+    )
+    assert detail["status"] == "completed", detail
+    evidence = {item["path"]: item for item in detail["numeric_evidence"]}
+    entry = next(
+        item for item in actual6.tools.ledger.records() if item["execution_id"] == receipt_id
+    )
+    for metric in ("display_decimal_places", "displayed_change_residual"):
+        path = prefix + ".known_cost_reconciliation." + metric
+        marker = "[value:" + evidence[path]["id"] + "]"
+        text = (
+            "Observed " + marker + " logged defect events."
+            if language == "en"
+            else "Đã ghi nhận " + marker + " sự kiện lỗi."
+        )
+        report = actual6.runtime.resolve_report(ReportDraft(report=text))
+        audit = audit_report(report, actual6.tools.ledger)
+        assert not audit["verified"], (tool, path, audit)
+        expected_kind = (
+            "display_precision" if metric == "display_decimal_places" else "cost_diagnostic"
+        )
+        assert metric_unit(entry, path)["kind"] == expected_kind
+        if metric == "display_decimal_places":
+            assert numeric_role(entry, path) == "display_precision"
+        else:
+            text = (
+                "The displayed cost-change rounding difference is " + marker + " local currency."
+                if language == "en"
+                else "Chênh lệch do làm tròn mức thay đổi chi phí hiển thị là "
+                + marker
+                + " nội tệ."
+            )
+            valid = actual6.runtime.resolve_report(ReportDraft(report=text))
+            assert audit_report(valid, actual6.tools.ledger)["verified"]
+    assert actual6.tools.ledger.verify_integrity() == []

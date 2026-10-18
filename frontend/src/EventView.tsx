@@ -78,6 +78,18 @@ export function resolveNumericClaim(claims: readonly NumericClaim[] | undefined,
   return paths.length === 1 ? paths[0] : undefined;
 }
 
+const citationSources = new WeakMap<HTMLButtonElement, string>();
+
+/** Bind opt-in evidence controls without serializing internal source paths into markup. */
+export function bindCitationSource(button: HTMLButtonElement, claimId: string): () => void {
+  citationSources.set(button, claimId);
+  return () => citationSources.delete(button);
+}
+
+export function citationSourceId(button: HTMLButtonElement): string | undefined {
+  return citationSources.get(button);
+}
+
 export function formatEvidenceValue(value: unknown, locale: string): string | undefined {
   if (value === undefined || value === null) return undefined;
   return typeof value === 'number' && Number.isFinite(value)
@@ -124,6 +136,13 @@ export const CitationBadge = memo(function CitationBadge({
   const copyTimeoutRef = useRef<number | null>(null);
   const popoverRef = useRef<HTMLSpanElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const captureButton = useCallback(
+    (element: HTMLButtonElement | null) => {
+      buttonRef.current = element;
+      if (element) return bindCitationSource(element, claimId);
+    },
+    [claimId],
+  );
   const popoverId = useId();
   const [position, setPosition] = useState({ left: 12, top: 12 });
   const [copyFailed, setCopyFailed] = useState(false);
@@ -298,9 +317,12 @@ export const CitationBadge = memo(function CitationBadge({
       }}
     >
       <button
-        ref={buttonRef}
+        ref={captureButton}
         type="button"
         className={`citation-badge ${isOpen ? 'is-active' : ''}`}
+        data-answer-citation=""
+        data-evidence-index={index}
+        data-evidence-pinned={isPinned}
         onClick={handleToggle}
         aria-expanded={isOpen}
         aria-haspopup="dialog"
@@ -577,7 +599,11 @@ function ReportTable({
   const count = new Intl.NumberFormat(isVi ? 'vi-VN' : 'en-US');
   const { t } = createI18n(language);
   return (
-    <div className={searchable ? 'report-table-explorer' : undefined}>
+    <div
+      className={searchable ? 'report-table-explorer' : undefined}
+      data-answer-table-rows={rows.length}
+      data-answer-table-visible-rows={visible.length}
+    >
       {searchable && (
         <div className="report-table-tools">
           <label className="report-table-search" htmlFor={`${id}-search`}>
@@ -882,7 +908,11 @@ function ArtifactChart({ event, language }: { event: WorkspaceEvent; language: L
   const src = artifactUrl(event.data.url);
   if (!chartArtifact(event) || !src) return null;
   return (
-    <figure className="agent-chart">
+    <figure
+      className="agent-chart"
+      data-answer-session-id={event.session_id}
+      data-answer-run-id={event.run_id}
+    >
       <AnswerChart
         src={src}
         alt={text(event.data.description) || t('ui.analysis_chart')}
@@ -998,7 +1028,14 @@ export const EventView = memo(function EventView({
       : undefined;
     const claims = Array.isArray(d.claims) ? (d.claims as NumericClaim[]) : undefined;
     return (
-      <article className={user ? 'message user-message' : 'message analyst-message'} lang={locale}>
+      <article
+        className={user ? 'message user-message' : 'message analyst-message'}
+        lang={locale}
+        tabIndex={user ? undefined : -1}
+        data-answer-session-id={user ? undefined : event.session_id}
+        data-answer-run-id={user ? undefined : event.run_id}
+        data-answer-message-id={user ? undefined : event.id}
+      >
         <EventLabel
           icon={
             user ? (

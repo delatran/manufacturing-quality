@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { LayoutDashboard, Search } from 'lucide-react';
 import Dashboard from './Dashboard';
@@ -9,6 +9,9 @@ import { useI18n } from './i18n';
 import { commandMatchesContext, isVisibleWorkspacePanel } from './workspace-state';
 import type { UiCommand, WorkspacePanel } from './workspace-state';
 import { applicationUrl } from './app-url';
+import { commitUi, throwIfAborted, useWebMcpTools, waitForUi } from './webmcp';
+import { buildWorkspaceTools } from './workspace-webmcp';
+import type { AnalysisStage, DashboardScopeResult, WorkspaceSnapshot } from './workspace-webmcp';
 
 type Tab = 'dashboard' | 'agent';
 const AgentWorkspace = lazy(() => import('./AgentWorkspace'));
@@ -23,7 +26,7 @@ export default function App() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [sourceChecked, setSourceChecked] = useState(false);
-  const [revision, setRevision] = useState(0);
+  const [analysisStage, setAnalysisStage] = useState<AnalysisStage>();
   const [prefill, setPrefill] = useState<{
     id: number;
     text: string;
@@ -32,14 +35,40 @@ export default function App() {
   }>();
   const requestVersion = useRef(0);
   const scopePending = useRef(false);
+  const mounted = useRef(false);
+  const dashboardAbort = useRef<AbortController | undefined>(undefined);
+  const prefillSequence = useRef(0);
   const currentContextId = useRef<string | undefined>(undefined);
-  currentContextId.current = data?.context.context_id;
-  const adoptedFilters = useRef<string | undefined>(undefined);
   const [panelRequest, setPanelRequest] = useState<{ id: number; panel: WorkspacePanel }>();
   const scroll = useRef<Record<Tab, number>>({ dashboard: 0, agent: 0 });
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
   const applied = data?.context.filters;
   const contextSummary = applied ? scope(applied) : undefined;
+  const committed = useRef<WorkspaceSnapshot>({
+    tab,
+    locale,
+    data,
+    loading,
+    refreshing,
+    error,
+    canAnalyze,
+    sourceChecked,
+    analysisStage,
+  });
+  useLayoutEffect(() => {
+    currentContextId.current = data?.context.context_id;
+    committed.current = {
+      tab,
+      locale,
+      data,
+      loading,
+      refreshing,
+      error,
+      canAnalyze,
+      sourceChecked,
+      analysisStage,
+    };
+  }, [tab, locale, data, loading, refreshing, error, canAnalyze, sourceChecked, analysisStage]);
   useEffect(() => {
     let disposed = false;
     void getConfig()
@@ -54,34 +83,67 @@ export default function App() {
       disposed = true;
     };
   }, []);
-  useEffect(() => {
-    if (adoptedFilters.current === JSON.stringify(filters)) {
-      adoptedFilters.current = undefined;
-      return;
-    }
-    const abort = new AbortController();
-    const version = ++requestVersion.current;
-    setLoading(true);
-    setError('');
-    getDashboard(filters, abort.signal)
-      .then((result) => {
-        if (version === requestVersion.current) {
+  const loadDashboard = useCallback(
+    async (
+      next: Filters,
+      refreshSource = false,
+      signal?: AbortSignal,
+    ): Promise<DashboardScopeResult> => {
+      throwIfAborted(signal);
+      dashboardAbort.current?.abort();
+      const abort = new AbortController();
+      dashboardAbort.current = abort;
+      const cancel = () => abort.abort();
+      signal?.addEventListener('abort', cancel, { once: true });
+      const version = ++requestVersion.current;
+      scopePending.current = true;
+      setFilters({ ...next });
+      setLoading(true);
+      setRefreshing(refreshSource);
+      setSourceChecked(false);
+      setError('');
+      try {
+        const result = refreshSource
+          ? await refreshDashboard(next)
+          : await getDashboard(next, abort.signal);
+        throwIfAborted(signal);
+        if (!mounted.current || version !== requestVersion.current) return { status: 'superseded' };
+        await commitUi(() => {
           setData(result);
+          setFilters(result.context.filters);
+          setLoading(false);
+          setRefreshing(false);
+          setSourceChecked(refreshSource && !result.status.stale);
           scopePending.current = false;
-        }
-      })
-      .catch((failure: unknown) => {
-        if (!abort.signal.aborted && version === requestVersion.current) {
-          // A failed selection leaves the previous applied context available.
+        }, signal);
+        if (!mounted.current || version !== requestVersion.current) return { status: 'superseded' };
+        return { status: 'applied', context_id: result.context.context_id };
+      } catch (failure) {
+        if (!mounted.current || version !== requestVersion.current) return { status: 'superseded' };
+        const message = failure instanceof Error ? failure.message : String(failure);
+        // Keep the last committed immutable context. Aborting cannot undo a completed commit.
+        await commitUi(() => {
+          setLoading(false);
+          setRefreshing(false);
           scopePending.current = false;
-          setError(failure instanceof Error ? failure.message : String(failure));
-        }
-      })
-      .finally(() => {
-        if (version === requestVersion.current) setLoading(false);
-      });
-    return () => abort.abort();
-  }, [filters, revision]);
+          if (!signal?.aborted && !abort.signal.aborted) setError(message);
+        });
+        throwIfAborted(signal);
+        return { status: 'failed', error: message };
+      } finally {
+        signal?.removeEventListener('abort', cancel);
+      }
+    },
+    [],
+  );
+  useEffect(() => {
+    mounted.current = true;
+    void loadDashboard(initialFilters);
+    return () => {
+      mounted.current = false;
+      dashboardAbort.current?.abort();
+    };
+  }, [loadDashboard]);
   const selectTab = useCallback(
     (next: Tab) => {
       scroll.current[tab] = window.scrollY;
@@ -93,11 +155,12 @@ export default function App() {
     },
     [tab],
   );
-  const applyManualFilters = useCallback((next: Filters) => {
-    scopePending.current = true;
-    requestVersion.current += 1;
-    setFilters(next);
-  }, []);
+  const applyManualFilters = useCallback(
+    (next: Filters) => {
+      void loadDashboard(next);
+    },
+    [loadDashboard],
+  );
   function keyTabs(event: KeyboardEvent, index: number) {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
@@ -105,26 +168,17 @@ export default function App() {
     tabs.current[next]?.focus();
     selectTab(next === 0 ? 'dashboard' : 'agent');
   }
-  const refresh = useCallback(async () => {
-    setRefreshing(true);
-    setError('');
-    setSourceChecked(false);
-    try {
-      const result = await refreshDashboard(filters);
-      setSourceChecked(!result.status?.stale);
-      setRevision((value) => value + 1);
-    } catch (failure) {
-      setError(failure instanceof Error ? failure.message : String(failure));
-    } finally {
-      setRefreshing(false);
-    }
-  }, [filters]);
+  const refresh = useCallback(
+    () => loadDashboard(data?.context.filters ?? filters, true),
+    [data, filters, loadDashboard],
+  );
   const analyze = useCallback(
     (priority?: number) => {
-      if (!data || loading || !canAnalyze) return;
+      if (!data || loading || refreshing || scopePending.current || !canAnalyze) return;
       const selected = data.analysis.recommendations.find((item) => item.priority === priority);
+      const id = ++prefillSequence.current;
       setPrefill({
-        id: Date.now(),
+        id,
         contextId: data.context.context_id,
         contextSummary: contextSummary || '',
         text: selected
@@ -135,10 +189,20 @@ export default function App() {
               value0: contextSummary,
             }),
       });
+      const staging: AnalysisStage = { id, context_id: data.context.context_id, status: 'pending' };
+      setAnalysisStage(staging);
       selectTab('agent');
+      return staging;
     },
-    [data, loading, canAnalyze, contextSummary, t, selectTab],
+    [data, loading, refreshing, canAnalyze, contextSummary, t, selectTab],
   );
+  const prefillApplied = useCallback((id: number, contextId: string, applied: boolean) => {
+    setAnalysisStage((current) =>
+      current?.id === id && current.context_id === contextId
+        ? { ...current, status: applied ? 'staged' : 'not_staged' }
+        : current,
+    );
+  }, []);
   const applyUiCommand = useCallback(
     async (command: UiCommand): Promise<boolean> => {
       if (
@@ -157,12 +221,13 @@ export default function App() {
         )
           return false;
         requestVersion.current += 1;
+        dashboardAbort.current?.abort();
         currentContextId.current = result.context.context_id;
-        adoptedFilters.current = JSON.stringify(result.context.filters);
         setData(result);
         setFilters(result.context.filters);
         setLoading(false);
         setError('');
+        setSourceChecked(false);
       }
       setPanelRequest({ id: Date.now(), panel: command.panel });
       selectTab('dashboard');
@@ -176,6 +241,67 @@ export default function App() {
       document.getElementById('dashboard-content')?.focus({ preventScroll: true }),
     );
   }, [selectTab]);
+  const navigate = useCallback(
+    async (next: Tab, signal?: AbortSignal) => {
+      await commitUi(() => selectTab(next), signal);
+      await waitForUi(() => {
+        if (!mounted.current || committed.current.tab !== next)
+          throw new Error('Workspace navigation was superseded.');
+        return next === 'dashboard' || document.querySelector('#agent-panel .agent-workspace')
+          ? true
+          : undefined;
+      }, signal);
+    },
+    [selectTab],
+  );
+  useWebMcpTools(
+    buildWorkspaceTools({
+      getSnapshot: () => committed.current,
+      navigate,
+      changeLanguage: (next, signal) => commitUi(() => setLocale(next), signal),
+      async applyScope(next, signal) {
+        const version = requestVersion.current;
+        await navigate('dashboard', signal);
+        if (version !== requestVersion.current || scopePending.current)
+          throw new Error('The Dashboard scope changed before the request could be applied.');
+        const result = await loadDashboard(next, false, signal);
+        if (result.status === 'applied' && committed.current.tab !== 'dashboard')
+          return { status: 'superseded', context_id: result.context_id };
+        return result;
+      },
+      async refreshScope(signal) {
+        const version = requestVersion.current;
+        const next = committed.current.data?.context.filters;
+        if (!next) throw new Error('The Dashboard has no applied scope.');
+        await navigate('dashboard', signal);
+        if (version !== requestVersion.current || scopePending.current)
+          throw new Error('The Dashboard scope changed before the source could be refreshed.');
+        const result = await loadDashboard(next, true, signal);
+        if (result.status === 'applied' && committed.current.tab !== 'dashboard')
+          return { status: 'superseded', context_id: result.context_id };
+        return result;
+      },
+      async stageAnalysis(priority, signal) {
+        let staging: AnalysisStage | undefined;
+        await commitUi(() => {
+          staging = analyze(priority);
+        }, signal);
+        if (!staging)
+          throw new Error('The Dashboard cannot stage an analysis while its scope changes.');
+        const stagedId = staging.id;
+        return waitForUi(() => {
+          if (!mounted.current) throw new Error('This workspace is no longer mounted.');
+          const current = committed.current.analysisStage;
+          if (current?.id !== stagedId) throw new Error('Analysis staging was superseded.');
+          if (committed.current.tab !== 'agent')
+            throw new Error('Analysis staging was interrupted by workspace navigation.');
+          if (current.context_id !== committed.current.data?.context.context_id)
+            throw new Error('The Dashboard scope changed during analysis staging.');
+          return current.status !== 'pending' ? current : undefined;
+        }, signal);
+      },
+    }),
+  );
   return (
     <div className="app-shell">
       <a className="skip-link" href={tab === 'dashboard' ? '#dashboard-content' : '#agent-panel'}>
@@ -245,6 +371,7 @@ export default function App() {
         hidden={tab !== 'dashboard'}
       >
         <Dashboard
+          visible={tab === 'dashboard'}
           data={data}
           loading={loading}
           refreshing={refreshing}
@@ -286,6 +413,7 @@ export default function App() {
               prefill={prefill}
               onUiCommand={applyUiCommand}
               onOpenDashboard={openDashboard}
+              onPrefillApplied={prefillApplied}
             />
           </Suspense>
         )}

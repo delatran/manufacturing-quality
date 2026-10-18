@@ -12,7 +12,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from .claim_feedback import numeric_role, source_contexts
+from .claim_feedback import numeric_role, source_at, source_contexts
 from .evidence import EvidenceLedger, canonical, sha256
 from .localization import display_number, normalize_language
 from .report_output import unit_note
@@ -26,11 +26,51 @@ _FIELDS = {
     "production_line": {"en": "Production line", "vi": "Chuyền sản xuất"},
     "category": {"en": "Product category", "vi": "Nhóm sản phẩm"},
 }
+_MONTH_NAMES = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+_MONTHLY_PATHS = {
+    "analysis_query": {"$.analysis.monthly"},
+    "dashboard_context": {"$.monthly"},
+    "dashboard_compare_scope": {"$.monthly"},
+    "analysis_compare": {"$.baseline.analysis.monthly", "$.comparison.analysis.monthly"},
+    "scenario_compare": {"$.canonical.analysis.monthly", "$.selected.analysis.monthly"},
+}
 
 
 def _field_label(key: str, language: str, terms: dict) -> str:
     # Unknown analytical names remain exact source keys rather than guessed prose.
     return _FIELDS.get(key, terms.get(key, {})).get(language, key)
+
+
+def _monthly_presentation(source: dict, arguments: dict, selected: list, language: str) -> dict:
+    """Bind localized month text to the original canonical month cells."""
+    tool = source.get("tool")
+    if (
+        not isinstance(tool, str)
+        or source.get("execution_kind") not in {"bounded_analysis", "canonical_receipt_import"}
+        or arguments["x"] not in {"month", "label"}
+        or arguments["path"] not in _MONTHLY_PATHS.get(tool, set())
+    ):
+        return {}
+    labels = []
+    for path, _ in selected:
+        month_path = path + ".month"
+        try:
+            month = source_at(source["result"], month_path)
+        except (KeyError, IndexError, TypeError, ValueError):
+            return {}
+        if not isinstance(month, str) or not re.fullmatch(r"[0-9]{4}-(?:0[1-9]|1[0-2])", month):
+            return {}
+        year, number = month.split("-")
+        labels.append(
+            {
+                "source_path": month_path,
+                "source_value": month,
+                "text": f"Tháng {int(number)}/{year}"
+                if language == "vi"
+                else f"{_MONTH_NAMES[int(number) - 1]} {year}",
+            }
+        )
+    return {"dimension": "month", "labels": labels}
 
 
 def _chart_binding(
@@ -102,6 +142,7 @@ def _chart_binding(
     glossary = Path(__file__).resolve().parents[1] / "knowledge" / "glossary.json"
     glossary_bytes = glossary.read_bytes() if glossary.is_file() else b""
     terms = json.loads(glossary_bytes)["terms"] if glossary_bytes else {}
+    presentation = _monthly_presentation(source, arguments, selected, language)
     binding = {
         "renderer": RENDERER,
         "renderer_sha256": sha256(Path(__file__).read_bytes()),
@@ -120,12 +161,14 @@ def _chart_binding(
         "rows_returned": len(points),
         "analysis_contexts": contexts,
         "axis_labels": {
-            "x": _field_label(x, language, terms),
+            "x": _field_label(presentation.get("dimension", x), language, terms),
             "y": _field_label(y, language, terms),
         },
         "unit_note": unit_note(claims, ledger, language),
         "null_policy": "gap",
     }
+    if presentation:
+        binding["label_presentation"] = presentation
     return {"id": sha256(canonical(binding))[:24], **binding}
 
 
@@ -153,7 +196,11 @@ def _png(chart: dict) -> bytes:
 
     language = chart["language"]
     points = chart["points"]
-    labels = [str(point["label"]) for point in points]
+    labels = (
+        [label["text"] for label in chart["label_presentation"]["labels"]]
+        if chart.get("label_presentation")
+        else [str(point["label"]) for point in points]
+    )
     values = [math.nan if point["value"] is None else point["value"] for point in points]
     positions = list(range(len(points)))
     height = max(3.8, min(16.0, len(points) * 0.34)) if chart["kind"] == "bar" else 4.8

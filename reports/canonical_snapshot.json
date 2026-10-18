@@ -29,10 +29,10 @@
     "analyst/case_study/scenarios.py": "7bbc5ff32e2ecad8f64e3462f28fc02dd4479f77a6030b3a871c257f19309f4f",
     "analyst/case_study/sensitivity.py": "5a6a5ae26e4b59ef5066d811b6109d0000542adfdabd36f477ca44f314bf7448",
     "analyst/case_study/workbook.py": "886046fa323bc2ababe55423501bcfa455f31cc3f8eafddf629c0f463a2d0013",
-    "scripts/generate_submission.py": "57abcb5c035433df71fa8bfeb512fc5a63a282554467aa37bcb915d0a70f152e"
+    "scripts/generate_submission.py": "28881b29c9840be1350a6ea4d088986604c87a52c6f7d9eb7259b7136b92c3f7"
   },
-  "report_id": "33cc3a616435735e314b5eb1",
-  "generated_at": "2026-10-18T20:02:25.473238+00:00",
+  "report_id": "5fb4c047808c71233216b53a",
+  "generated_at": "2026-10-18T21:11:51.370557+00:00",
   "source_receipts": {
     "defects": {
       "url": "https://raw.githubusercontent.com/phongtdt/RFID_Data-Analyst_Case-Study-Oct-2026/f6adf2451ac6297c1b749abc131cff8a46020dc9/mock-api/defect_records.json",
@@ -41,9 +41,9 @@
       "etag": "W/\"b91dc67e3d8dcf216d0e507667dfb9ce8b3f44f224867bd4592985f6d5fb0e1f\"",
       "bytes": 272164,
       "http_status": 200,
-      "fetched_at": "2026-10-18T20:02:24.333960+00:00",
+      "fetched_at": "2026-10-18T21:11:50.125862+00:00",
       "runtime_url": "https://raw.githubusercontent.com/phongtdt/RFID_Data-Analyst_Case-Study-Oct-2026/main/mock-api/defect_records.json",
-      "runtime_fetched_at": "2026-10-18T20:02:23.655186+00:00",
+      "runtime_fetched_at": "2026-10-18T21:11:49.395606+00:00",
       "schema": [
         "defect_id",
         "product_id",
@@ -62,7 +62,7 @@
       "etag": "W/\"7ad623d851f1e24f19582580f1e907f3149a80c6d8f6f930f7d54023a6b01882\"",
       "bytes": 3672,
       "http_status": 200,
-      "fetched_at": "2026-10-18T20:02:24.641961+00:00",
+      "fetched_at": "2026-10-18T21:11:50.456861+00:00",
       "schema": [
         "product_id",
         "product_name",
@@ -78,7 +78,7 @@
       "etag": "W/\"3a5c6fe8c22488854cb8767fb37422448b2e5a26616c29b0c3066fad0ce200c5\"",
       "bytes": 8222,
       "http_status": 200,
-      "fetched_at": "2026-10-18T20:02:24.960971+00:00",
+      "fetched_at": "2026-10-18T21:11:50.847856+00:00",
       "schema": [
         "Summary",
         "Issues Found",
@@ -136,7 +136,7 @@
           ]
         }
       },
-      "fetched_at": "2026-10-18T20:02:23.655186+00:00",
+      "fetched_at": "2026-10-18T21:11:49.395606+00:00",
       "http_status": 200,
       "http_attempts": 1,
       "master_sha256": "8772e8f0d0fbe1bf66b259859055e1742b066f91a31777b9f5e4630f606b9a86",
@@ -165,7 +165,7 @@
       "currency": "local currency (unspecified)",
       "stale": false,
       "last_error": null,
-      "last_attempt_at": "2026-10-18T20:02:23.655186+00:00",
+      "last_attempt_at": "2026-10-18T21:11:49.395606+00:00",
       "reference_output_note": "Reference-output intensity = linked logged defect events / (sum of monthly_output for all eligible master products × selected full months) × 1,000. Static reference output is not verified actual production; this is not a defect probability. Event filters change the numerator only.",
       "limitations": [
         "The supplied records are a historical January-June 2024 case study; refresh time is not event freshness.",
@@ -23173,7 +23173,7 @@
             ]
           }
         },
-        "fetched_at": "2026-10-18T20:02:23.655186+00:00",
+        "fetched_at": "2026-10-18T21:11:49.395606+00:00",
         "http_status": 200,
         "http_attempts": 1,
         "master_sha256": "8772e8f0d0fbe1bf66b259859055e1742b066f91a31777b9f5e4630f606b9a86",
@@ -23218,7 +23218,7 @@
         "currency": "local currency (unspecified)",
         "stale": false,
         "last_error": null,
-        "last_attempt_at": "2026-10-18T20:02:23.655186+00:00",
+        "last_attempt_at": "2026-10-18T21:11:49.395606+00:00",
         "reference_output_note": "Reference-output intensity = linked logged defect events / (sum of monthly_output for all eligible master products × selected full months) × 1,000. Static reference output is not verified actual production; this is not a defect probability. Event filters change the numerator only.",
         "limitations": [
           "The supplied records are a historical January-June 2024 case study; refresh time is not event freshness.",
@@ -24140,7 +24140,7 @@
             ]
           }
         },
-        "fetched_at": "2026-10-18T20:02:23.655186+00:00",
+        "fetched_at": "2026-10-18T21:11:49.395606+00:00",
         "http_status": 200,
         "http_attempts": 1,
         "master_sha256": "8772e8f0d0fbe1bf66b259859055e1742b066f91a31777b9f5e4630f606b9a86",
@@ -24182,7 +24182,7 @@
         "currency": "local currency (unspecified)",
         "stale": false,
         "last_error": null,
-        "last_attempt_at": "2026-10-18T20:02:23.655186+00:00",
+        "last_attempt_at": "2026-10-18T21:11:49.395606+00:00",
         "reference_output_note": "Reference-output intensity = linked logged defect events / (sum of monthly_output for all eligible master products × selected full months) × 1,000. Static reference output is not verified actual production; this is not a defect probability. Event filters change the numerator only.",
         "limitations": [
           "The supplied records are a historical January-June 2024 case study; refresh time is not event freshness.",
@@ -25101,7 +25101,7 @@
             ]
           }
         },
-        "fetched_at": "2026-10-18T20:02:23.655186+00:00",
+        "fetched_at": "2026-10-18T21:11:49.395606+00:00",
         "http_status": 200,
         "http_attempts": 1,
         "master_sha256": "8772e8f0d0fbe1bf66b259859055e1742b066f91a31777b9f5e4630f606b9a86",
@@ -25143,7 +25143,7 @@
         "currency": "local currency (unspecified)",
         "stale": false,
         "last_error": null,
-        "last_attempt_at": "2026-10-18T20:02:23.655186+00:00",
+        "last_attempt_at": "2026-10-18T21:11:49.395606+00:00",
         "reference_output_note": "Reference-output intensity = linked logged defect events / (sum of monthly_output for all eligible master products × selected full months) × 1,000. Static reference output is not verified actual production; this is not a defect probability. Event filters change the numerator only.",
         "limitations": [
           "The supplied records are a historical January-June 2024 case study; refresh time is not event freshness.",
