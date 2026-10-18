@@ -4,11 +4,13 @@ import asyncio
 import json
 from types import SimpleNamespace
 
+import httpx2
 import pytest
 from analyst.config import Settings
 from analyst.model import ResponseProtocolError
 from analyst.runtime import AnalystRuntime, FixtureModel
 from analyst.tools import AnalystTools
+from openai import ConflictError
 from test_managed_agents import (
     Node,
     Page,
@@ -29,6 +31,12 @@ class GatedStream:
 
     async def __aiter__(self):
         yield event("agent.session.created", session=session(status="in_progress"))
+        yield event(
+            "agent.session.turn.in_progress",
+            session_id="sess_real",
+            turn_id="turn_real",
+            turn=Node(id="turn_real", session_id="sess_real", status="in_progress"),
+        )
         self.ready.set()
         await self.finish.wait()
         yield event("agent.session.turn.completed", session_id="sess_real", turn_id="turn_real")
@@ -36,6 +44,87 @@ class GatedStream:
 
     async def close(self):
         pass
+
+
+def test_created_and_queued_turn_details_wait_for_same_run_boundary():
+    async def scenario():
+        class StartingStream(GatedStream):
+            def __init__(self):
+                super().__init__()
+                self.created = asyncio.Event()
+                self.queue = asyncio.Event()
+                self.queued = asyncio.Event()
+                self.start = asyncio.Event()
+
+            async def __aiter__(self):
+                yield event("agent.session.created", session=session(status="in_progress"))
+                self.created.set()
+                await self.queue.wait()
+                yield event(
+                    "agent.session.turn.created",
+                    session_id="sess_real",
+                    turn_id="turn_real",
+                    turn=Node(id="turn_real", session_id="sess_real", status="queued"),
+                )
+                yield event("agent.session.in_progress", session=session(status="in_progress"))
+                self.queued.set()
+                await self.start.wait()
+                yield event(
+                    "agent.session.turn.in_progress",
+                    session_id="sess_real",
+                    turn_id="turn_real",
+                    turn=Node(id="turn_real", session_id="sess_real", status="in_progress"),
+                )
+                self.ready.set()
+                await self.finish.wait()
+                yield event(
+                    "agent.session.turn.completed", session_id="sess_real", turn_id="turn_real"
+                )
+                yield event("agent.session.idle", session=session())
+
+        live = StartingStream()
+        sessions = Sessions([session()], [[message()]], [live])
+        lead, events = model_for(sessions)
+        lead.role = "Lead Analyst"
+
+        async def emit(*args):
+            events.append(args)
+
+        runtime = AnalystRuntime(Settings(mode="mock"), None, emit)
+        runtime.prompt = "Original question"
+        runtime.models = [lead]
+        consume = runtime.model_steering("Lead Analyst")
+        running = asyncio.create_task(request(lead))
+        try:
+            await asyncio.wait_for(live.created.wait(), 2)
+            created = await runtime.steer("Detail during creation", instruction_id="created")
+            assert created["accepted"] and created["mode"] == "same_run_boundary"
+            assert not sessions.inputs and not lead._live_submissions
+            live.queue.set()
+            await asyncio.wait_for(live.queued.wait(), 2)
+            queued = await runtime.steer("Detail while queued", instruction_id="queued")
+            assert queued["accepted"] and queued["mode"] == "same_run_boundary"
+            assert not sessions.inputs and not lead._live_submissions
+            live.start.set()
+            await asyncio.wait_for(live.ready.wait(), 2)
+            active = await runtime.steer("Detail during generation", instruction_id="active")
+            assert active["accepted"] and active["mode"] == "native_inflight"
+            assert active["session_id"] == "sess_real"
+            assert len(sessions.inputs) == 1
+            assert sessions.inputs[0]["idempotency_key"] == "active"
+            assert await consume() == ["Detail during creation", "Detail while queued"]
+            assert await consume() == []
+            assert not runtime._steering_pending()
+        finally:
+            live.queue.set()
+            live.start.set()
+            live.finish.set()
+            await running
+        assert len(sessions.creates) == 1
+        assert lead.history[1] == {"role": "user", "content": "Detail during generation"}
+        assert [kind for kind, _ in events].count("steering_submitted") == 1
+
+    asyncio.run(scenario())
 
 
 def test_native_detail_is_sent_before_generation_finishes_and_is_not_replayed():
@@ -127,6 +216,92 @@ def test_closed_native_boundary_does_not_start_unobserved_turn():
     asyncio.run(scenario())
 
 
+@pytest.mark.parametrize(
+    "kind",
+    [
+        "agent.session.turn.created",
+        "agent.session.requires_action",
+        "agent.session.idle",
+        "agent.session.failed",
+        "agent.session.turn.completed",
+        "agent.session.turn.failed",
+        "agent.session.turn.cancelled",
+    ],
+)
+def test_native_window_closes_before_publishing_nonrunning_phase(kind):
+    async def scenario():
+        sessions = Sessions([], [], [])
+        model, _ = model_for(sessions)
+        model._session_limit_cents = 30
+        observed = []
+
+        async def emit(event_kind, data):
+            if event_kind == "provider_phase" and data["provider_event"] == kind:
+                observed.append(await model.steer("Late detail", instruction_id="late"))
+
+        model.emit = emit
+        await model._observe(
+            Stream(
+                [
+                    event("agent.session.created", session=session(status="in_progress")),
+                    event(
+                        "agent.session.turn.in_progress",
+                        session_id="sess_real",
+                        turn_id="turn_real",
+                        turn=Node(id="turn_real", session_id="sess_real", status="in_progress"),
+                    ),
+                    event(kind, session_id="sess_real", turn_id="turn_real"),
+                ]
+            )
+        )
+        assert observed == [{"accepted": False, "mode": "same_run_boundary"}]
+        assert not sessions.inputs and not model._live_submissions
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize(
+    "turn",
+    [
+        {},
+        {"id": "different", "session_id": "sess_real", "status": "in_progress"},
+        {"id": "turn_real", "session_id": "different", "status": "in_progress"},
+        {"id": "turn_real", "session_id": "sess_real", "status": "queued"},
+        {
+            "id": "turn_real",
+            "session_id": "sess_real",
+            "status": "in_progress",
+            "subagent_id": "subagent_other",
+        },
+    ],
+)
+def test_native_window_requires_matching_running_root_turn(turn):
+    async def scenario():
+        sessions = Sessions([], [], [])
+        model, _ = model_for(sessions)
+        model._session_limit_cents = 30
+        await model._observe(
+            Stream(
+                [
+                    event("agent.session.created", session=session(status="in_progress")),
+                    event(
+                        "agent.session.turn.in_progress",
+                        session_id="sess_real",
+                        turn_id="turn_real",
+                        turn=turn,
+                    ),
+                ]
+            )
+        )
+        assert await model.steer("Early detail", instruction_id="early") == {
+            "accepted": False,
+            "mode": "same_run_boundary",
+        }
+        assert not sessions.inputs and not model._live_submissions
+
+    asyncio.run(scenario())
+
+
 def test_provider_idle_race_settles_new_turn_in_same_native_session():
     async def scenario():
         live = GatedStream()
@@ -152,20 +327,29 @@ def test_provider_idle_race_settles_new_turn_in_same_native_session():
     asyncio.run(scenario())
 
 
-def test_ambiguous_native_admission_is_not_automatically_replayed():
+@pytest.mark.parametrize("conflict", [False, True])
+def test_ambiguous_native_admission_is_not_automatically_replayed(conflict):
     async def scenario():
         sessions = Sessions([], [], [])
         calls = []
 
         async def lost_reply(*args, **kwargs):
             calls.append(kwargs)
+            if conflict:
+                raise ConflictError(
+                    "Current resource state conflicts with admission",
+                    response=httpx2.Response(
+                        409, request=httpx2.Request("POST", "https://api.openai.com/events")
+                    ),
+                    body={"code": "conflict_error"},
+                )
             raise ConnectionError("reply lost after dispatch")
 
         sessions.events.create = lost_reply
         model, _ = model_for(sessions)
         model.session_id = "sess_real"
         model._accepts_live_steering = True
-        with pytest.raises(ConnectionError):
+        with pytest.raises(ConflictError if conflict else ConnectionError):
             await model.steer("More detail", instruction_id="durable-key")
         with pytest.raises(ResponseProtocolError, match="unresolved"):
             await model.steer("More detail", instruction_id="durable-key")

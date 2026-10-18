@@ -190,8 +190,9 @@ class ManagedAgentsModel(AgentModel):
 
         A message racing with provider idle may start another native turn, but
         the final snapshot still settles that same session before returning to
-        Runner. Closed boundaries are revised by Runner instead of dispatching
-        unobserved work. An ambiguous HTTP result is never replayed implicitly.
+        Runner. Startup and closed boundaries are revised by Runner instead of
+        dispatching unobserved work. Session creation alone does not establish
+        a running turn. An ambiguous HTTP result is never replayed implicitly.
         """
         if self._cancel_requested:
             raise ResponseProtocolError("This managed session has stopped accepting instructions")
@@ -521,11 +522,40 @@ class ManagedAgentsModel(AgentModel):
                 continue
             if raw.get("turn_id"):
                 self.turn_id = raw["turn_id"]
+            kind = raw.get("type", "")
+            if kind == "agent.session.turn.in_progress":
+                turn = raw.get("turn") or {}
+                # A newly created session can already report in_progress while
+                # its first turn is still queued. Only an observed running root
+                # turn establishes a native steering window.
+                self._accepts_live_steering = (
+                    not self._cancel_requested
+                    and bool(self.session_id)
+                    and raw.get("session_id") == self.session_id
+                    and isinstance(self.turn_id, str)
+                    and bool(self.turn_id)
+                    and raw.get("turn_id") == self.turn_id
+                    and isinstance(turn, dict)
+                    and turn.get("id") == raw.get("turn_id")
+                    and turn.get("session_id") == self.session_id
+                    and turn.get("status") == "in_progress"
+                    and turn.get("subagent_id") is None
+                )
+            elif kind in {
+                "agent.session.created",
+                "agent.session.requires_action",
+                "agent.session.idle",
+                "agent.session.failed",
+                "agent.session.turn.created",
+                "agent.session.turn.completed",
+                "agent.session.turn.failed",
+                "agent.session.turn.cancelled",
+            }:
+                self._accepts_live_steering = False
             mapped = managed_trace(event)
             if mapped:
                 self._remember_public_summary(mapped)
                 await self.emit(*mapped)
-            kind = raw.get("type", "")
             if kind in {
                 "agent.session.turn.completed",
                 "agent.session.turn.failed",
@@ -582,6 +612,7 @@ class ManagedAgentsModel(AgentModel):
         snapshot; their partial deltas cannot safely be aligned across a gap.
         """
         while True:
+            self._accepts_live_steering = False
             stream = await self._read_retry(lambda: self.sessions.events.stream(self.session_id))
             buffered: asyncio.Queue[Any] = asyncio.Queue()
             ended = object()
@@ -626,6 +657,7 @@ class ManagedAgentsModel(AgentModel):
                 if not self._transient_read_error(error):
                     raise
             finally:
+                self._accepts_live_steering = False
                 reader.cancel()
                 with suppress(asyncio.CancelledError):
                     await reader
@@ -911,6 +943,7 @@ class ManagedAgentsModel(AgentModel):
         **kwargs,
     ):
         require_application_model(self.settings.model)
+        self._accepts_live_steering = False
         timeout = self.settings.run_limit("run_timeout_seconds")
         self._recovery_deadline = time.monotonic() + timeout if timeout is not None else None
         agent = self._agent_configuration(system_instructions, tools, output_schema, handoffs)
@@ -981,12 +1014,13 @@ class ManagedAgentsModel(AgentModel):
                 if self._session_limit_cents is not None:
                     create_args["spend_control"] = {"limit": self._session_limit_cents}
                 stream = await self.sessions.create(**create_args)
-            self._accepts_live_steering = True
             try:
                 recovered = not await self._observe(stream)
+                self._accepts_live_steering = False
             except (ResponseProtocolError, asyncio.CancelledError):
                 raise
             except Exception as error:
+                self._accepts_live_steering = False
                 if not self.session_id:
                     raise
                 recovered = True
