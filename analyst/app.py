@@ -487,6 +487,10 @@ class Workspace:
                             "session_id",
                             "turn_id",
                             "event_id",
+                            "display_text",
+                            "display_mode",
+                            "display_localized",
+                            "display_source",
                         )
                         if data.get(key) is not None
                     },
@@ -633,6 +637,38 @@ class Workspace:
             raise ValueError("This analysis has finished; send a new question instead")
         return run
 
+    def _reply_target(self, sid: str, reply_to: Any) -> tuple[dict[str, Any], dict[str, Any]]:
+        if (
+            not isinstance(reply_to, dict)
+            or set(reply_to) != {"run_id", "message_id"}
+            or not isinstance(reply_to["run_id"], str)
+            or not re.fullmatch(r"[a-f0-9]{32}", reply_to["run_id"])
+            or type(reply_to["message_id"]) is not int
+            or reply_to["message_id"] <= 0
+        ):
+            raise ValueError("Invalid answer reference for this follow-up")
+        session = self.store.session(sid)
+        run = next((run for run in session["runs"] if run["id"] == reply_to["run_id"]), None)
+        messages = [
+            event
+            for event in session["events"]
+            if event["run_id"] == reply_to["run_id"]
+            and event["type"] == "message"
+            and event["data"].get("role") == "assistant"
+        ]
+        if run is None or run["state"] != "completed" or not messages:
+            raise ValueError("The referenced answer is unavailable or has not completed")
+        message = messages[-1]
+        if (
+            message["id"] != reply_to["message_id"]
+            or not isinstance(message["data"].get("qa"), dict)
+            or message["data"]["qa"].get("verified") is not True
+            or not isinstance(message["data"].get("text"), str)
+            or not message["data"]["text"].strip()
+        ):
+            raise ValueError("The referenced answer is stale, unavailable or unverified")
+        return run, message
+
     async def prompt(
         self,
         sid: str,
@@ -641,8 +677,22 @@ class Workspace:
         language: str = "en",
         action_intent: str = "none",
         steer_run_id: str | None = None,
+        reply_to: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        self.store.session(sid)
+        session = self.store.session(sid)
+        if reply_to is not None:
+            if steer_run_id is not None:
+                raise ValueError("An answer follow-up cannot also steer an active analysis")
+            if action_intent != "none":
+                raise ValueError("An answer follow-up is read-only; request a work item separately")
+            source_run, _ = self._reply_target(sid, reply_to)
+            reply_to = dict(reply_to)
+            source_context = source_run["analysis_context_id"]
+            if analysis_context_id is not None and analysis_context_id != source_context:
+                raise ValueError("The follow-up context differs from the referenced answer")
+            analysis_context_id = source_context
+            language = source_run["language"]
+        language_change_from_steering = False
         if steer_run_id is not None:
             if not isinstance(steer_run_id, str) or not re.fullmatch(r"[a-f0-9]{32}", steer_run_id):
                 raise ValueError("Invalid active analysis for this detail")
@@ -650,10 +700,21 @@ class Workspace:
             analysis_context_id = target["analysis_context_id"]
             language = target["language"]
             action_intent = target["action_intent"]
+            from .localization import explicit_response_language
+
+            requested_language = explicit_response_language(text)
+            if requested_language is not None and requested_language != language:
+                # A language change needs a separate run, since the active
+                # managed session keeps its original configuration and authority.
+                steer_run_id = None
+                language = requested_language
+                action_intent = "none"
+                language_change_from_steering = True
         if self.settings.agent_mode == "unavailable" and self.runtime_factory is None:
             raise ValueError("AI is unavailable because no API key is configured")
         if (
             analysis_context_id is None
+            and reply_to is None
             and self.runtime_factory is None
             and self.settings.mode != "mock"
         ):
@@ -666,11 +727,24 @@ class Workspace:
             analysis_context_id = payload["context"]["context_id"]
         from .investigation import response_language
 
-        language = (
-            normalize_language(language)
-            if steer_run_id is not None
-            else response_language(text, normalize_language(language))
+        previous_language = next(
+            (
+                event["data"]["language"]
+                for event in reversed(session["events"])
+                if event["type"] == "message"
+                and event["data"].get("role") == "user"
+                and event["data"].get("language") in {"en", "vi"}
+            ),
+            normalize_language(language),
         )
+        if reply_to is not None:
+            language = response_language(text, language)
+        else:
+            language = (
+                normalize_language(language)
+                if steer_run_id is not None
+                else response_language(text, previous_language)
+            )
         action_intent = normalize_action_intent(action_intent)
         if action_intent != "none" and analysis_context_id is None:
             raise ValueError(
@@ -711,9 +785,16 @@ class Workspace:
                 ) from error
         steering_delivery: tuple[str, int, str, Any] | None = None
         async with self.lock:
+            if reply_to is not None:
+                self._reply_target(sid, reply_to)
             if steer_run_id is not None:
                 self._steering_target(sid, steer_run_id)
-            if analysis_context_id is not None and steer_run_id is None:
+            if (
+                analysis_context_id is not None
+                and steer_run_id is None
+                and reply_to is None
+                and not language_change_from_steering
+            ):
                 self._bind_ui_scope(sid, await self.analysis.context_by_id(analysis_context_id))
             active = self.tasks.get(sid)
             active_rid = self.active_run_ids.get(sid)
@@ -740,6 +821,7 @@ class Workspace:
                     "language": language,
                     "action_intent": action_intent,
                     **({"steer_run_id": active_rid} if same_run else {}),
+                    **({"reply_to": reply_to} if reply_to is not None else {}),
                 },
             )
             if active and not active.done():
@@ -747,8 +829,8 @@ class Workspace:
                 # queues the remaining instruction for a separate run.
                 from .investigation import merge_scope_grants, scope_grants
 
-                restrictions = scope_grants(text, {})
-                if restrictions["revoke_filters"] or restrictions["revoke_view"]:
+                restrictions = scope_grants(text, {}) if reply_to is None else {}
+                if restrictions.get("revoke_filters") or restrictions.get("revoke_view"):
                     if active_rid in self.ui_authorities:
                         self.ui_authorities[active_rid] = merge_scope_grants(
                             self.ui_authorities[active_rid], restrictions
@@ -775,7 +857,7 @@ class Workspace:
                     steering_delivery = (active_rid, instruction_row, instruction_id, steer)
                 else:
                     self.store.queue_instruction(
-                        sid, text, analysis_context_id, language, action_intent
+                        sid, text, analysis_context_id, language, action_intent, reply_to
                     )
                     await self.emit(
                         sid,
@@ -785,7 +867,13 @@ class Workspace:
                             "state": "queued",
                             "language": language,
                             "label": (
-                                "Your new dashboard scope is queued for a separate run after the current analysis."
+                                (
+                                    "Yêu cầu hỏi tiếp về câu trả lời được xếp cho phân tích riêng sau lượt hiện tại."
+                                    if language == "vi"
+                                    else "Your answer follow-up is queued for a separate analysis after the current run."
+                                )
+                                if reply_to is not None
+                                else "Your new dashboard scope is queued for a separate run after the current analysis."
                                 if changed_scope
                                 else "Your new response language is queued for a separate run after the current analysis."
                                 if changed_language
@@ -801,7 +889,7 @@ class Workspace:
                 self.active_languages[sid] = language
                 self.active_action_intents[sid] = action_intent
                 self.tasks[sid] = asyncio.create_task(
-                    self._run(sid, text, analysis_context_id, language, action_intent)
+                    self._run(sid, text, analysis_context_id, language, action_intent, reply_to)
                 )
                 return {"queued": False}
         # Provider admission can take arbitrarily long. The target and durable
@@ -1038,6 +1126,8 @@ class Workspace:
         analysis_context_id: str | None = None,
         language: str = "en",
         action_intent: str = "none",
+        reply_to: dict[str, Any] | None = None,
+        queued_instruction_id: int | None = None,
     ) -> None:
         from .memory import AnalystMemory
         from .runtime import AnalystRuntime
@@ -1053,18 +1143,25 @@ class Workspace:
         self.active_action_intents[sid] = action_intent
         self.run_languages[rid] = language
         initial_items = self.store.history(sid)
+        referenced_presentation = None
         # Preserve the original request before any awaited work. A restart resumes
         # only on a new user prompt, with this exact request still in its context.
         # Steering has its own durable state, so it is not duplicated here.
         if prompt:
             self.store.save_history(sid, initial_items + [{"role": "user", "content": prompt}])
-        carried = self.store.take_instructions(
-            sid,
-            rid,
-            include_unresolved=True,
-            analysis_context_id=analysis_context_id,
-            language=language,
-            action_intent=action_intent,
+        carried = (
+            self.store.take_instructions(
+                sid,
+                rid,
+                include_unresolved=True,
+                analysis_context_id=analysis_context_id,
+                language=language,
+                action_intent=action_intent,
+                reply_to=reply_to,
+                queued_instruction_id=queued_instruction_id,
+            )
+            if reply_to is None or queued_instruction_id is not None
+            else []
         )
         if carried:
             prompt = "\n\n".join(carried + ([prompt] if prompt else []))
@@ -1072,7 +1169,14 @@ class Workspace:
         async def emit(kind: str, data: dict[str, Any]) -> dict[str, Any]:
             return await self.emit(sid, rid, kind, data)
 
-        await emit("status", {"state": "running", "label": "Lead Analyst is preparing the run"})
+        await emit(
+            "status",
+            {
+                "state": "running",
+                "label": "Lead Analyst is preparing the run",
+                **({"reply_to": reply_to} if reply_to is not None else {}),
+            },
+        )
 
         async def steering() -> list[str]:
             messages = self.store.take_instructions(
@@ -1100,6 +1204,98 @@ class Workspace:
         runtime = None
         knowledge_cost = 0.0
         try:
+            if reply_to is not None:
+                source_run, source_message = self._reply_target(sid, reply_to)
+                if source_run["analysis_context_id"] != analysis_context_id:
+                    raise ValueError("The referenced answer context changed before this run")
+                source_text = re.sub(
+                    r"\[claim:((?:[^\[\]]|\[\d+\])+)\]",
+                    "",
+                    source_message["data"]["text"],
+                )
+                source_text = re.sub(
+                    r"^<!-- evidence-table:[a-f0-9]{24}:(?:start|end) -->\r?$",
+                    "",
+                    source_text,
+                    flags=re.MULTILINE,
+                )
+                historical_presentation = []
+                delivery = source_message["data"].get("delivery")
+                source_charts = (
+                    delivery.get("source_charts", []) if isinstance(delivery, dict) else []
+                )
+                for source_chart in source_charts if isinstance(source_charts, list) else []:
+                    chart = source_chart.get("chart") if isinstance(source_chart, dict) else None
+                    if not isinstance(chart, dict) or chart.get("kind") not in {"bar", "line"}:
+                        continue
+                    selection = chart.get("selection")
+                    axes = chart.get("axis_labels")
+                    if not isinstance(selection, dict) or not isinstance(axes, dict):
+                        continue
+                    if (
+                        any(not isinstance(selection.get(key), str) for key in ("path", "x", "y"))
+                        or any(type(selection.get(key)) is not int for key in ("offset", "limit"))
+                        or any(not isinstance(axes.get(key), str) for key in ("x", "y"))
+                    ):
+                        continue
+                    contexts = chart.get("analysis_contexts", [])
+                    historical_presentation.append(
+                        {
+                            "kind": chart["kind"],
+                            "selection": {
+                                key: selection[key]
+                                for key in ("path", "x", "y", "offset", "limit")
+                                if key in selection
+                            },
+                            "axis_labels": {key: axes[key] for key in ("x", "y") if key in axes},
+                            "unit_note": chart.get("unit_note", "")
+                            if isinstance(chart.get("unit_note", ""), str)
+                            else "",
+                            "language": chart.get("language")
+                            if isinstance(chart.get("language"), str)
+                            and chart.get("language") in {"en", "vi"}
+                            else source_run["language"],
+                            "analysis_contexts": [
+                                {
+                                    "filters": {
+                                        key: value
+                                        for key, value in context.get("filters", {}).items()
+                                        if isinstance(value, str) or value is None
+                                    }
+                                    if isinstance(context.get("filters"), dict)
+                                    else {},
+                                    "scenario": context.get("scenario", "")
+                                    if isinstance(context.get("scenario", ""), str)
+                                    else "",
+                                }
+                                for context in (contexts if isinstance(contexts, list) else [])
+                                if isinstance(context, dict)
+                            ],
+                        }
+                    )
+                # Historical content stays separate from the exact current request.
+                # It imports neither numeric claims nor the source run's authority.
+                referenced_presentation = historical_presentation or None
+                initial_items = initial_items + [
+                    {
+                        "role": "user",
+                        "content": canonical_json(
+                            {
+                                "referenced_answer": reply_to,
+                                "historical_text": source_text,
+                                **(
+                                    {"historical_presentation": historical_presentation}
+                                    if historical_presentation
+                                    else {}
+                                ),
+                                "context_id": analysis_context_id,
+                                "source_language": source_run["language"],
+                                "evidence_status": "Historical conversation only; retrieve current-run tool evidence for measurements. No action authority is inherited.",
+                            }
+                        ),
+                    }
+                ]
+                self.store.save_history(sid, initial_items + [{"role": "user", "content": prompt}])
             analysis_context = None
             if analysis_context_id:
                 analysis_context = await self.analysis.context_by_id(analysis_context_id)
@@ -1235,6 +1431,10 @@ class Workspace:
                 raise ValueError("The configured runtime does not support work-item requests")
             if accepts_options or "state_store" in parameters:
                 runtime_options["state_store"] = self.store
+            if referenced_presentation and (
+                accepts_options or "referenced_presentation" in parameters
+            ):
+                runtime_options["referenced_presentation"] = referenced_presentation
             if accepts_options or "ui_handler" in parameters:
 
                 async def ui_handler(arguments: dict[str, Any]) -> dict[str, Any]:
@@ -1470,7 +1670,15 @@ class Workspace:
                         self.active_languages[sid] = next_language
                         self.active_action_intents[sid] = next_action_intent
                         self.tasks[sid] = asyncio.create_task(
-                            self._run(sid, "", context_id, next_language, next_action_intent)
+                            self._run(
+                                sid,
+                                "",
+                                context_id,
+                                next_language,
+                                next_action_intent,
+                                pending.get("reply_to"),
+                                pending.get("queued_instruction_id"),
+                            )
                         )
 
     async def close(self) -> None:
@@ -1732,6 +1940,7 @@ def create_app(
                 request_language(body),
                 body.get("action_intent", "none"),
                 body.get("steer_run_id"),
+                body.get("reply_to"),
             )
         except SourceError as error:
             raise HTTPException(
@@ -1778,6 +1987,7 @@ def create_app(
                             request_language(message),
                             message.get("action_intent", "none"),
                             message.get("steer_run_id"),
+                            message.get("reply_to"),
                         )
                     except ValueError as error:
                         await workspace.emit(sid, None, "error", {"message": str(error)})

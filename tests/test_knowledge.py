@@ -48,7 +48,7 @@ def test_offline_seed_no_network_and_stable_cache_identity(setup, monkeypatch):
     )
     assert status["status"] == "pending_no_api_key"
     assert not status["remote_verified"] and not effective.vector_store_id
-    assert status["memory_notes"] == 7
+    assert status["memory_notes"] == 8
     assert "Missing cost stays unknown" in memory.markdown_path.read_text()
     assert "not a sourced plant procedure" in memory.markdown_path.read_text()
     assert "does not prove a current safety hazard" in memory.markdown_path.read_text()
@@ -61,6 +61,11 @@ def test_offline_seed_no_network_and_stable_cache_identity(setup, monkeypatch):
         in memory.markdown_path.read_text()
     )
     assert "statistical signals are a compass" in memory.markdown_path.read_text()
+    assert (
+        "case.reporting.adaptive_response (report_preference)" in memory.markdown_path.read_text()
+    )
+    assert "Plain prose can complete a simple question" in memory.markdown_path.read_text()
+    assert "without appending a routine number-format legend" in memory.markdown_path.read_text()
     assert "666" not in memory.markdown_path.read_text()
     assert events[0][0] == "memory"
     again, _ = asyncio.run(prepare_knowledge(effective, memory))
@@ -68,6 +73,21 @@ def test_offline_seed_no_network_and_stable_cache_identity(setup, monkeypatch):
     old = knowledge_fingerprint(settings.root)
     (settings.root / "knowledge/case_brief.md").write_text("Changed rule")
     assert knowledge_fingerprint(settings.root) != old
+
+
+def test_offline_seed_replaces_stale_reporting_preference(setup):
+    settings, memory = setup
+    memory.store(
+        "case.reporting.adaptive_response",
+        "Every answer must include an executive report and number-format note.",
+        "report_preference",
+    )
+    asyncio.run(prepare_knowledge(settings, memory))
+    notes = memory.recall("adaptive response reporting preference", limit=20)["items"]
+    preference = next(item for item in notes if item["key"] == "case.reporting.adaptive_response")
+    assert preference["category"] == "report_preference"
+    assert "Plain prose can complete a simple question" in preference["content"]
+    assert "Every answer must include" not in memory.markdown_path.read_text()
 
 
 class FakeClient:

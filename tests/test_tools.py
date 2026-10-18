@@ -166,7 +166,7 @@ def test_tool_execution_schemas_support_rationale_and_preserve_envelope(tmp_path
             for schema in exec_schemas.values():
                 assert "rationale" in schema["parameters"]["properties"]
                 assert schema["parameters"]["properties"]["rationale"]["description"] == (
-                    "One concise sentence explaining why this tool is chosen and which analytical hypothesis or decision question it answers."
+                    "One concise public sentence in the selected response language explaining why this tool is chosen and which analytical hypothesis or decision question it answers. Null when no explanation helps; never include private reasoning."
                 )
                 assert set(schema["parameters"]["required"]) == set(
                     schema["parameters"]["properties"]
@@ -194,6 +194,30 @@ def test_tool_execution_schemas_support_rationale_and_preserve_envelope(tmp_path
             )
             assert sql_res.get("rationale") == "Calculate aggregate total"
             assert sql_res["result"]["rows"][0]["total"] == 30
+        finally:
+            await tools.close()
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    "title",
+    ["Compare logged events across lines", "Đối chiếu sự kiện lỗi giữa các dây chuyền"],
+)
+def test_visible_plan_preserves_selected_language(tmp_path, title):
+    async def run():
+        tools = AnalystTools(tmp_path / "run", [], memory_enabled=False)
+        try:
+            schema = next(item for item in tools.schemas if item["name"] == "todo_planner")
+            title_schema = schema["parameters"]["properties"]["items"]["items"]["properties"][
+                "title"
+            ]
+            assert "selected response language" in title_schema["description"]
+            assert "a simple question does not need one" in schema["description"]
+            tasks = [{"title": title, "status": "in_progress"}]
+            receipt = await tools.call("todo_planner", {"items": tasks})
+            assert tools.todos == tasks
+            assert receipt["result"]["items"] == tasks
         finally:
             await tools.close()
 

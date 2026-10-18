@@ -9,7 +9,15 @@ from copy import deepcopy
 import pytest
 from analyst.app import create_app
 from analyst.config import Settings
-from analyst.localization import PHRASES, VI_NUMBER_NOTE, localize_report, vietnamese_metadata
+from analyst.localization import (
+    PHRASES,
+    VI_NUMBER_NOTE,
+    explicit_response_language,
+    localize_report,
+    response_language,
+    text_language,
+    vietnamese_metadata,
+)
 from analyst.runtime import AnalystReport, AnalystRuntime, audit_report
 from analyst.store import SessionStore
 from analyst.tools import AnalystTools
@@ -20,7 +28,7 @@ from test_runtime import FrozenAnalysisService, canonical_context
 def test_translation_preserves_numbers_claim_identifiers_code_and_links():
     source = "Observed repair cost is 123,456.90 [claim:analysis.monthly[0].known_repair_cost]. `Critical 3.14` [evidence](report2024.md)"
     translated = localize_report(source, "vi")
-    assert translated.startswith(VI_NUMBER_NOTE)
+    assert VI_NUMBER_NOTE not in translated
     assert "123,456.90 [claim:analysis.monthly[0].known_repair_cost]" in translated
     assert "`Critical 3.14`" in translated and "(report2024.md)" in translated
     assert localize_report(source) == source
@@ -98,7 +106,7 @@ def test_vietnamese_sdk_context_report_preserves_exact_canonical_receipt_and_cla
                     assert (
                         "Dây chuyền ba" in result["report"] and "tháng Một năm" in result["report"]
                     )
-                    assert result["report"].count(VI_NUMBER_NOTE) == 1
+                    assert VI_NUMBER_NOTE not in result["report"]
                     assert any(
                         "đang kiểm tra bằng chứng" in data["delta"]
                         for kind, data in events
@@ -244,16 +252,24 @@ def test_language_change_waits_for_own_http_run_and_does_not_rewrite_history(tmp
     with TestClient(create_app(settings, runtime_factory=Runtime)) as client:
         sid = client.post("/api/sessions").json()["id"]
         url = f"/api/sessions/{sid}/prompt"
-        assert client.post(url, json={"text": "EN_INITIAL"}).status_code == 200
+        assert client.post(url, json={"text": "Explain the selected data."}).status_code == 200
         wait(entered.is_set)
-        assert client.post(url, json={"text": "VI_NEXT", "language": "vi"}).json()["queued"]
-        assert client.post(url, json={"text": "EN_UPDATE", "language": "en"}).json()["queued"]
+        assert client.post(
+            url, json={"text": "Tóm tắt dữ liệu đang chọn.", "language": "vi"}
+        ).json()["queued"]
+        assert client.post(
+            url, json={"text": "Also compare the observed costs.", "language": "en"}
+        ).json()["queued"]
         release.set()
         wait(lambda: len(Runtime.calls) == 2)
         wait(lambda: client.get(f"/api/sessions/{sid}").json()["runs"][-1]["state"] == "completed")
         assert Runtime.calls == [
-            {"language": "en", "prompt": "EN_INITIAL", "steering": ["EN_UPDATE"]},
-            {"language": "vi", "prompt": "VI_NEXT", "steering": []},
+            {
+                "language": "en",
+                "prompt": "Explain the selected data.",
+                "steering": ["Also compare the observed costs."],
+            },
+            {"language": "vi", "prompt": "Tóm tắt dữ liệu đang chọn.", "steering": []},
         ]
         snapshot = client.get(f"/api/sessions/{sid}").json()
         replies = [
@@ -300,3 +316,236 @@ def test_currency_translation_does_not_infer_domestic_currency(source):
     if "123,456.90" in source:
         assert "123,456.90" in translated
     assert localize_report(source, "en") == source
+
+
+@pytest.mark.parametrize(
+    ("question", "preferred", "expected"),
+    [
+        ("What is the total observed repair cost?", "vi", "en"),
+        ("Which line has the highest Critical share?", "vi", "en"),
+        ("Summarize the available evidence.", "vi", "en"),
+        ("Explain ‘Chi phí sửa chữa’ in the source.", "vi", "en"),
+        ("Why does the report mention Nhân?", "vi", "en"),
+        ("Tóm tắt chi phí và tỷ trọng lỗi theo tháng.", "en", "vi"),
+        ("tom tat chi phi va ty trong loi theo thang", "en", "vi"),
+        ("con Line 3 thi sao?", "en", "vi"),
+        ("So sanh Line 3 voi Line 2", "en", "vi"),
+        ("Dữ liệu hiện có nói gì? Trả lời bằng tiếng Anh.", "vi", "en"),
+        ("Answer in Vietnamese using the current filters.", "en", "vi"),
+        ("OK", "vi", "vi"),
+        ("continue", "vi", "vi"),
+        ("next?", "vi", "vi"),
+        ("more", "vi", "vi"),
+        ("tiep tuc", "en", "en"),
+        ("Line 3", "vi", "vi"),
+        ("`print('Tóm tắt dữ liệu')`", "en", "en"),
+        ("https://example.com/du-lieu?lang=vi", "en", "en"),
+    ],
+)
+def test_question_language_uses_current_prose_and_prior_language_for_ambiguity(
+    question, preferred, expected
+):
+    assert response_language(question, preferred) == expected
+
+
+@pytest.mark.parametrize(
+    ("question", "expected"),
+    [
+        ("Please answer in English.", "en"),
+        ("Can you respond entirely in Vietnamese?", "vi"),
+        ("Hãy trả lời bằng tiếng Anh.", "en"),
+        ("tra loi tieng viet", "vi"),
+        ("English, please.", "en"),
+        ("Do not answer in English; answer in Vietnamese.", "vi"),
+        ("What does ‘answer in Vietnamese’ mean?", None),
+        ("Explain `answer in Vietnamese`.", None),
+        ("Don't answer in Vietnamese.", None),
+        ("Which line has the highest Critical share?", None),
+    ],
+)
+def test_explicit_response_language_distinguishes_directives_from_ordinary_steering(
+    question, expected
+):
+    assert explicit_response_language(question) == expected
+
+
+@pytest.mark.parametrize("prefix", ["> ", " > ", "  >> ", "   > > ", "    ", "\t", "  \t"])
+@pytest.mark.parametrize(
+    ("authored", "quoted", "expected"),
+    [
+        ("What does this note mean?", "Please answer in Vietnamese.", "en"),
+        ("Giải thích thông báo sau:", "Answer in English.", "vi"),
+    ],
+)
+def test_markdown_source_directives_do_not_choose_the_question_language(
+    prefix, authored, quoted, expected
+):
+    question = authored + "\n" + prefix + quoted
+    assert text_language(question) == expected
+    assert response_language(question, "vi" if expected == "en" else "en") == expected
+    assert explicit_response_language(question) is None
+
+
+@pytest.mark.parametrize("prefix", ["> ", "   >> ", "    ", "\t"])
+@pytest.mark.parametrize("preferred", ["en", "vi"])
+def test_markdown_source_only_keeps_the_prior_question_language(prefix, preferred):
+    question = prefix + "Answer in English. Tra loi tieng Viet."
+    assert text_language(question) is None
+    assert explicit_response_language(question) is None
+    assert response_language(question, preferred) == preferred
+
+
+@pytest.mark.parametrize("prefix", ["> ", "   > > ", "    ", "\t"])
+@pytest.mark.parametrize(
+    ("authored", "quoted", "expected"),
+    [
+        ("Please answer in English.", "Answer in Vietnamese.", "en"),
+        ("Hãy trả lời bằng tiếng Việt.", "Answer in English.", "vi"),
+    ],
+)
+def test_authored_directive_outside_markdown_source_remains_effective(
+    prefix, authored, quoted, expected
+):
+    question = "Review this note:\n" + prefix + quoted + "\n\n" + authored
+    assert explicit_response_language(question) == expected
+    assert response_language(question, "vi" if expected == "en" else "en") == expected
+
+
+@pytest.mark.parametrize(
+    "identifier",
+    [
+        "READ_ONLY",
+        "READ_ONLY_STEERING",
+        "repair_cost",
+        "event_count",
+        "analysis.monthly[0].event_count",
+        "$.analysis.monthly[0].event_count",
+        "analysis.monthly",
+        'analysis["monthly"][0]["event_count"]',
+        "artifacts/analysis/monthly.csv",
+        r"C:\analysis\monthly\event_count.json",
+        "repairCost",
+        "EventCount",
+        "analysis2024",
+        "answer_in_vietnamese",
+        "AnswerInEnglish",
+        "[claim:analysis.monthly[0].event_count]",
+    ],
+)
+def test_code_identifiers_and_paths_are_not_question_language_evidence(identifier):
+    assert text_language(identifier) is None
+    assert explicit_response_language(identifier) is None
+    assert response_language(identifier, "vi") == "vi"
+    assert response_language(identifier, "en") == "en"
+
+
+@pytest.mark.parametrize(
+    ("question", "expected"),
+    [
+        ("What is repair_cost?", "en"),
+        ("What changed in $.analysis.monthly[0].event_count?", "en"),
+        ("Explain artifacts/analysis/monthly.csv.", "en"),
+        ("Ý nghĩa của event_count là gì?", "vi"),
+        ("Kiểm tra số liệu trong analysis.monthly.", "vi"),
+        ("tom tat chi phi trong repairCost", "vi"),
+    ],
+)
+def test_authored_prose_around_identifiers_still_selects_the_question_language(question, expected):
+    assert text_language(question) == expected
+    assert explicit_response_language(question) is None
+    assert response_language(question, "vi" if expected == "en" else "en") == expected
+
+
+@pytest.mark.parametrize("preferred", ["fr", None, 1])
+def test_question_language_validates_the_fallback(preferred):
+    with pytest.raises(ValueError, match="language must"):
+        response_language("OK", preferred)
+
+
+def test_report_language_does_not_accept_a_vietnamese_unit_legend_as_vietnamese_prose():
+    assert text_language("The selected line has the highest observed repair cost.") == "en"
+    assert text_language("Đã ghi nhận các sự kiện lỗi trong phạm vi đang chọn.") == "vi"
+    assert text_language("CSV [claim:event_count] `print('du lieu')`") is None
+
+
+@pytest.mark.parametrize("language", ["en", "vi"])
+def test_public_summary_display_uses_full_part_snapshots_and_preserves_raw_audit(language):
+    async def scenario():
+        events = []
+
+        async def emit(kind, data):
+            events.append((kind, data))
+
+        runtime = AnalystRuntime(Settings(mode="mock"), object(), emit, language=language)
+        identity = {
+            "provider_api": "agents",
+            "session_id": "session-public",
+            "turn_id": "turn-public",
+            "item_id": "reasoning-public",
+            "summary_index": 0,
+        }
+        text = (
+            "Reviewing the request and checking evidence."
+            if language == "en"
+            else "Đang kiểm tra dữ liệu và bằng chứng."
+        )
+        await runtime.emit("reasoning_part", {**identity, "phase": "added", "text": ""})
+        # A chunk may split in the middle of a word. Only accumulated prose can
+        # select the original public summary for the primary display.
+        await runtime.emit("reasoning_summary", {**identity, "delta": text[:2]})
+        await runtime.emit(
+            "reasoning_summary", {**identity, "output_index": 3, "delta": text[2:11]}
+        )
+        await runtime.emit("reasoning_summary", {**identity, "delta": text[11:]})
+        await runtime.emit("reasoning_summary", {**identity, "text": text, "done": True})
+        await runtime.emit("reasoning_part", {**identity, "phase": "done", "text": text})
+        assert "".join(data.get("delta", "") for _, data in events) == text
+        assert all(data["language"] == language for _, data in events)
+        assert all(data["display_mode"] == "snapshot" for _, data in events)
+        assert all(data["item_id"] == identity["item_id"] for _, data in events)
+        assert events[1][1]["display_source"] == "task_status"
+        for _, data in events[-3:]:
+            assert data["display_text"] == text
+            assert data["display_source"] == "provider_summary"
+            assert data["display_localized"] is False
+
+        other = (
+            "Đang kiểm tra dữ liệu và bằng chứng."
+            if language == "en"
+            else "Reviewing the request and checking evidence."
+        )
+        await runtime.emit(
+            "reasoning_summary",
+            {**identity, "summary_index": 1, "text": other, "done": True},
+        )
+        data = events[-1][1]
+        assert data["text"] == other
+        assert data["display_text"] != other
+        assert text_language(data["display_text"]) == language
+        assert data["display_source"] == "task_status"
+        assert data["display_localized"] is True
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("language", ["en", "vi"])
+def test_unavailable_run_keeps_the_question_language_without_a_provider_call(language):
+    async def scenario():
+        events = []
+        runtime = AnalystRuntime(
+            Settings(mode="auto", api_key=""),
+            object(),
+            lambda kind, data: events.append((kind, data)),
+            language=language,
+        )
+        result = await runtime.run("Explain the current data.")
+        assert result["status"] == "unavailable"
+        assert result["language"] == language
+        assert result["report_number_format"] == ("vi-VN" if language == "vi" else "en-US")
+        assert len(events) == 1
+        assert events[0][0] == "status"
+        assert events[0][1]["language"] == language
+        assert text_language(events[0][1]["label"]) == language
+        assert runtime.models == []
+
+    asyncio.run(scenario())

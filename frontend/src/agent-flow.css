@@ -357,6 +357,14 @@
   border-inline-start: 2px solid var(--agent-line);
 }
 
+.agent-workspace .flow-summary-source {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--agent-muted);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
 .agent-workspace .flow-step.is-thinking.is-done:not(.is-open) .flow-thoughts,
 .agent-workspace .flow-thoughts.is-collapsed {
   display: none;

@@ -1,4 +1,5 @@
 import type { WorkspaceEvent } from './types';
+import type { Locale } from './i18n';
 
 // A read-only projection of the stored event history into the provider's own
 // processing order. Every step is backed by an event the server recorded;
@@ -10,6 +11,8 @@ export type FlowPart = {
   title: string;
   body: string;
   done: boolean;
+  displayText?: string;
+  displaySource?: 'task_status' | 'provider_summary';
 };
 
 export type FlowThinking = {
@@ -81,6 +84,7 @@ export type FlowRun = {
   background: boolean;
   state: string;
   prompt: string;
+  language?: Locale;
   steps: FlowStep[];
   compactions: number;
 };
@@ -178,6 +182,20 @@ function builder(event: WorkspaceEvent, runId: string): Builder {
 
 function note(id: string, label: string, detail: string, tone: 'info' | 'warn' = 'info'): FlowNote {
   return { kind: 'note', id, tone, label, detail };
+}
+
+function updateSummaryDisplay(part: FlowPart, data: Record<string, unknown>) {
+  // The server may supply a full public display snapshot while preserving the
+  // provider's original delta in `raw`. Never append a fallback task status to
+  // provider text, or reconstruct a translation from arbitrary partial strings.
+  if (data.display_mode === 'snapshot' && typeof data.display_text === 'string') {
+    part.displayText = data.display_text;
+    part.displaySource =
+      data.display_source === 'task_status' || data.display_source === 'provider_summary'
+        ? data.display_source
+        : undefined;
+  }
+  Object.assign(part, splitSummaryPart(part.displayText ?? part.raw));
 }
 
 function ensureThinkingBlock(
@@ -396,6 +414,9 @@ export function projectAgentFlow(events: WorkspaceEvent[]): Map<string, FlowRun>
     }
     const run = open(event);
     if (!run) continue;
+    // Run metadata is immutable. A later question or steering message must not
+    // relabel work that was already recorded in another language.
+    if (!run.language && (d.language === 'en' || d.language === 'vi')) run.language = d.language;
     const providerSessionId =
       text(d.provider_session_id) || (d.provider_api === 'agents' ? text(d.session_id) : '');
     const providerTurnId =
@@ -447,9 +468,7 @@ export function projectAgentFlow(events: WorkspaceEvent[]): Map<string, FlowRun>
         const final = d.final === true || d.done === true;
         if ((part.done || block.done) && !final) break;
         part.raw = final ? raw : part.raw + raw;
-        const split = splitSummaryPart(part.raw);
-        part.title = split.title;
-        part.body = split.body;
+        updateSummaryDisplay(part, d);
         if (final) {
           part.done = true;
           if (event.time && run.thinkingStarts.has(itemId) && !block.durationMs) {
@@ -478,14 +497,16 @@ export function projectAgentFlow(events: WorkspaceEvent[]): Map<string, FlowRun>
           part.raw = '';
           part.title = '';
           part.body = '';
+          part.displayText = undefined;
+          part.displaySource = undefined;
         }
         if (part && d.phase === 'done') {
           if (typeof d.text === 'string') {
             part.raw = d.text;
-            Object.assign(part, splitSummaryPart(part.raw));
           }
           part.done = true;
         }
+        updateSummaryDisplay(part, d);
         break;
       }
       case 'output_item': {
@@ -864,6 +885,7 @@ export function projectAgentFlow(events: WorkspaceEvent[]): Map<string, FlowRun>
       background: run.background,
       state: run.state,
       prompt: run.prompt,
+      language: run.language,
       compactions: run.compactions,
       // The accepted report is rendered once by EventView with delivery checks.
       steps: run.order.filter(

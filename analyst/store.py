@@ -108,6 +108,8 @@ class SessionStore:
                 "AND json_extract(events.data,'$.instruction_id')="
                 "'steering-' || steering.run_id || '-' || steering.id)"
             )
+        if "reply_to" not in steering_columns:
+            self.db.execute("ALTER TABLE steering ADD COLUMN reply_to TEXT")
         self.db.commit()
 
     def close(self) -> None:
@@ -334,13 +336,21 @@ class SessionStore:
         analysis_context_id: str | None = None,
         language: str = "en",
         action_intent: str = "none",
+        reply_to: dict[str, Any] | None = None,
     ) -> None:
         language = normalize_language(language)
         action_intent = normalize_action_intent(action_intent)
         with self._lock, self.db:
             self.db.execute(
-                "INSERT INTO steering(session_id,text,analysis_context_id,language,action_intent) VALUES (?,?,?,?,?)",
-                (sid, text, analysis_context_id, language, action_intent),
+                "INSERT INTO steering(session_id,text,analysis_context_id,language,action_intent,reply_to) VALUES (?,?,?,?,?,?)",
+                (
+                    sid,
+                    text,
+                    analysis_context_id,
+                    language,
+                    action_intent,
+                    json.dumps(reply_to, sort_keys=True) if reply_to is not None else None,
+                ),
             )
 
     def take_instructions(
@@ -352,6 +362,8 @@ class SessionStore:
         analysis_context_id: str | None = None,
         language: str = "en",
         action_intent: str = "none",
+        reply_to: dict[str, Any] | None = None,
+        queued_instruction_id: int | None = None,
     ) -> list[str]:
         language = normalize_language(language)
         action_intent = normalize_action_intent(action_intent)
@@ -361,12 +373,23 @@ class SessionStore:
             else "(state='queued' OR (state='pending' AND run_id=?))"
         )
         parameters = (sid,) if include_unresolved else (sid, rid)
+        source = json.dumps(reply_to, sort_keys=True) if reply_to is not None else None
+        selection = " AND id=?" if queued_instruction_id is not None else ""
         with self._lock, self.db:
             rows = self.db.execute(
                 f"SELECT id,text FROM steering WHERE session_id=? AND {condition} "
                 "AND (target_run_id IS NULL OR target_run_id=?) "
-                "AND analysis_context_id IS ? AND language=? AND action_intent=? ORDER BY id",
-                (*parameters, rid, analysis_context_id, language, action_intent),
+                "AND analysis_context_id IS ? AND language=? AND action_intent=? "
+                f"AND reply_to IS ?{selection} ORDER BY id",
+                (
+                    *parameters,
+                    rid,
+                    analysis_context_id,
+                    language,
+                    action_intent,
+                    source,
+                    *((queued_instruction_id,) if queued_instruction_id is not None else ()),
+                ),
             ).fetchall()
             self.db.executemany(
                 "UPDATE steering SET state='applied',run_id=? WHERE id=?",
@@ -424,10 +447,17 @@ class SessionStore:
     def next_queued_run(self, sid: str) -> dict | None:
         with self._lock:
             row = self.db.execute(
-                "SELECT analysis_context_id,language,action_intent FROM steering WHERE session_id=? AND state='queued' ORDER BY id LIMIT 1",
+                "SELECT id,analysis_context_id,language,action_intent,reply_to FROM steering WHERE session_id=? AND state='queued' ORDER BY id LIMIT 1",
                 (sid,),
             ).fetchone()
-        return dict(row) if row is not None else None
+        if row is None:
+            return None
+        result = dict(row)
+        identity = result.pop("id")
+        reference = result.pop("reply_to")
+        if reference is not None:
+            result.update(reply_to=json.loads(reference), queued_instruction_id=identity)
+        return result
 
     def has_queued_instruction(self, sid: str) -> bool:
         with self._lock:

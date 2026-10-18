@@ -1,13 +1,16 @@
 import { Check, ChevronDown, CircleAlert, Clock, Lightbulb, LoaderCircle } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useI18n } from './i18n';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createI18n, useI18n } from './i18n';
 import { analysisStatus } from './EventView';
-import type { Translate } from './i18n';
+import type { Locale, Translate } from './i18n';
 import type { FlowCall, FlowRun, FlowStep } from './agent-flow';
 import { completedFlowStates, stoppedFlowStates } from './agent-flow';
+import { flowSummaryDisplay } from './flow-summary-display';
 
 // Presentation only. Every value shown here comes from a stored provider or
 // receipt event; this view never derives a number of its own.
+
+const FlowLanguage = createContext(createI18n('en'));
 
 function duration(value: number | undefined): string {
   if (!value || value <= 0) return '';
@@ -23,6 +26,8 @@ function friendlyToolLabel(name: string, locale: string = 'vi'): string {
     scenario_compare: 'Thử nghiệm giả định',
     analysis_records: 'Truy xuất bản ghi lỗi',
     analysis_provenance: 'Kiểm tra nguồn dữ liệu',
+    report_table: 'Bảng dữ liệu nguồn',
+    report_chart: 'Tạo biểu đồ',
     ui_command: 'Điều khiển giao diện',
     investigation_update: 'Cập nhật hồ sơ điều tra',
     local_python_repl: 'Chạy mã Python',
@@ -44,6 +49,8 @@ function friendlyToolLabel(name: string, locale: string = 'vi'): string {
     scenario_compare: 'Test a scenario',
     analysis_records: 'Look up defect records',
     analysis_provenance: 'Check data provenance',
+    report_table: 'Source table',
+    report_chart: 'Create chart',
     ui_command: 'Update the workspace view',
     investigation_update: 'Update the investigation',
     local_python_repl: 'Run Python code',
@@ -58,7 +65,7 @@ function friendlyToolLabel(name: string, locale: string = 'vi'): string {
     code_interpreter_call: 'Run code',
   };
   const map = locale === 'vi' ? labelsVi : labelsEn;
-  return map[name] || labelsVi[name] || name;
+  return map[name] || name;
 }
 
 function extractRationale(command: string | undefined): string | undefined {
@@ -221,10 +228,11 @@ function StepIcon({ step }: { step: FlowStep }) {
 }
 
 function ThinkingStep({ step }: { step: Extract<FlowStep, { kind: 'thinking' }> }) {
-  const { t, locale } = useI18n();
+  const { t, locale } = useContext(FlowLanguage);
   const [open, setOpen] = useState(false);
   const [now, setNow] = useState(Date.now);
-  const empty = step.parts.every((part) => !part.title && !part.body);
+  const parts = step.parts.map((part) => flowSummaryDisplay(part, locale));
+  const empty = parts.every((part) => !part.title && !part.body);
   const isActive = !step.done && !step.stopped;
 
   useEffect(() => {
@@ -235,7 +243,10 @@ function ThinkingStep({ step }: { step: Extract<FlowStep, { kind: 'thinking' }> 
 
   const elapsed = step.startedAt ? Math.max(0, (now - step.startedAt) / 1000) : undefined;
   const recordedDuration = duration(step.durationMs);
-  const sectionCount = step.parts.filter((part) => part.title || part.body).length;
+  const sectionCount = parts.filter(
+    (part) => part.displaySource !== 'task_status' && (part.title || part.body),
+  ).length;
+  const hasTaskStatus = parts.some((part) => part.displaySource === 'task_status');
 
   return (
     <li
@@ -259,9 +270,13 @@ function ThinkingStep({ step }: { step: Extract<FlowStep, { kind: 'thinking' }> 
             >
               <span className="flow-kind">{t('ui.agent_flow_thinking')}</span>
               <span className="flow-pill-badge">
-                {locale === 'vi'
-                  ? `${sectionCount} phần tóm tắt`
-                  : `${sectionCount} summary ${sectionCount === 1 ? 'section' : 'sections'}`}
+                {hasTaskStatus && !sectionCount
+                  ? locale === 'vi'
+                    ? 'Trạng thái tác vụ'
+                    : 'Task status'
+                  : locale === 'vi'
+                    ? `${sectionCount} phần tóm tắt`
+                    : `${sectionCount} summary ${sectionCount === 1 ? 'section' : 'sections'}`}
                 {recordedDuration && ` · ${recordedDuration}`}
               </span>
               <ChevronDown
@@ -296,8 +311,13 @@ function ThinkingStep({ step }: { step: Extract<FlowStep, { kind: 'thinking' }> 
           <p className="flow-dim">{t('ui.agent_flow_encrypted_reasoning')}</p>
         ) : (
           <div className="flow-thoughts">
-            {step.parts.map((part) => (
+            {parts.map((part) => (
               <div className="flow-thought" key={part.index}>
+                {part.displaySource === 'task_status' && (
+                  <span className="flow-summary-source">
+                    {locale === 'vi' ? 'Trạng thái tác vụ' : 'Task status'}
+                  </span>
+                )}
                 {part.title && <strong>{part.title}</strong>}
                 {part.body && <p>{part.body}</p>}
               </div>
@@ -310,7 +330,7 @@ function ThinkingStep({ step }: { step: Extract<FlowStep, { kind: 'thinking' }> 
 }
 
 function CallStep({ step }: { step: FlowCall }) {
-  const { t, locale } = useI18n();
+  const { t, locale } = useContext(FlowLanguage);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const length = duration(step.durationMs);
   const rationale = step.rationale || extractRationale(step.command);
@@ -402,7 +422,7 @@ function CallStep({ step }: { step: FlowCall }) {
 }
 
 function Step({ step }: { step: FlowStep }) {
-  const { t, locale } = useI18n();
+  const { t, locale } = useContext(FlowLanguage);
   if (step.kind === 'thinking') {
     return <ThinkingStep step={step} />;
   }
@@ -488,7 +508,13 @@ function currentStepSummary(step: FlowStep, t: Translate, locale: string) {
     };
   // Public reasoning summaries belong to the opt-in timeline. They can contain
   // model-oriented planning language rather than a user-facing progress update.
-  if (step.kind === 'thinking') return { label: t('ui.agent_flow_thinking') };
+  if (step.kind === 'thinking') {
+    const latestPart = [...step.parts].reverse().find((part) => part.title || part.body);
+    return {
+      label: t('ui.agent_flow_thinking'),
+      detail: latestPart?.displaySource === 'task_status' ? latestPart.body : undefined,
+    };
+  }
   if (step.kind === 'note') {
     if (step.label === 'review')
       return {
@@ -518,15 +544,31 @@ function currentStepSummary(step: FlowStep, t: Translate, locale: string) {
   }
   if (step.kind === 'draft')
     return {
-      label: locale === 'vi' ? 'Cập nhật tiến độ' : 'Progress update',
-      detail: step.text,
+      label:
+        step.messagePhase === 'commentary'
+          ? locale === 'vi'
+            ? 'Cập nhật tiến độ'
+            : 'Progress update'
+          : t('ui.agent_flow_draft'),
+      detail: step.messagePhase === 'commentary' ? step.text : t('ui.agent_flow_draft_unverified'),
     };
   if (step.kind === 'failure') return { label: t('ui.agent_flow_stopped'), detail: step.message };
   return { label: t('ui.agent_flow_answer'), detail: t('ui.agent_flow_answer_below') };
 }
 
-export default function AgentFlow({ run }: { run: FlowRun }) {
-  const { t, number, locale } = useI18n();
+export default function AgentFlow({ run, language }: { run: FlowRun; language?: Locale }) {
+  const page = useI18n();
+  const locale = run.language ?? language ?? page.locale;
+  const i18n = useMemo(() => createI18n(locale), [locale]);
+  return (
+    <FlowLanguage.Provider value={i18n}>
+      <RunFlow run={run} />
+    </FlowLanguage.Provider>
+  );
+}
+
+function RunFlow({ run }: { run: FlowRun }) {
+  const { t, number, locale } = useContext(FlowLanguage);
   // The native disclosure retains a person's choice across live updates. A
   // different run gets its own default without moving focus or scrolling.
   const [disclosure, setDisclosure] = useState<{ runId: string; open: boolean } | null>(null);
@@ -577,6 +619,7 @@ export default function AgentFlow({ run }: { run: FlowRun }) {
   return (
     <section
       className={'agent-flow ' + (halted ? 'is-stopped' : active ? 'is-active' : 'is-done')}
+      lang={locale}
       aria-label={t('ui.agent_flow_label')}
     >
       <header className="agent-flow-head">
@@ -599,7 +642,7 @@ export default function AgentFlow({ run }: { run: FlowRun }) {
           <span className="agent-flow-current-label">
             {locale === 'vi' ? 'Cập nhật gần nhất' : 'Latest update'}
           </span>
-          <p className="agent-flow-current-title">
+          <p className="agent-flow-current-title" role="status" aria-atomic="true">
             {current?.label || t('ui.agent_flow_waiting')}
             {currentStep?.kind === 'call' && (
               <span className="flow-state">{callStatus(currentStep, t)}</span>

@@ -19,8 +19,8 @@ from .report_output import unit_note
 from .tools import ToolEnvelope as ToolEnvelope
 from .tools import function_schema
 
-TOOLS_VERSION = "dashboard-analysis-v14"
-INSTRUCTIONS_VERSION = "investigation-v14"
+TOOLS_VERSION = "dashboard-analysis-v15"
+INSTRUCTIONS_VERSION = "investigation-v15"
 SCENARIOS = ["", "exclude_cost_10", "ambiguous_dm", "year_2024"]
 SECTIONS = [
     "overview",
@@ -85,11 +85,11 @@ def product_schemas():
     plan = {
         "type": ["string", "null"],
         "maxLength": 600,
-        "description": "One concise visible plan for a multi-step investigation, included with its first useful analysis call. Null for simple questions or later calls. Never include private reasoning.",
+        "description": "One concise visible plan in the selected response language for a multi-step investigation, included with its first useful analysis call. Null for simple questions or later calls. Never include private reasoning.",
     }
     rationale = {
         "type": ["string", "null"],
-        "description": "One concise sentence explaining why this tool is chosen and which analytical hypothesis or decision question it answers.",
+        "description": "One concise public sentence in the selected response language explaining why this tool is chosen and which analytical hypothesis or decision question it answers. Null when no explanation helps; never include private reasoning.",
     }
     hypothesis = {
         "type": "object",
@@ -786,7 +786,12 @@ class ProductTools:
 def tool_code() -> str:
     return "\n".join(
         path.read_text(encoding="utf-8")
-        for path in (Path(__file__), Path(__file__).with_name("analysis_sql.py"))
+        for path in (
+            Path(__file__),
+            Path(__file__).with_name("analysis_sql.py"),
+            Path(__file__).with_name("chart_views.py"),
+            Path(__file__).resolve().parents[1] / "knowledge" / "glossary.json",
+        )
     )
 
 

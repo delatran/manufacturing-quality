@@ -185,3 +185,66 @@ def test_retired_provider_webhook_endpoint_is_unavailable(tmp_path):
     application = create_app(settings(tmp_path), runtime_factory=FixtureRuntime)
     with TestClient(application) as client:
         assert client.post("/api/webhooks/openai", json={}).status_code == 404
+
+
+def test_question_language_survives_page_locale_and_ambiguous_followups(tmp_path):
+    class LanguageRuntime:
+        def __init__(
+            self, settings, toolkit, emit, steering=None, initial_items=None, language="en"
+        ):
+            self.emit, self.language = emit, language
+
+        async def run(self, prompt):
+            report = "Fixture answer." if self.language == "en" else "Câu trả lời kiểm thử."
+            await self.emit("report", {"report": report, "claims": [], "qa": {"verified": True}})
+            return {"status": "completed", "usage": [], "cost_usd": 0}
+
+    application = create_app(settings(tmp_path), runtime_factory=LanguageRuntime)
+    cases = [
+        ("Hello, what can you help me with?", "vi", "en"),
+        ("OK", "vi", "en"),
+        ("Giải thích ý nghĩa của sự kiện lỗi giúp mình.", "en", "vi"),
+        ("OK", "en", "vi"),
+        ("What changed in the data?", "vi", "en"),
+    ]
+    with TestClient(application) as client:
+        sid = client.post("/api/sessions").json()["id"]
+        for prompt, page_language, expected in cases:
+            prior = client.get(f"/api/sessions/{sid}").json()["events"]
+            after = prior[-1]["id"] if prior else 0
+            with client.websocket_connect(f"/api/sessions/{sid}/ws?after={after}") as socket:
+                socket.send_json({"type": "prompt", "text": prompt, "language": page_language})
+                while True:
+                    event = socket.receive_json()
+                    if event["type"] == "status" and event["data"]["state"] == "completed":
+                        break
+            saved = client.get(f"/api/sessions/{sid}").json()
+            run = saved["runs"][-1]
+            assert run["language"] == expected
+            run_events = [event for event in saved["events"] if event.get("run_id") == run["id"]]
+            assert all(event["data"]["language"] == expected for event in run_events)
+            assert any(event["type"] == "message" for event in run_events)
+
+
+def test_summary_display_metadata_survives_browser_event_projection(tmp_path):
+    application = create_app(settings(tmp_path))
+    with TestClient(application):
+        workspace = application.state.workspace
+        sid = workspace.store.create_session()["id"]
+        rid, _ = workspace.store.begin_run(sid, language="vi")
+        data = {
+            "delta": "Original provider public summary.",
+            "item_id": "summary-1",
+            "done": True,
+            "display_text": "Đang kiểm tra bằng chứng và chuẩn bị câu trả lời.",
+            "display_mode": "snapshot",
+            "display_source": "task_status",
+            "display_localized": True,
+        }
+        asyncio.run(workspace.emit(sid, rid, "reasoning_summary", data))
+        saved = workspace.store.events(sid)[-1]
+        assert saved["type"] == "reasoning"
+        assert saved["data"]["text"] == data["delta"]
+        assert saved["data"]["language"] == "vi"
+        for field in ("display_text", "display_mode", "display_source", "display_localized"):
+            assert saved["data"][field] == data[field]

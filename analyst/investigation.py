@@ -10,6 +10,7 @@ from typing import Any
 
 from .evidence import EvidenceLedger, canonical, sha256
 from .localization import normalize_language, report_number_format
+from .localization import response_language as response_language
 from .store import SessionStore
 
 
@@ -19,31 +20,6 @@ def plain_text(value):
         for char in unicodedata.normalize("NFKD", value.lower().replace("đ", "d"))
         if not unicodedata.combining(char)
     )
-
-
-def response_language(text, preferred="en"):
-    if re.search(r"[À-ỹĐđ]", text):
-        return "vi"
-    normalized = plain_text(text)
-    if any(
-        phrase in normalized
-        for phrase in (
-            "dieu tra",
-            "chi phi",
-            "so sanh",
-            "thang ",
-            "con nhom",
-            "hoan tac",
-            "kha nang",
-        )
-    ):
-        return "vi"
-    if re.search(
-        r"\b(investigate|compare|explain|prepare|show|why|costs|priorities|evidence|hypothesis)\b",
-        normalized,
-    ):
-        return "en"
-    return preferred
 
 
 def scope_grants(text, options):

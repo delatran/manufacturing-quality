@@ -46,6 +46,55 @@ def wait_for(predicate):
     raise AssertionError("Synthetic steering boundary was not reached")
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "original,requested,prompt",
+    [("vi", "en", "Please answer in English."), ("en", "vi", "Trả lời bằng tiếng Việt.")],
+)
+async def test_explicit_language_change_queues_without_mutating_active_work(
+    tmp_path, original, requested, prompt
+):
+    config = Settings(mode="mock", state_dir=str(tmp_path / "state"), memory_enabled=False)
+    workspace = Workspace(config, analysis_service=ScopedAnalysis(tmp_path))
+    sid = workspace.store.create_session()["id"]
+    rid, _ = workspace.store.begin_run(sid, A, original, "draft_update")
+    release = asyncio.Event()
+    workspace.tasks[sid] = asyncio.create_task(release.wait())
+    workspace.active_run_ids[sid] = rid
+    workspace.active_contexts[sid] = A
+    workspace.active_languages[sid] = original
+    workspace.active_action_intents[sid] = "draft_update"
+    workspace._bind_ui_scope(sid, {"context": {"context_id": B}})
+    details = []
+
+    async def steer(text, *, instruction_id):
+        details.append(text)
+        return {"accepted": True}
+
+    workspace.active_runtimes[sid] = SimpleNamespace(accepting_steering=True, steer=steer)
+    try:
+        result = await workspace.prompt(sid, prompt, steer_run_id=rid)
+        assert result == {"queued": True}
+        assert details == []
+        assert workspace.store.run_language(rid) == original
+        assert workspace.active_languages[sid] == original
+        assert workspace.active_action_intents[sid] == "draft_update"
+        assert workspace.store.investigation(sid)["ui"]["context_id"] == B
+        expected = {"analysis_context_id": A, "language": requested, "action_intent": "none"}
+        assert workspace.store.next_queued_run(sid) == expected
+        persisted = SessionStore(workspace.state_dir)
+        try:
+            assert persisted.next_queued_run(sid) == expected
+        finally:
+            persisted.close()
+        queued = workspace.store.events(sid)[-1]
+        assert queued["data"]["state"] == "queued"
+        assert queued["data"]["language"] == requested
+    finally:
+        release.set()
+        await workspace.close()
+
+
 @pytest.mark.parametrize("transport", ["http", "websocket"])
 def test_detail_targets_active_run_and_preserves_frozen_tuple_and_dashboard(tmp_path, transport):
     entered, release = threading.Event(), threading.Event()
@@ -79,7 +128,7 @@ def test_detail_targets_active_run_and_preserves_frozen_tuple_and_dashboard(tmp_
         client.post(
             url,
             json={
-                "text": "Analyze this scope",
+                "text": "Phân tích phạm vi này",
                 "analysis_context_id": A,
                 "language": "vi",
                 "action_intent": "draft_create",

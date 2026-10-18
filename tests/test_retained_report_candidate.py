@@ -978,11 +978,13 @@ def test_qa_operational_proof_rejects_failed_unbounded_foreign_or_unsealed_recei
             entry["entry_sha256"] = sha256(
                 canonical({key: value for key, value in entry.items() if key != "entry_sha256"})
             )
-        runtime.toolkit.ledger.path.write_text(canonical(entry) + "\n")
+        runtime.toolkit.ledger.path.write_text(canonical(entry) + "\n", encoding="utf-8")
     elif failure == "damaged_ledger":
         damaged = runtime.toolkit.ledger.record("unrelated_tool", "code", {"ok": False})
         damaged["entry_sha256"] = "f" * 64
-        runtime.toolkit.ledger.path.write_text(canonical(entry) + "\n" + canonical(damaged) + "\n")
+        runtime.toolkit.ledger.path.write_text(
+            canonical(entry) + "\n" + canonical(damaged) + "\n", encoding="utf-8"
+        )
     qa, _errors = qa_for_ui(runtime)
     assert qa["operational_receipts"] == []
     assert qa["numeric_support"] == [] and runtime.available_claims() == {}

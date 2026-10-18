@@ -165,7 +165,7 @@ class AnalystTools:
         string = {"type": "string"}
         rationale = {
             "type": ["string", "null"],
-            "description": "One concise sentence explaining why this tool is chosen and which analytical hypothesis or decision question it answers.",
+            "description": "One concise public sentence in the selected response language explaining why this tool is chosen and which analytical hypothesis or decision question it answers. Null when no explanation helps; never include private reasoning.",
         }
         schemas = [
             function_schema(
@@ -185,14 +185,17 @@ class AnalystTools:
             ),
             function_schema(
                 "todo_planner",
-                "Replace the visible work plan with concrete tasks and statuses.",
+                "Replace the visible work plan with concrete tasks and statuses in the selected response language. Use only for work that benefits from a visible multi-step plan; a simple question does not need one. Never include private reasoning.",
                 {
                     "items": {
                         "type": "array",
                         "items": {
                             "type": "object",
                             "properties": {
-                                "title": string,
+                                "title": {
+                                    **string,
+                                    "description": "A concrete user-visible task in the selected response language.",
+                                },
                                 "status": {
                                     "type": "string",
                                     "enum": ["pending", "in_progress", "completed", "blocked"],

@@ -23,7 +23,7 @@ import {
   socketUrl,
 } from './api';
 import EventView, { chartArtifact, friendlyError } from './EventView';
-import { useI18n } from './i18n';
+import { createI18n, I18nScope, useI18n } from './i18n';
 import { applicationUrl } from './app-url';
 import { projectEvents } from './stream';
 import AgentFlow from './AgentFlow';
@@ -35,6 +35,16 @@ import type { DashboardData } from './dashboard-types';
 import type { UiCommand } from './workspace-state';
 import AgentScope, { questionScope } from './AgentScope';
 import { conversationScrollPosition } from './conversation-scroll';
+import { conversationEventLanguage, conversationRunLanguages } from './conversation-language';
+import AnswerFollowups from './AnswerFollowups';
+import { answerSourceQuestion, eligibleAnswerFollowup } from './answer-followups';
+import {
+  answerReplyAvailable,
+  parseAnswerReply,
+  promptAcknowledges,
+  questionForAnswer,
+} from './answer-reply';
+import type { AnswerReference, AnswerReply, PromptAdmission } from './answer-reply';
 
 const storageKey = 'analyst.workspace.session.v1';
 const draftKey = 'analyst.workspace.draft.v2';
@@ -57,7 +67,7 @@ const terminalStates = new Set([
   'timeout',
   'unavailable',
 ]);
-type Draft = { text: string; contextId?: string; contextSummary?: string };
+type Draft = { text: string; contextId?: string; contextSummary?: string; reply?: AnswerReply };
 export type AgentActionIntent = 'none' | 'draft_create' | 'draft_update';
 export type AgentWorkItemDraft = {
   title: string;
@@ -74,7 +84,10 @@ export function buildPromptMessage(
   contextId?: string,
   actionIntent: AgentActionIntent = 'none',
   steerRunId?: string,
+  replyTo?: AnswerReference,
 ) {
+  if (replyTo && (steerRunId || actionIntent !== 'none'))
+    throw new Error('An answer follow-up must start a separate analysis');
   if (actionIntent !== 'none' && !contextId && !steerRunId)
     throw new Error('Choose a dashboard context before preparing an action draft');
   return {
@@ -84,6 +97,7 @@ export function buildPromptMessage(
     language,
     action_intent: actionIntent,
     ...(steerRunId ? { steer_run_id: steerRunId } : {}),
+    ...(replyTo ? { reply_to: { run_id: replyTo.run_id, message_id: replyTo.message_id } } : {}),
   };
 }
 
@@ -154,6 +168,7 @@ const readDraft = (): Draft => {
       text: typeof value.text === 'string' ? value.text : '',
       contextId: typeof value.contextId === 'string' ? value.contextId : undefined,
       contextSummary: typeof value.contextSummary === 'string' ? value.contextSummary : undefined,
+      reply: parseAnswerReply(value.reply),
     };
   } catch {
     return { text: '' };
@@ -420,6 +435,7 @@ export default function AgentWorkspace({
   const [events, setEvents] = useState<WorkspaceEvent[]>([]);
   const [text, setText] = useState(initialDraft.text);
   const [prefillContext, setPrefillContext] = useState<string | undefined>(initialDraft.contextId);
+  const [answerReply, setAnswerReply] = useState<AnswerReply | undefined>(initialDraft.reply);
   const [frozenContext, setFrozenContext] = useState<DashboardData['context']>();
   const [frozenData, setFrozenData] = useState<DashboardData>();
   const [failedContextId, setFailedContextId] = useState<string>();
@@ -453,6 +469,7 @@ export default function AgentWorkspace({
   const composerDock = useRef<HTMLElement>(null);
   const nearBottom = useRef(true);
   const pendingPrompt = useRef<string | null>(null);
+  const pendingRequest = useRef<PromptAdmission | null>(null);
   const pendingDraft = useRef<Draft | null>(null);
   const bootRetry = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const {
@@ -461,14 +478,12 @@ export default function AgentWorkspace({
     providerStopped,
     lastRunStatus,
     hasConversation,
-    lastReport,
     lastQuestion,
     runningActionValue: derivedActionValue,
   } = useMemo(() => {
     let lastStatusEv: WorkspaceEvent | undefined;
     let lastRunStatusEv: WorkspaceEvent | undefined;
     let hasMessage = false;
-    let lastReportEv: WorkspaceEvent | undefined;
     let lastQuestionEv: WorkspaceEvent | undefined;
     let hasProviderStopped = false;
 
@@ -481,7 +496,6 @@ export default function AgentWorkspace({
       }
       if (ev.type === 'message') {
         hasMessage = true;
-        if (!lastReportEv && ev.data?.role !== 'user') lastReportEv = ev;
         if (!lastQuestionEv && ev.data?.role === 'user') lastQuestionEv = ev;
       }
     }
@@ -512,7 +526,6 @@ export default function AgentWorkspace({
       providerStopped: isProvStopped,
       lastRunStatus: lastRunStatusEv,
       hasConversation: hasMessage,
-      lastReport: lastReportEv,
       lastQuestion: lastQuestionEv,
       runningActionValue: actionVal,
     };
@@ -551,6 +564,11 @@ export default function AgentWorkspace({
     ? ['mock', 'simulation', 'simulated', 'offline'].includes(config.mode?.toLowerCase())
     : false;
   const visibleEvents = useMemo(() => projectConversation(events), [events]);
+  const runLanguages = useMemo(
+    () => conversationRunLanguages(events, session?.runs),
+    [events, session?.runs],
+  );
+  const replyAvailable = answerReplyAvailable(answerReply, session, events);
   // The full provider timeline is projected from the same stored history.
   const flowRuns = useMemo<Map<string, FlowRun>>(() => projectAgentFlow(events), [events]);
   const selectedScope = questionScope({
@@ -561,12 +579,16 @@ export default function AgentWorkspace({
     failedContextId,
   });
   const selectedContext = selectedScope.id;
-  const composerLabel = active
-    ? t('ui.agent_steer_current_work')
-    : hasConversation
-      ? t('ui.agent_next_question')
-      : t('ui.your_analysis_question');
-  const sendLabel = active ? t('ui.agent_send_instruction') : t('ui.send_question');
+  const composerLabel = answerReply
+    ? locale === 'vi'
+      ? 'Hỏi tiếp về câu trả lời đã chọn'
+      : 'Follow up on the selected answer'
+    : active
+      ? t('ui.agent_steer_current_work')
+      : hasConversation
+        ? t('ui.agent_next_question')
+        : t('ui.your_analysis_question');
+  const sendLabel = active && !answerReply ? t('ui.agent_send_instruction') : t('ui.send_question');
   const capturedViewDiffers = selectedScope.captured;
   const scopeUnavailable = selectedScope.unavailable;
   const scopeLoading = selectedScope.loading;
@@ -604,11 +626,12 @@ export default function AgentWorkspace({
         ? dashboardData
         : undefined;
   const activeKpis = activeData?.analysis.kpis;
-  function summaryFor(context?: WorkspaceEvent) {
+  function summaryFor(context?: WorkspaceEvent, language = locale) {
+    const contextI18n = createI18n(language);
     const filters = context?.data.filters;
     return filters && typeof filters === 'object'
-      ? scope(filters as Record<string, unknown>)
-      : t('ui.the_data_selected_for_this_analysis');
+      ? contextI18n.scope(filters as Record<string, unknown>)
+      : contextI18n.t('ui.the_data_selected_for_this_analysis');
   }
 
   const suggestions = suppliedSuggestions || [
@@ -642,6 +665,7 @@ export default function AgentWorkspace({
     if (!prefill) return;
     setText(prefill.text);
     setPrefillContext(prefill.contextId);
+    setAnswerReply(undefined);
     composer.current?.focus();
   }, [prefill]);
 
@@ -651,14 +675,19 @@ export default function AgentWorkspace({
         const savedDraft =
           awaitingPrompt && pendingDraft.current
             ? pendingDraft.current
-            : { text, contextId: prefillContext, contextSummary: selectedSummary };
+            : {
+                text,
+                contextId: prefillContext,
+                contextSummary: selectedSummary,
+                reply: answerReply,
+              };
         localStorage.setItem(draftKey, JSON.stringify(savedDraft));
       } catch {
         /* Drafts remain available in the current tab without storage. */
       }
     }, 200);
     return () => clearTimeout(timer);
-  }, [text, prefillContext, selectedSummary, awaitingPrompt]);
+  }, [text, prefillContext, selectedSummary, awaitingPrompt, answerReply]);
 
   useEffect(() => {
     let disposed = false;
@@ -749,12 +778,9 @@ export default function AgentWorkspace({
             }
             if (event.type === 'status' && terminalStates.has(String(event.data.state)))
               setCancelling(false);
-            if (
-              event.type === 'message' &&
-              event.data.role === 'user' &&
-              (!pendingPrompt.current || event.data.text === pendingPrompt.current)
-            ) {
+            if (promptAcknowledges(event, pendingRequest.current)) {
               pendingPrompt.current = null;
+              pendingRequest.current = null;
               pendingDraft.current = null;
               setAwaitingPrompt(null);
             }
@@ -762,11 +788,13 @@ export default function AgentWorkspace({
               const unsent = pendingPrompt.current;
               const original = pendingDraft.current;
               pendingPrompt.current = null;
+              pendingRequest.current = null;
               pendingDraft.current = null;
               setText((previous) => previous || unsent);
               setAwaitingPrompt(null);
               if (original) {
                 setPrefillContext(original.contextId);
+                setAnswerReply(original.reply);
               }
             }
           });
@@ -877,41 +905,52 @@ export default function AgentWorkspace({
       awaitingPrompt ||
       providerStopped ||
       aiUnavailable ||
-      (active ? !lastRunStatus?.run_id : scopeUnavailable || scopeLoading || !selectedContext) ||
+      !replyAvailable ||
+      (active && !answerReply
+        ? !lastRunStatus?.run_id
+        : scopeUnavailable || scopeLoading || !selectedContext) ||
       socket.current?.readyState !== WebSocket.OPEN
     )
       return;
     setError('');
     // Details target the active run, irrespective of ambient Dashboard or locale changes.
-    const promptContext = active ? (runningContextId ?? undefined) : selectedContext;
+    const steering = active && !answerReply;
+    const promptContext = steering ? (runningContextId ?? undefined) : selectedContext;
     const promptLanguage =
-      active && (runningLanguage === 'en' || runningLanguage === 'vi') ? runningLanguage : locale;
+      answerReply?.language ??
+      (steering && (runningLanguage === 'en' || runningLanguage === 'vi')
+        ? runningLanguage
+        : locale);
     try {
       if (socket.current?.readyState !== WebSocket.OPEN)
         throw new Error('Connection lost before the prompt was sent');
       pendingPrompt.current = prompt;
       pendingDraft.current = {
         text: prompt,
-        contextId: active ? prefillContext : promptContext,
+        contextId: steering ? prefillContext : promptContext,
         contextSummary: selectedSummary,
+        reply: answerReply,
       };
-      socket.current.send(
-        JSON.stringify(
-          buildPromptMessage(
-            prompt,
-            promptLanguage,
-            promptContext,
-            active ? runningActionIntent : 'none',
-            active ? lastRunStatus?.run_id : undefined,
-          ),
-        ),
+      const message = buildPromptMessage(
+        prompt,
+        promptLanguage,
+        promptContext,
+        steering ? runningActionIntent : 'none',
+        steering ? lastRunStatus?.run_id : undefined,
+        answerReply,
       );
+      pendingRequest.current = message;
+      socket.current.send(JSON.stringify(message));
       setAwaitingPrompt(prompt);
       setText('');
-      if (!active) setPrefillContext(undefined);
+      setAnswerReply(undefined);
+      if (!steering) setPrefillContext(undefined);
       nearBottom.current = true;
       composer.current?.focus();
     } catch (failure) {
+      pendingPrompt.current = null;
+      pendingRequest.current = null;
+      pendingDraft.current = null;
       setError(description(failure));
     }
   }
@@ -924,17 +963,23 @@ export default function AgentWorkspace({
   function chooseSuggestion(suggestion: Suggestion) {
     setText(suggestion.prompt);
     setPrefillContext(selectedContext);
+    setAnswerReply(undefined);
     composer.current?.focus();
   }
-  function followUp(prompt: string) {
+  function followUp(report: WorkspaceEvent, prompt: string, language: 'en' | 'vi') {
+    if (!eligibleAnswerFollowup(report, events, session?.runs) || awaitingPrompt) return;
+    const context = report.run_id ? runContexts.get(report.run_id) : undefined;
+    const id = context?.data.context_id;
+    if (typeof id !== 'string' || !report.run_id || typeof report.id !== 'number') return;
     setText(prompt);
-    const reportContext = lastReport?.run_id ? runContexts.get(lastReport.run_id) : undefined;
-    const id = reportContext?.data.context_id;
-    if (typeof id === 'string') {
-      setPrefillContext(id);
-    } else {
-      setPrefillContext(undefined);
-    }
+    setPrefillContext(id);
+    setAnswerReply({
+      sessionId: report.session_id,
+      run_id: report.run_id,
+      message_id: report.id,
+      language,
+      question: answerSourceQuestion(report, questionForAnswer(report, events)),
+    });
     composer.current?.focus();
   }
 
@@ -1048,6 +1093,7 @@ export default function AgentWorkspace({
                   disabled={!contextId}
                   onClick={() => {
                     setPrefillContext(undefined);
+                    setAnswerReply(undefined);
                   }}
                 >
                   {t('ui.use_current_dashboard')}
@@ -1172,31 +1218,57 @@ export default function AgentWorkspace({
             // Show the provider timeline for each run alongside its report and files.
             const flow =
               event.type === 'activity' && event.run_id ? flowRuns.get(event.run_id) : undefined;
+            const language = conversationEventLanguage(event, runLanguages, locale);
+            const responseI18n = createI18n(language);
             return (
-              <div
-                className="conversation-entry"
-                key={String(event.id)}
-                tabIndex={-1}
-                role="group"
-                aria-label={
-                  event.type === 'message'
-                    ? event.data.role === 'user'
-                      ? t('ui.you')
-                      : t('ui.quality_analyst_2')
-                    : t('ui.analyst_conversation')
-                }
-              >
-                {event.type === 'message' &&
-                  event.data.role !== 'user' &&
-                  event.run_id &&
-                  runContexts.has(event.run_id) && (
-                    <p className="report-scope">
-                      <span>{t('ui.based_on')}</span>
-                      {summaryFor(runContexts.get(event.run_id))}
-                    </p>
+              <I18nScope key={String(event.id)} locale={language}>
+                <div
+                  className="conversation-entry"
+                  lang={language}
+                  tabIndex={-1}
+                  role="group"
+                  aria-label={
+                    event.type === 'message'
+                      ? event.data.role === 'user'
+                        ? responseI18n.t('ui.you')
+                        : responseI18n.t('ui.quality_analyst_2')
+                      : responseI18n.t('ui.analyst_conversation')
+                  }
+                >
+                  {event.type === 'message' &&
+                    event.data.role !== 'user' &&
+                    event.run_id &&
+                    runContexts.has(event.run_id) && (
+                      <p className="report-scope">
+                        <span>{responseI18n.t('ui.based_on')}</span>
+                        {summaryFor(runContexts.get(event.run_id), language)}
+                      </p>
+                    )}
+                  {flow ? (
+                    <AgentFlow run={flow} language={language} />
+                  ) : (
+                    <EventView event={event} language={language} />
                   )}
-                {flow ? <AgentFlow run={flow} /> : <EventView event={event} />}
-              </div>
+                  {event.type === 'message' && event.data.role === 'assistant' && (
+                    <AnswerFollowups
+                      report={event}
+                      question={questionForAnswer(event, events)}
+                      language={language}
+                      eligible={
+                        eligibleAnswerFollowup(event, events, session?.runs) &&
+                        Boolean(event.run_id && runContexts.has(event.run_id))
+                      }
+                      disabled={
+                        Boolean(awaitingPrompt) ||
+                        providerStopped ||
+                        aiUnavailable ||
+                        connection !== 'connected'
+                      }
+                      onFollowUp={followUp}
+                    />
+                  )}
+                </div>
+              </I18nScope>
             );
           })}
           {awaitingPrompt && (
@@ -1212,34 +1284,6 @@ export default function AgentWorkspace({
             </article>
           )}
         </div>
-        {lastReport && !active && (
-          <section className="agent-followup" aria-label={t('ui.next_steps')}>
-            <div>
-              <h2>{t('ui.next_steps')}</h2>
-            </div>
-            <div className="agent-followup-actions">
-              <button
-                type="button"
-                onClick={() =>
-                  followUp(
-                    t('ui.from_this_report_which_findings_should_production_investigate_fir'),
-                  )
-                }
-              >
-                {t('ui.explore_the_next_check')}
-                <ArrowRight size={16} />
-              </button>
-              <button type="button" onClick={() => followUp(t('ui.agent_followup_halves_prompt'))}>
-                {t('ui.agent_followup_halves_label')}
-                <ArrowRight size={16} />
-              </button>
-              <button type="button" onClick={() => followUp(t('ui.agent_followup_mix_prompt'))}>
-                {t('ui.agent_followup_mix_label')}
-                <ArrowRight size={16} />
-              </button>
-            </div>
-          </section>
-        )}
         {!active &&
           [
             'failed',
@@ -1256,7 +1300,25 @@ export default function AgentWorkspace({
               className="agent-retry-button"
               type="button"
               onClick={() => {
+                const reference = lastQuestion.data.reply_to;
+                const restored =
+                  reference && typeof reference === 'object'
+                    ? parseAnswerReply({
+                        ...reference,
+                        sessionId: lastQuestion.session_id,
+                        language: lastQuestion.data.language,
+                      })
+                    : undefined;
+                if (reference && !restored) {
+                  setError(
+                    locale === 'vi'
+                      ? 'Không thể khôi phục liên kết câu trả lời của yêu cầu này.'
+                      : 'The answer reference for this question could not be restored.',
+                  );
+                  return;
+                }
                 setText(String(lastQuestion.data.text || ''));
+                setAnswerReply(restored);
                 const originalContext = lastQuestion.data.analysis_context_id;
                 if (typeof originalContext === 'string') {
                   setPrefillContext(originalContext);
@@ -1304,8 +1366,10 @@ export default function AgentWorkspace({
                   setText(saved?.text || awaitingPrompt);
                   if (saved) {
                     setPrefillContext(saved.contextId);
+                    setAnswerReply(saved.reply);
                   }
                   pendingPrompt.current = null;
+                  pendingRequest.current = null;
                   pendingDraft.current = null;
                   setAwaitingPrompt(null);
                   requestAnimationFrame(() => composer.current?.focus());
@@ -1329,6 +1393,48 @@ export default function AgentWorkspace({
             </div>
           )}
           <form className={'composer ' + (active ? 'is-active' : '')} onSubmit={submit}>
+            {answerReply && (
+              <div className="answer-reply-context" role="status">
+                <div>
+                  <span className="answer-reply-label">
+                    {locale === 'vi'
+                      ? 'Hỏi tiếp về câu trả lời đã chọn'
+                      : 'Following up on the selected answer'}
+                  </span>
+                  {answerReply.question && (
+                    <p className="answer-reply-question">{answerReply.question}</p>
+                  )}
+                  {!replyAvailable && (
+                    <p>
+                      {locale === 'vi'
+                        ? 'Chưa xác minh được câu trả lời gốc. Hãy chờ tải hội thoại hoặc bỏ liên kết này để đặt câu hỏi mới.'
+                        : 'The source answer is unavailable. Wait for the conversation to load, or clear this reference to ask a new question.'}
+                    </p>
+                  )}
+                  {active && (
+                    <p>
+                      {locale === 'vi'
+                        ? 'Yêu cầu này sẽ được xếp cho một lượt riêng sau lượt đang chạy.'
+                        : 'This question will queue for a separate analysis after the current run.'}
+                    </p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="answer-reply-clear"
+                  aria-label={
+                    locale === 'vi' ? 'Bỏ liên kết câu trả lời' : 'Clear answer reference'
+                  }
+                  onClick={() => {
+                    setAnswerReply(undefined);
+                    setPrefillContext(undefined);
+                    composer.current?.focus();
+                  }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            )}
             <label className="composer-label" htmlFor="analyst-prompt">
               {composerLabel}
             </label>
@@ -1339,7 +1445,7 @@ export default function AgentWorkspace({
               onChange={(event) => setText(event.target.value)}
               onKeyDown={onKeyDown}
               placeholder={
-                active
+                active && !answerReply
                   ? t('ui.add_a_detail_or_ask_a_follow_up')
                   : t('ui.ask_a_question_about_your_production_data')
               }
@@ -1348,7 +1454,13 @@ export default function AgentWorkspace({
             />
             <div className="composer-bottom">
               <div className="composer-context">
-                <span>{t('ui.using_selected_dashboard_data')}</span>
+                <span>
+                  {answerReply
+                    ? locale === 'vi'
+                      ? 'Dùng dữ liệu đã chốt của câu trả lời này'
+                      : "Using this answer's saved data"
+                    : t('ui.using_selected_dashboard_data')}
+                </span>
               </div>
               <button
                 className="send-button"
@@ -1359,13 +1471,14 @@ export default function AgentWorkspace({
                   Boolean(awaitingPrompt) ||
                   providerStopped ||
                   aiUnavailable ||
-                  (active
+                  !replyAvailable ||
+                  (active && !answerReply
                     ? !lastRunStatus?.run_id
                     : scopeUnavailable || scopeLoading || !selectedContext) ||
                   connection !== 'connected'
                 }
                 aria-label={sendLabel}
-                title={active ? sendLabel : t('ui.send_question_enter')}
+                title={active && !answerReply ? sendLabel : t('ui.send_question_enter')}
               >
                 <ArrowUp size={20} />
               </button>

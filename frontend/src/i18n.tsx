@@ -157,6 +157,11 @@ export function createI18n(locale: Locale, setLocale: (value: Locale) => void = 
 
 const I18nContext = createContext(createI18n('en'));
 
+export function I18nScope({ children, locale }: { children: ReactNode; locale: Locale }) {
+  const value = useMemo(() => createI18n(locale), [locale]);
+  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
+}
+
 export function I18nProvider({
   children,
   initialLocale,

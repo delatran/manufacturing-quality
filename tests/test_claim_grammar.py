@@ -548,22 +548,33 @@ async def test_unrecognized_same_leaf_names_do_not_gain_trusted_units(actual7):
 @pytest.mark.parametrize("language", ["en", "vi"])
 async def test_actual_sdk_qa_header_is_exact_same_visible_renderer_projection(actual7, language):
     text = (
-        "Observed "
+        ("Ghi nhận " if language == "vi" else "Observed ")
         + marker(actual7, "kpis", "$.analysis.kpis.event_count")
-        + " logged defect events in the selected scope."
+        + (
+            " sự kiện lỗi được ghi nhận trong phạm vi đã chọn."
+            if language == "vi"
+            else " logged defect events in the selected scope."
+        )
     )
     observed = []
 
     def model(role):
+        if role == "QA Verifier" and observed:
+            raise AssertionError("This fixture expects one successful QA review, without retries")
         value = ScriptedFinal(actual7.runtime, role, text, observed)
         actual7.runtime.models.append(value)
         return value
 
     actual7.runtime.model = model
-    result = await actual7.runtime.run("Summarize the selected evidence without changing the view.")
+    result = await actual7.runtime.run(
+        "Tóm tắt bằng chứng đã chọn, không thay đổi giao diện."
+        if language == "vi"
+        else "Summarize the selected evidence without changing the view."
+    )
     assert result["status"] == "completed", result.get("qa")
     assert len(observed) == 1
     qa = json.loads(observed[0])
+    assert qa["language"] == language and qa["audit"]["verified"]
     manifest = result["delivery"]["source_manifest"]
     header = qa["visible_scope_header"]
     assert header == visible_scope_header(manifest)

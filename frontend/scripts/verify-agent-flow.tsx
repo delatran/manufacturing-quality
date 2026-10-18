@@ -3,6 +3,8 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import AgentFlow from '../src/AgentFlow';
 import { callOutcome, projectAgentFlow, splitSummaryPart } from '../src/agent-flow';
+import { flowSummaryDisplay } from '../src/flow-summary-display';
+import type { FlowPart } from '../src/agent-flow';
 import { I18nProvider } from '../src/i18n';
 import type { WorkspaceEvent } from '../src/types';
 
@@ -261,7 +263,8 @@ const injectedHtml = renderToStaticMarkup(
   </I18nProvider>,
 );
 assert.doesNotMatch(injectedHtml, /<script>|<b>x<\/b>/, 'Trace content stays inert');
-assert.match(injectedHtml, /&lt;script&gt;/);
+assert.match(injectedHtml, /&lt;b&gt;x&lt;\/b&gt;/);
+assert.doesNotMatch(injectedHtml, /alert\(1\)/, 'Unclassified provider prose is not promoted');
 
 for (const locale of ['en', 'vi'] as const) {
   const markup = renderToStaticMarkup(
@@ -281,7 +284,11 @@ for (const locale of ['en', 'vi'] as const) {
   assert.match(markup, /event_count=1284/);
   assert.match(markup, /exec exec-0123456/);
   assert.doesNotMatch(markup, /12\.5k|agent-flow-usage/);
-  assert.match(markup, /Reading the selected data/);
+  assert.doesNotMatch(markup, /Reading the selected data/);
+  assert.match(
+    markup,
+    locale === 'vi' ? /Đang xem xét yêu cầu và bằng chứng/ : /Reviewing the request and evidence/,
+  );
   assert.match(
     markup,
     locale === 'en' ? /Agent flow/ : /Luồng xử lý/,
@@ -429,12 +436,12 @@ for (const locale of ['en', 'vi'] as const) {
     condensedMarkup,
     /flow-summary-absence|No public summary for|mục suy luận đã hoàn tất không có tóm tắt/,
   );
-  assert.match(condensedMarkup, /First public summary\.|Second public summary\./);
+  assert.doesNotMatch(condensedMarkup, /First public summary\.|Second public summary\./);
+  const summaryStatus =
+    locale === 'vi' ? 'Đang xem xét yêu cầu và bằng chứng' : 'Reviewing the request and evidence';
+  assert.ok(condensedMarkup.indexOf(summaryStatus) < condensedMarkup.indexOf('ordered_analysis'));
   assert.ok(
-    condensedMarkup.indexOf('Reading real data') < condensedMarkup.indexOf('ordered_analysis'),
-  );
-  assert.ok(
-    condensedMarkup.indexOf('ordered_analysis') < condensedMarkup.indexOf('Checking real results'),
+    condensedMarkup.indexOf('ordered_analysis') < condensedMarkup.lastIndexOf(summaryStatus),
   );
   assert.match(condensedMarkup, /class="flow-thoughts"/);
   assert.doesNotMatch(condensedMarkup, /<details class="flow-body"/);
@@ -1072,7 +1079,11 @@ for (const metadata of [
       </I18nProvider>,
     );
     assert.match(markup, /gpt-6-luna/);
-    assert.match(markup, /Checking the selected data/);
+    assert.doesNotMatch(markup, /Checking the selected data/);
+    assert.match(
+      markup,
+      locale === 'vi' ? /Đang xem xét yêu cầu và bằng chứng/ : /Reviewing the request and evidence/,
+    );
     assert.doesNotMatch(
       markup,
       /usage-only-session|agent-flow-usage|flow-provider-details|Token usage|best effort|Provider session|Chưa có số liệu token|hóa đơn chưa được chốt|\$500|ui\.agent_flow/,
@@ -1339,7 +1350,8 @@ for (const locale of ['en', 'vi'] as const) {
     </I18nProvider>,
   );
   assert.doesNotMatch(markup, /1\.2s|aspects|khía cạnh|Thought for|Đã suy nghĩ/);
-  assert.match(markup, locale === 'vi' ? /1 phần tóm tắt/ : /1 summary section/);
+  assert.match(markup, locale === 'vi' ? /Trạng thái tác vụ/ : /Task status/);
+  assert.doesNotMatch(markup, /1 phần tóm tắt|1 summary section/);
 }
 const timed = projectAgentFlow([event('reasoning', { item_id: 'timed', text: 'Checking.' })]).get(
   'run-1',
@@ -1488,11 +1500,18 @@ for (const locale of ['en', 'vi'] as const) {
   );
   assert.match(summaryPrimary, locale === 'vi' ? /Suy luận/ : /Thinking/);
   const summaryTimeline = summaryMarkup.match(/<ol[^>]*>([\s\S]*?)<\/ol>/)?.[1] || '';
-  assert.match(summaryTimeline, /Recommending checks for classification/);
-  assert.match(
+  assert.doesNotMatch(summaryTimeline, /Recommending checks for classification/);
+  assert.doesNotMatch(
     summaryTimeline,
     /I should recommend checks\. I need to cite evidence \[value:1071\]\./,
   );
+  assert.match(
+    summaryTimeline,
+    locale === 'vi' ? /Đang xem xét yêu cầu và bằng chứng/ : /Reviewing the request and evidence/,
+  );
+  const retainedSummary = summaryFlow.steps.find((step) => step.kind === 'thinking');
+  assert.ok(retainedSummary?.kind === 'thinking');
+  assert.match(retainedSummary.parts[0].raw, /I should recommend checks/);
 
   const reviewerInstruction =
     'Phân tích chỉ có số liệu tổng hợp; hãy giữ giới hạn suy luận và sửa claim [value:1071].';
@@ -1572,6 +1591,325 @@ for (const locale of ['en', 'vi'] as const) {
   );
 }
 
+// Each run follows its own recorded language, across alternating questions in
+// the same conversation and independently of the page's language selector.
+const bilingualHistory = [
+  event('message', { role: 'user', text: 'Compare the defect trends.', language: 'en' }, null),
+  event('run_started', { language: 'en' }, 'bilingual-en'),
+  event('tool', { name: 'analysis_query', tool_id: 'en-query', status: 'running' }, 'bilingual-en'),
+  event('message', { role: 'user', text: 'Đối chiếu chi phí sửa chữa.', language: 'vi' }, null),
+  event('run_started', { language: 'vi' }, 'bilingual-vi'),
+  event('tool', { name: 'analysis_query', tool_id: 'vi-query', status: 'running' }, 'bilingual-vi'),
+  event('status', { state: 'completed', language: 'vi' }, 'bilingual-en'),
+  event('message', { role: 'user', text: 'Now check data provenance.', language: 'en' }, null),
+  event('run_started', { language: 'en' }, 'bilingual-next-en'),
+  event(
+    'tool',
+    { name: 'analysis_provenance', tool_id: 'provenance', status: 'running' },
+    'bilingual-next-en',
+  ),
+];
+const bilingualCopy = structuredClone(bilingualHistory);
+const bilingualRuns = projectAgentFlow(bilingualHistory);
+assert.deepEqual(bilingualHistory, bilingualCopy, 'Language projection preserves event history');
+assert.deepEqual(
+  [...bilingualRuns.values()].map((item) => [item.runId, item.language, item.prompt]),
+  [
+    ['bilingual-en', 'en', 'Compare the defect trends.'],
+    ['bilingual-vi', 'vi', 'Đối chiếu chi phí sửa chữa.'],
+    ['bilingual-next-en', 'en', 'Now check data provenance.'],
+  ],
+  'A later question or inconsistent late event cannot change an earlier run language',
+);
+for (const pageLocale of ['en', 'vi'] as const) {
+  const markup = renderToStaticMarkup(
+    <I18nProvider initialLocale={pageLocale} persist={false}>
+      {[...bilingualRuns.values()].map((item) => (
+        <AgentFlow key={item.runId} run={item} />
+      ))}
+    </I18nProvider>,
+  );
+  const sections = [...markup.matchAll(/<section\b[\s\S]*?<\/section>/g)].map((match) => match[0]);
+  assert.equal(sections.length, 3);
+  assert.match(sections[0], /lang="en"[\s\S]*Query the quality ledger/);
+  assert.doesNotMatch(sections[0], /Luồng xử lý|Truy vấn sổ cái chất lượng/);
+  assert.match(sections[1], /lang="vi"[\s\S]*Luồng xử lý[\s\S]*Truy vấn sổ cái chất lượng/);
+  assert.doesNotMatch(sections[1], /Agent flow|Query the quality ledger/);
+  assert.match(sections[2], /lang="en"[\s\S]*Check data provenance/);
+}
+// Source-backed presentation tools follow the recorded run language in both
+// the current work panel and processing history, independent of page locale.
+const presentationToolLabels = [
+  ['report_table', 'Source table', 'Bảng dữ liệu nguồn'],
+  ['report_chart', 'Create chart', 'Tạo biểu đồ'],
+] as const;
+for (const [toolName, englishLabel, vietnameseLabel] of presentationToolLabels) {
+  for (const runLanguage of ['en', 'vi'] as const) {
+    const toolHistory = [
+      event('run_started', { language: runLanguage }, 'presentation-tool'),
+      event(
+        'tool',
+        { name: toolName, tool_id: 'presentation-tool-call', status: 'running' },
+        'presentation-tool',
+      ),
+    ];
+    const original = JSON.stringify(toolHistory);
+    const toolRun = projectAgentFlow(toolHistory).get('presentation-tool')!;
+    const label = runLanguage === 'vi' ? vietnameseLabel : englishLabel;
+    const otherLabel = runLanguage === 'vi' ? englishLabel : vietnameseLabel;
+    for (const pageLocale of ['en', 'vi'] as const) {
+      for (const state of ['running', 'completed'] as const) {
+        const markup = renderToStaticMarkup(
+          <I18nProvider initialLocale={pageLocale} persist={false}>
+            <AgentFlow run={{ ...toolRun, state }} />
+          </I18nProvider>,
+        );
+        assert.ok(markup.includes(`<span class="flow-friendly-name">${label}</span>`));
+        assert.ok(!markup.includes(otherLabel));
+        assert.doesNotMatch(markup, /report_table|report_chart/);
+        if (state === 'running') {
+          const current = markup.match(/<div class="agent-flow-current">([\s\S]*?)<\/div>/)?.[1];
+          assert.ok(current?.includes(label));
+        }
+      }
+    }
+    assert.equal(JSON.stringify(toolHistory), original, 'Tool labels never rewrite stored events');
+  }
+}
+
+const legacyLanguageRun = projectAgentFlow([
+  event('run_started', { language: 'unsupported' }),
+  event('tool', { name: 'analysis_query', tool_id: 'legacy-language', status: 'running' }),
+]).get('run-1')!;
+assert.equal(legacyLanguageRun.language, undefined, 'Unknown language values stay unknown');
+const hydratedLanguageMarkup = renderToStaticMarkup(
+  <I18nProvider initialLocale="en" persist={false}>
+    <AgentFlow run={legacyLanguageRun} language="vi" />
+  </I18nProvider>,
+);
+assert.match(hydratedLanguageMarkup, /lang="vi"[\s\S]*Truy vấn sổ cái chất lượng/);
+
+// A localized task status is a full display snapshot, not a translated provider
+// summary. Raw public text stays available in the projection and source events.
+const rawPublicSummary = '**Reading scope**\n\nI will inspect Line-3.';
+const taskStatusText = 'Đang xem xét yêu cầu và bằng chứng để chuẩn bị câu trả lời.';
+const displayHistory = [
+  event('run_started', { language: 'vi' }),
+  event('reasoning', {
+    item_id: 'localized-summary',
+    summary_index: 0,
+    text: '**Reading scope**\n\n',
+    display_text: taskStatusText,
+    display_mode: 'snapshot',
+    display_source: 'task_status',
+  }),
+  event('reasoning', {
+    item_id: 'localized-summary',
+    summary_index: 0,
+    text: 'I will inspect Line-3.',
+    display_text: taskStatusText,
+    display_mode: 'snapshot',
+    display_source: 'task_status',
+  }),
+  event('reasoning_part', {
+    item_id: 'localized-summary',
+    summary_index: 0,
+    phase: 'done',
+    text: rawPublicSummary,
+  }),
+];
+const displayHistoryCopy = structuredClone(displayHistory);
+const displayRun = projectAgentFlow(displayHistory).get('run-1')!;
+const displayBlock = displayRun.steps.find((step) => step.kind === 'thinking');
+assert.ok(displayBlock?.kind === 'thinking');
+assert.equal(displayBlock.parts.length, 1);
+assert.equal(displayBlock.parts[0].raw, rawPublicSummary);
+assert.equal(displayBlock.parts[0].body, taskStatusText);
+assert.equal(displayBlock.parts[0].displaySource, 'task_status');
+assert.deepEqual(displayHistory, displayHistoryCopy);
+const displayMarkup = renderToStaticMarkup(
+  <I18nProvider initialLocale="en" persist={false}>
+    <AgentFlow run={displayRun} />
+  </I18nProvider>,
+);
+assert.match(displayMarkup, /lang="vi"/);
+assert.match(displayMarkup, /Trạng thái tác vụ/);
+assert.doesNotMatch(displayMarkup, /Reading scope|I will inspect Line-3/);
+const displayTimeline = displayMarkup.match(/<ol[^>]*>([\s\S]*?)<\/ol>/)?.[1] || '';
+assert.equal(
+  displayTimeline.split(taskStatusText).length - 1,
+  1,
+  'Snapshots do not repeat fallback text',
+);
+assert.match(
+  displayMarkup.match(/<div class="agent-flow-current">([\s\S]*?)<\/div>/)?.[1] || '',
+  /Đang xem xét yêu cầu và bằng chứng/,
+  'The recorded task status provides a useful primary update',
+);
+
+const nativeDisplayRun = projectAgentFlow([
+  event('run_started', { language: 'vi' }),
+  event('reasoning_part', {
+    item_id: 'native-display',
+    summary_index: 0,
+    phase: 'added',
+    display_text: taskStatusText,
+    display_mode: 'snapshot',
+    display_source: 'task_status',
+  }),
+  event('reasoning', {
+    item_id: 'native-display',
+    summary_index: 0,
+    text: '**Đọc phạm vi**\n\nĐối chiếu dữ liệu đã chọn.',
+    display_text: '**Đọc phạm vi**\n\nĐối chiếu dữ liệu đã chọn.',
+    display_mode: 'snapshot',
+    display_source: 'provider_summary',
+    final: true,
+  }),
+  event('output_item', { item_id: 'native-display', item_type: 'reasoning', phase: 'done' }),
+]).get('run-1')!;
+const nativeDisplay = nativeDisplayRun.steps.find((step) => step.kind === 'thinking');
+assert.ok(nativeDisplay?.kind === 'thinking');
+assert.equal(nativeDisplay.parts[0].title, 'Đọc phạm vi');
+assert.equal(nativeDisplay.parts[0].displaySource, 'provider_summary');
+const nativeDisplayMarkup = renderToStaticMarkup(
+  <I18nProvider initialLocale="en" persist={false}>
+    <AgentFlow run={nativeDisplayRun} />
+  </I18nProvider>,
+);
+assert.match(nativeDisplayMarkup, /1 phần tóm tắt/);
+assert.doesNotMatch(nativeDisplayMarkup, /Trạng thái tác vụ|Đang xem xét yêu cầu/);
+
+const laterPublicPartRun = projectAgentFlow([
+  ...displayHistory,
+  event('reasoning', {
+    item_id: 'localized-summary',
+    summary_index: 1,
+    text: 'Đang đối chiếu phạm vi đã chọn.',
+    display_text: 'Đang đối chiếu phạm vi đã chọn.',
+    display_mode: 'snapshot',
+    display_source: 'provider_summary',
+  }),
+]).get('run-1')!;
+const laterPublicPartMarkup = renderToStaticMarkup(
+  <I18nProvider initialLocale="en" persist={false}>
+    <AgentFlow run={laterPublicPartRun} />
+  </I18nProvider>,
+);
+assert.doesNotMatch(
+  laterPublicPartMarkup.match(/<div class="agent-flow-current">([\s\S]*?)<\/div>/)?.[1] || '',
+  /Đang xem xét yêu cầu/,
+  'An earlier fallback does not replace a newer recorded update',
+);
+
+// An unverified answer draft is not promoted as a public progress message.
+const unverifiedDraftRun = projectAgentFlow([
+  event('run_started', { language: 'en' }),
+  event('text_delta', { item_id: 'draft-answer', delta: 'An unverified conclusion.' }),
+]).get('run-1')!;
+const unverifiedDraftMarkup = renderToStaticMarkup(
+  <I18nProvider initialLocale="vi" persist={false}>
+    <AgentFlow run={unverifiedDraftRun} />
+  </I18nProvider>,
+);
+assert.doesNotMatch(
+  unverifiedDraftMarkup.match(/<div class="agent-flow-current">([\s\S]*?)<\/div>/)?.[1] || '',
+  /An unverified conclusion/,
+);
+assert.match(unverifiedDraftMarkup, /An unverified conclusion/);
+
+// Partial language detection can temporarily accept an English sentence that
+// quotes a Vietnamese label. The view waits for a finalized, compatible snapshot.
+const uncertainSummaryText =
+  '**Assessing the request**\n\nNeed to review "dữ liệu" before continuing.';
+const uncertainSummaryPart: FlowPart = {
+  index: 0,
+  raw: uncertainSummaryText,
+  title: 'Assessing the request',
+  body: 'Need to review "dữ liệu" before continuing.',
+  done: false,
+  displayText: uncertainSummaryText,
+  displaySource: 'provider_summary',
+};
+const uncertainCopy = structuredClone(uncertainSummaryPart);
+for (const done of [false, true]) {
+  const projected = flowSummaryDisplay({ ...uncertainSummaryPart, done }, 'vi');
+  assert.equal(projected.displaySource, 'task_status');
+  assert.equal(projected.body, taskStatusText);
+  assert.equal(projected.title, '');
+  assert.equal(projected.raw, uncertainSummaryText);
+}
+assert.deepEqual(uncertainSummaryPart, uncertainCopy);
+const provenVietnamesePart: FlowPart = {
+  ...uncertainSummaryPart,
+  raw: '**Đọc phạm vi**\n\nĐối chiếu dữ liệu đã chọn.',
+  title: 'Đọc phạm vi',
+  body: 'Đối chiếu dữ liệu đã chọn.',
+  displayText: '**Đọc phạm vi**\n\nĐối chiếu dữ liệu đã chọn.',
+  done: true,
+};
+assert.equal(flowSummaryDisplay(provenVietnamesePart, 'vi'), provenVietnamesePart);
+assert.equal(
+  flowSummaryDisplay({ ...provenVietnamesePart, done: false }, 'vi').displaySource,
+  'task_status',
+);
+const uncertainTitle = flowSummaryDisplay(
+  { ...provenVietnamesePart, title: 'Checking results' },
+  'vi',
+);
+assert.equal(uncertainTitle.title, '');
+assert.equal(uncertainTitle.body, provenVietnamesePart.body);
+assert.equal(uncertainTitle.displaySource, 'provider_summary');
+assert.equal(
+  flowSummaryDisplay({ ...provenVietnamesePart, displaySource: undefined }, 'vi').displaySource,
+  'task_status',
+);
+const provenEnglishPart: FlowPart = {
+  ...provenVietnamesePart,
+  raw: '**Checking evidence**\n\nReview the recorded results.',
+  title: 'Checking evidence',
+  body: 'Review the recorded results.',
+  displayText: '**Checking evidence**\n\nReview the recorded results.',
+};
+assert.equal(flowSummaryDisplay(provenEnglishPart, 'en'), provenEnglishPart);
+assert.equal(flowSummaryDisplay(provenEnglishPart, 'vi').displaySource, 'task_status');
+assert.equal(flowSummaryDisplay(provenVietnamesePart, 'en').displaySource, 'task_status');
+const recordedTaskStatus = {
+  ...uncertainSummaryPart,
+  body: taskStatusText,
+  displaySource: 'task_status' as const,
+};
+assert.equal(flowSummaryDisplay(recordedTaskStatus, 'vi'), recordedTaskStatus);
+for (const final of [false, true]) {
+  const mixedHistory = [
+    event('run_started', { language: 'vi' }),
+    event('reasoning', {
+      item_id: 'mixed-language-public-part',
+      text: uncertainSummaryText,
+      display_text: uncertainSummaryText,
+      display_mode: 'snapshot',
+      display_source: 'provider_summary',
+      final,
+    }),
+  ];
+  const before = structuredClone(mixedHistory);
+  const mixedRun = projectAgentFlow(mixedHistory).get('run-1')!;
+  const markup = renderToStaticMarkup(
+    <I18nProvider initialLocale="en" persist={false}>
+      <AgentFlow run={mixedRun} />
+    </I18nProvider>,
+  );
+  const historyMarkup = markup.match(/<ol[^>]*>([\s\S]*?)<\/ol>/)?.[1] || '';
+  assert.match(markup, /lang="vi"/);
+  assert.match(historyMarkup, /Trạng thái tác vụ/);
+  assert.ok(historyMarkup.includes(taskStatusText));
+  assert.doesNotMatch(historyMarkup, /Assessing the request|Need to review/);
+  const retained = mixedRun.steps.find((step) => step.kind === 'thinking');
+  assert.ok(retained?.kind === 'thinking');
+  assert.equal(retained.parts[0].raw, uncertainSummaryText);
+  assert.deepEqual(mixedHistory, before);
+}
+
 console.log(
-  'Verified provider-ordered agent flow: summary-part grouping, streamed call arguments joined to local receipts, run isolation, metadata-only usage handling, inert trace content and localized EN/VI rendering.',
+  'Verified provider-ordered agent flow: summary-part grouping, streamed call arguments joined to local receipts, run isolation, per-run EN/VI rendering, public display snapshots, metadata-only usage handling and inert trace content.',
 );

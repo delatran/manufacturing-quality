@@ -12,7 +12,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm run verify-ui && npm run build",
-    "verify-ui": "tsx --tsconfig tsconfig.json scripts/verify-stream.tsx && tsx --tsconfig tsconfig.json scripts/verify-agent-flow.tsx && tsx --tsconfig tsconfig.json scripts/verify-conversation-scroll.ts && tsx --tsconfig tsconfig.json scripts/verify-dashboard.tsx && tsx --tsconfig tsconfig.json scripts/verify-operations.tsx && tsx --tsconfig tsconfig.json scripts/verify-subpath.ts",
+    "verify-ui": "tsx --tsconfig tsconfig.json scripts/verify-stream.tsx && tsx --tsconfig tsconfig.json scripts/verify-agent-flow.tsx && tsx --tsconfig tsconfig.json scripts/verify-conversation-scroll.ts && tsx --tsconfig tsconfig.json scripts/verify-conversation-language.tsx && tsx --tsconfig tsconfig.json scripts/verify-answer-presentation.tsx && tsx --tsconfig tsconfig.json scripts/verify-answer-followups.tsx && tsx --tsconfig tsconfig.json scripts/verify-answer-content.tsx && tsx --tsconfig tsconfig.json scripts/verify-answer-reply.tsx && tsx --tsconfig tsconfig.json scripts/verify-dashboard.tsx && tsx --tsconfig tsconfig.json scripts/verify-operations.tsx && tsx --tsconfig tsconfig.json scripts/verify-subpath.ts",
     "preview": "vite preview --host 127.0.0.1"
   },
   "dependencies": {

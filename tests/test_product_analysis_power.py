@@ -315,8 +315,9 @@ def test_analysis_tools_have_nullable_rationale_and_strict_decision_boundaries()
         "analysis_sql",
     ]
     expected_desc = (
-        "One concise sentence explaining why this tool is chosen and which analytical "
-        "hypothesis or decision question it answers."
+        "One concise public sentence in the selected response language explaining why this tool is "
+        "chosen and which analytical hypothesis or decision question it answers. "
+        "Null when no explanation helps; never include private reasoning."
     )
     for name in analysis_tools:
         tool = schemas[name]
@@ -325,6 +326,9 @@ def test_analysis_tools_have_nullable_rationale_and_strict_decision_boundaries()
         assert props["rationale"]["description"] == expected_desc
         assert props["rationale"]["type"] == ["string", "null"]
         assert set(tool["parameters"]["required"]) == set(props)
+        if "plan" in props:
+            assert "selected response language" in props["plan"]["description"]
+            assert "Null for simple questions or later calls" in props["plan"]["description"]
 
     # Decision boundaries check
     assert "analysis_query" in schemas["analysis_sql"]["description"]
@@ -333,10 +337,35 @@ def test_analysis_tools_have_nullable_rationale_and_strict_decision_boundaries()
 
 
 @pytest.mark.asyncio
-async def test_analysis_tools_preserve_rationale_in_output(runtime):
-    test_rationale = "Hypothesis: line 2 defect spike driving warranty impact."
+@pytest.mark.parametrize(
+    "test_plan,test_rationale",
+    [
+        (
+            "Compare logged events and observed repair costs.",
+            "Read the selected scope before comparing lines.",
+        ),
+        (
+            "Đối chiếu sự kiện lỗi và chi phí sửa chữa ghi nhận.",
+            "Kiểm tra phạm vi đã chọn trước khi so sánh các dây chuyền.",
+        ),
+    ],
+)
+async def test_analysis_tools_preserve_visible_language(runtime, test_plan, test_rationale):
+    events = []
+
+    async def emit(kind, data):
+        events.append((kind, data))
+
+    runtime.emit = emit
     actual, context = await runtime.product_tools.call(
         "analysis_query",
-        {"section": "kpis", "filters": filters(), "rationale": test_rationale},
+        {
+            "section": "kpis",
+            "filters": filters(),
+            "plan": test_plan,
+            "rationale": test_rationale,
+        },
     )
     assert actual.get("rationale") == test_rationale
+    assert events == [("todo", {"items": [{"title": test_plan, "status": "in_progress"}]})]
+    assert context == runtime.analysis_context["context"]

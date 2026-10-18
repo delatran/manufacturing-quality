@@ -1,7 +1,21 @@
-import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
+import {
+  Children,
+  createContext,
+  cloneElement,
+  isValidElement,
+  memo,
+  useCallback,
+  useContext,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import type { ReactNode, RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import Markdown from 'react-markdown';
+import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
   Check,
@@ -15,10 +29,14 @@ import {
 } from 'lucide-react';
 import { artifactUrl } from './api';
 import { applicationUrl } from './app-url';
-import { useI18n } from './i18n';
+import { createI18n, useI18n } from './i18n';
+import AnswerCode from './AnswerCode';
+import AnswerChart from './AnswerChart';
+import { remarkAnswerContent } from './answer-markdown';
+import { isAnswerSectionLink, remarkAnswerPresentation } from './answer-presentation';
 import type { WorkspaceEvent } from './types';
 
-import type { Translate } from './i18n';
+import type { Locale, Translate } from './i18n';
 const text = (value: unknown) => (typeof value === 'string' ? value : '');
 const completed = new Set(['completed', 'complete', 'done', 'success']);
 const stopped = new Set([
@@ -89,12 +107,15 @@ export const CitationBadge = memo(function CitationBadge({
   index,
   claimId,
   claims,
+  language,
 }: {
   index: number;
   claimId: string;
   claims?: readonly NumericClaim[];
+  language?: Locale;
 }) {
-  const { locale } = useI18n();
+  const page = useI18n();
+  const locale = language ?? page.locale;
   const [isHovered, setIsHovered] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
   const [copiedField, setCopiedField] = useState<'id' | 'path' | null>(null);
@@ -309,6 +330,7 @@ export const CitationBadge = memo(function CitationBadge({
             style={position}
             className="citation-popover"
             role="dialog"
+            lang={locale}
             tabIndex={-1}
             aria-label={
               isVi
@@ -438,42 +460,59 @@ function localFileLink(value: string): boolean {
   }
 }
 
-// Presentation transforms claims into citation badges and simplifies the number-format note.
-// The event and audited report stay intact.
-export function businessReportText(value: unknown): string {
-  let citationIndex = 0;
-  const citationMap = new Map<string, number>();
-  const numberFormatPrefix =
-    'Định dạng số: dấu chấm phân tách hàng nghìn, dấu phẩy phân tách phần thập phân.';
-  const report = text(value);
-  // Hide only the app-owned leading note; authored mentions later in the report
-  // and the persisted report, claims and delivery evidence remain unchanged.
-  const visibleReport = report.startsWith(numberFormatPrefix)
-    ? report.slice(numberFormatPrefix.length).replace(/^(?:\r?\n)+/, '')
-    : report;
+const legacyNumberNotes = new Set([
+  'Định dạng số: dấu chấm phân tách hàng nghìn, dấu phẩy phân tách phần thập phân.',
+  'Quy ước số để đối chiếu bằng chứng: dấu phẩy phân tách hàng nghìn, dấu chấm phân tách phần thập phân.',
+  'Số trong báo cáo: dấu phẩy tách hàng nghìn, dấu chấm cho phần thập phân.',
+]);
 
-  return visibleReport
-    .split('\n')
-    .filter(
-      (line) =>
-        !(/^(?:https?:\/\/|\/|artifacts\/)/i.test(line.trim()) && localFileLink(line.trim())),
-    )
-    .join('\n')
-    .replace(/^<!-- evidence-table:[a-f0-9]{24}:(?:start|end) -->\r?$/gm, '')
-    .replace(/\s*\[claim:((?:[^[\]]|\[\d+\])+)\]/g, (_match, claimId) => {
-      const trimmed = claimId.trim();
-      let index = citationMap.get(trimmed);
-      if (index === undefined) {
-        citationIndex += 1;
-        index = citationIndex;
-        citationMap.set(trimmed, index);
-      }
-      return ` [${index}](#citation:${index}:${encodeURIComponent(trimmed)})`;
-    })
-    .replace(
-      'Quy ước số để đối chiếu bằng chứng: dấu phẩy phân tách hàng nghìn, dấu chấm phân tách phần thập phân.',
-      'Số trong báo cáo: dấu phẩy tách hàng nghìn, dấu chấm cho phần thập phân.',
-    );
+function withoutLegacyNumberNotes(report: string): string {
+  let removed = false;
+  let fence: { marker: string; quoteDepth: number } | undefined;
+  const visible = report.split('\n').filter((line) => {
+    let content = line;
+    let quoteDepth = 0;
+    // Each quote marker owns at most one following space. Further indentation
+    // belongs to its content and must survive code-block recognition.
+    while (/^ {0,3}>/.test(content)) {
+      content = content.replace(/^ {0,3}> ?/, '');
+      quoteDepth += 1;
+    }
+    if (fence && quoteDepth < fence.quoteDepth) fence = undefined;
+    // Four columns of indentation are authored code, including continued chunks
+    // after blank lines. An indented fence must not change the outer fence state.
+    if (/^(?: {4}| {0,3}\t)/.test(content)) return true;
+    const marker = content.match(/^ {0,3}(`{3,}|~{3,})(.*)$/);
+    if (marker) {
+      if (!fence) fence = { marker: marker[1], quoteDepth };
+      else if (
+        quoteDepth === fence.quoteDepth &&
+        marker[1][0] === fence.marker[0] &&
+        marker[1].length >= fence.marker.length &&
+        !marker[2].trim()
+      )
+        fence = undefined;
+      return true;
+    }
+    if (fence) return true;
+    // Match only entire known app notes, including old Markdown wrappers.
+    // Quoted inline explanations, data cells and authored numerical caveats survive.
+    const candidate = content
+      .trim()
+      .replace(/^(?:#{1,6}\s+|[-+*]\s+)/, '')
+      .replace(/\*\*|__|(?<!\w)[*_]|[*_](?!\w)/g, '')
+      .trim();
+    if (!legacyNumberNotes.has(candidate)) return true;
+    removed = true;
+    return false;
+  });
+  const result = visible.join('\n');
+  return removed ? result.replace(/^(?:[ \t]*\r?\n)+|(?:\r?\n[ \t]*)+$/g, '') : result;
+}
+
+// These are display projections. Persisted reports, claims and receipts stay intact.
+export function businessReportText(value: unknown): string {
+  return withoutLegacyNumberNotes(text(value));
 }
 
 function isTechnicalLink(value: string): boolean {
@@ -488,100 +527,280 @@ function isTechnicalLink(value: string): boolean {
 
 const defaultRemarkPlugins = [remarkGfm];
 
+function reportRowText(value: ReactNode): string {
+  if (typeof value === 'string' || typeof value === 'number') return String(value);
+  if (Array.isArray(value)) return value.map(reportRowText).join(' ');
+  if (!isValidElement<{ children?: ReactNode; href?: string }>(value)) return '';
+  // Evidence badges identify sources, not table values to search.
+  if (value.props.href?.startsWith('#citation:')) return '';
+  return reportRowText(value.props.children);
+}
+
+function searchText(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+    .replace(/đ/g, 'd');
+}
+
+export function filterReportRows(rows: readonly ReactNode[], query: string): readonly ReactNode[] {
+  const terms = searchText(query).trim().split(/\s+/).filter(Boolean);
+  if (!terms.length) return rows;
+  return rows.filter((row) => {
+    const content = searchText(reportRowText(row));
+    return terms.every((term) => content.includes(term));
+  });
+}
+
+function ReportTable({
+  children,
+  language,
+  interactive,
+}: {
+  children?: ReactNode;
+  language: Locale;
+  interactive: boolean;
+}) {
+  const [query, setQuery] = useState('');
+  const searchRef = useRef<HTMLInputElement>(null);
+  const id = useId();
+  const sections = Children.toArray(children);
+  const body = sections.find((section) => isValidElement(section) && section.type === 'tbody');
+  const rows = isValidElement<{ children?: ReactNode }>(body)
+    ? Children.toArray(body.props.children)
+    : [];
+  const searchable = interactive && rows.length >= 6;
+  const visible = searchable ? filterReportRows(rows, query) : rows;
+  const filtering = searchable && query.trim().length > 0;
+  const isVi = language === 'vi';
+  const count = new Intl.NumberFormat(isVi ? 'vi-VN' : 'en-US');
+  const { t } = createI18n(language);
+  return (
+    <div className={searchable ? 'report-table-explorer' : undefined}>
+      {searchable && (
+        <div className="report-table-tools">
+          <label className="report-table-search" htmlFor={`${id}-search`}>
+            <span>{isVi ? 'Tìm trong bảng' : 'Find in table'}</span>
+            <span className="report-table-search-field">
+              <Search size={15} aria-hidden="true" />
+              <input
+                ref={searchRef}
+                id={`${id}-search`}
+                type="search"
+                value={query}
+                placeholder={isVi ? 'Dây chuyền, tháng, nhóm lỗi…' : 'Line, month, defect group…'}
+                aria-controls={`${id}-table`}
+                onChange={(event) => setQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') setQuery('');
+                }}
+              />
+            </span>
+          </label>
+          <output className="report-table-count" aria-live="polite" aria-atomic="true">
+            {filtering
+              ? isVi
+                ? `${count.format(visible.length)}/${count.format(rows.length)} dòng`
+                : `${count.format(visible.length)} of ${count.format(rows.length)} rows`
+              : `${count.format(rows.length)} ${isVi ? 'dòng' : 'rows'}`}
+          </output>
+          {query && (
+            <button
+              type="button"
+              className="report-table-reset"
+              onClick={() => {
+                setQuery('');
+                searchRef.current?.focus();
+              }}
+            >
+              {isVi ? 'Xóa tìm kiếm' : 'Clear search'}
+            </button>
+          )}
+        </div>
+      )}
+      {filtering && !visible.length && (
+        <p className="report-table-empty">
+          {isVi
+            ? 'Không có dòng phù hợp. Thử từ khác hoặc xóa tìm kiếm.'
+            : 'No matching rows. Try another term or clear the search.'}
+        </p>
+      )}
+      <div
+        className="report-table-scroll"
+        tabIndex={0}
+        role="region"
+        aria-label={t('ui.report_data_table')}
+      >
+        <table id={searchable ? `${id}-table` : undefined}>
+          {sections.map((section) =>
+            section === body && isValidElement<{ children?: ReactNode }>(section)
+              ? cloneElement(section, undefined, visible)
+              : section,
+          )}
+        </table>
+      </div>
+    </div>
+  );
+}
+
+type ProseRendering = {
+  report: boolean;
+  chartUrls?: readonly string[];
+  claims?: readonly NumericClaim[];
+  locale: Locale;
+  t: Translate;
+  sectionPrefix: string;
+  prose: RefObject<HTMLDivElement | null>;
+};
+
+const ProseRenderingContext = createContext<ProseRendering | undefined>(undefined);
+
+function useProseRendering(): ProseRendering {
+  const rendering = useContext(ProseRenderingContext);
+  if (!rendering) throw new Error('Markdown rendering requires its answer context');
+  return rendering;
+}
+
+// Keep element types stable while source metadata and other runs are updated.
+// Context supplies current values without remounting local reading controls.
+const proseComponents: Components = {
+  p: ({ children, node }) =>
+    node?.children?.some(
+      (child) =>
+        child.type === 'element' &&
+        (child.tagName === 'img' ||
+          child.children.some((item) => item.type === 'element' && item.tagName === 'img')),
+    ) ? (
+      <div className="answer-chart-paragraph">{children}</div>
+    ) : (
+      <p>{children}</p>
+    ),
+  table: function ProseTable({ children }) {
+    const { locale, report } = useProseRendering();
+    return (
+      <ReportTable language={locale} interactive={report}>
+        {children}
+      </ReportTable>
+    );
+  },
+  a: function ProseLink({ href, children, node }) {
+    const { report, sectionPrefix, prose, claims, locale } = useProseRendering();
+    if (report && isAnswerSectionLink(href, sectionPrefix))
+      return (
+        <a
+          href={href}
+          onClick={(event) => {
+            event.preventDefault();
+            const target = document.getElementById(href.slice(1));
+            if (!target || !prose.current?.contains(target) || !/^H[1-6]$/.test(target.tagName))
+              return;
+            target.focus({ preventScroll: true });
+            target.scrollIntoView({ behavior: 'instant', block: 'start' });
+          }}
+        >
+          {children}
+        </a>
+      );
+    if (href && (href.startsWith('#citation:') || href.startsWith('#claim:'))) {
+      if (node?.properties.dataAnswerCitation !== 'true') return <>{children}</>;
+      const match = href.match(/^#(?:citation|claim):(\d+):(.*)$/);
+      const index = match ? parseInt(match[1], 10) : 1;
+      let rawId = match ? match[2] : href.replace(/^#(?:citation|claim):/, '');
+      try {
+        rawId = decodeURIComponent(rawId);
+      } catch {
+        // Keep malformed authored references inert and unresolved.
+      }
+      return <CitationBadge index={index} claimId={rawId} claims={claims} language={locale} />;
+    }
+    // GFM synthesizes links without source positions after decoding text entities.
+    if (report && !node?.position) return <>{children}</>;
+    if (report && href && isTechnicalLink(href)) return null;
+    if (report && href) {
+      if (localFileLink(href))
+        return node?.children?.some(
+          (child) => child.type === 'element' && child.tagName === 'img',
+        ) ? (
+          <>{children}</>
+        ) : null;
+    }
+    return (
+      <a
+        href={
+          href?.startsWith('#')
+            ? href
+            : href?.startsWith('/')
+              ? applicationUrl(href)
+              : artifactUrl(href) || href
+        }
+        target="_blank"
+        rel="noreferrer"
+      >
+        {children}
+      </a>
+    );
+  },
+  pre: function ProseCode({ children }) {
+    const { locale } = useProseRendering();
+    return <AnswerCode language={locale}>{children}</AnswerCode>;
+  },
+  img: function ProseImage({ src, alt }) {
+    const { report, chartUrls, locale, t } = useProseRendering();
+    const url = artifactUrl(src);
+    if (report && chartUrls !== undefined && (!url || !chartUrls.includes(url))) return null;
+    return url ? (
+      <AnswerChart src={url} alt={alt || t('ui.analysis_chart')} language={locale} />
+    ) : (
+      <span className="report-file-unavailable">
+        {alt || t('ui.chart')}: {t('ui.not_available')}
+      </span>
+    );
+  },
+};
+
 // Markdown keeps HTML inert. Charts are limited to this workspace's files.
 export const Prose = memo(function Prose({
   value,
   report = false,
   chartUrls,
   claims,
+  language,
 }: {
   value: unknown;
   report?: boolean;
   chartUrls?: readonly string[];
   claims?: readonly NumericClaim[];
+  language?: Locale;
 }) {
-  const { t } = useI18n();
-  const components = useMemo(
-    () => ({
-      table: ({ children }: { children?: ReactNode }) => (
-        <div
-          className="report-table-scroll"
-          tabIndex={0}
-          role="region"
-          aria-label={t('ui.report_data_table')}
-        >
-          <table>{children}</table>
-        </div>
-      ),
-      a: ({
-        href,
-        children,
-        node,
-      }: {
-        href?: string;
-        children?: ReactNode;
-        node?: { position?: unknown; children?: Array<{ type: string; tagName?: string }> };
-      }) => {
-        if (href && (href.startsWith('#citation:') || href.startsWith('#claim:'))) {
-          const match = href.match(/^#(?:citation|claim):(\d+):(.*)$/);
-          const index = match ? parseInt(match[1], 10) : 1;
-          let rawId = match ? match[2] : href.replace(/^#(?:citation|claim):/, '');
-          try {
-            rawId = decodeURIComponent(rawId);
-          } catch {
-            // Keep malformed authored references inert and unresolved.
-          }
-          return <CitationBadge index={index} claimId={rawId} claims={claims} />;
-        }
-        // GFM synthesizes links without source positions after decoding text entities.
-        if (report && !node?.position) return <>{children}</>;
-        if (report && href && isTechnicalLink(href)) return null;
-        if (report && href) {
-          if (localFileLink(href))
-            return node?.children?.some(
-              (child) => child.type === 'element' && child.tagName === 'img',
-            ) ? (
-              <>{children}</>
-            ) : null;
-        }
-        return (
-          <a
-            href={
-              href?.startsWith('#')
-                ? href
-                : href?.startsWith('/')
-                  ? applicationUrl(href)
-                  : artifactUrl(href) || href
-            }
-            target="_blank"
-            rel="noreferrer"
-          >
-            {children}
-          </a>
-        );
-      },
-      pre: ({ children }: { children?: ReactNode }) => (report ? null : <pre>{children}</pre>),
-      img: ({ src, alt }: { src?: string; alt?: string }) => {
-        const url = artifactUrl(src);
-        if (report && chartUrls !== undefined && (!url || !chartUrls.includes(url))) return null;
-        return url ? (
-          <img src={url} alt={alt || t('ui.analysis_chart')} loading="lazy" />
-        ) : (
-          <span className="report-file-unavailable">
-            {alt || t('ui.chart')}: {t('ui.not_available')}
-          </span>
-        );
-      },
-    }),
-    [report, chartUrls, t, claims],
+  const page = useI18n();
+  const locale = language ?? page.locale;
+  const { t } = useMemo(() => createI18n(locale), [locale]);
+  const sectionPrefix = useId();
+  const prose = useRef<HTMLDivElement>(null);
+  const rendering = useMemo<ProseRendering>(
+    () => ({ report, chartUrls, claims, locale, t, sectionPrefix, prose }),
+    [report, chartUrls, claims, locale, t, sectionPrefix],
   );
-
   return (
-    <div className="prose">
-      <Markdown remarkPlugins={defaultRemarkPlugins} components={components}>
-        {report ? businessReportText(value) : text(value)}
-      </Markdown>
-    </div>
+    <ProseRenderingContext.Provider value={rendering}>
+      <div className="prose" ref={prose}>
+        <Markdown
+          remarkPlugins={
+            report
+              ? [
+                  ...defaultRemarkPlugins,
+                  [remarkAnswerContent, { isLocalFile: localFileLink }],
+                  [remarkAnswerPresentation, { prefix: sectionPrefix, language: locale }],
+                ]
+              : defaultRemarkPlugins
+          }
+          components={proseComponents}
+        >
+          {report ? businessReportText(value) : text(value)}
+        </Markdown>
+      </div>
+    </ProseRenderingContext.Provider>
   );
 });
 
@@ -658,22 +877,23 @@ export function chartArtifact(event: WorkspaceEvent): boolean {
   );
 }
 
-function ArtifactChart({ event }: { event: WorkspaceEvent }) {
-  const { t } = useI18n();
-  if (!chartArtifact(event)) return null;
+function ArtifactChart({ event, language }: { event: WorkspaceEvent; language: Locale }) {
+  const { t } = createI18n(language);
+  const src = artifactUrl(event.data.url);
+  if (!chartArtifact(event) || !src) return null;
   return (
     <figure className="agent-chart">
-      <img
-        src={artifactUrl(event.data.url)}
+      <AnswerChart
+        src={src}
         alt={text(event.data.description) || t('ui.analysis_chart')}
-        loading="lazy"
+        language={language}
       />
     </figure>
   );
 }
 
-function Activity({ event }: { event: WorkspaceEvent }) {
-  const { t } = useI18n();
+function Activity({ event, language }: { event: WorkspaceEvent; language: Locale }) {
+  const { t } = createI18n(language);
   const state = text(event.data.state) || 'running';
   const isDone = completed.has(state);
   const isStopped = stopped.has(state);
@@ -752,9 +972,18 @@ function Activity({ event }: { event: WorkspaceEvent }) {
   );
 }
 
-export const EventView = memo(function EventView({ event }: { event: WorkspaceEvent }) {
-  const { t } = useI18n();
+export const EventView = memo(function EventView({
+  event,
+  language,
+}: {
+  event: WorkspaceEvent;
+  language?: Locale;
+}) {
+  const page = useI18n();
   const d = event.data || {};
+  const locale =
+    language ?? (d.language === 'en' || d.language === 'vi' ? d.language : page.locale);
+  const { t } = useMemo(() => createI18n(locale), [locale]);
   if (event.type === 'message') {
     const user = d.role === 'user';
     const qa =
@@ -769,7 +998,7 @@ export const EventView = memo(function EventView({ event }: { event: WorkspaceEv
       : undefined;
     const claims = Array.isArray(d.claims) ? (d.claims as NumericClaim[]) : undefined;
     return (
-      <article className={user ? 'message user-message' : 'message analyst-message'}>
+      <article className={user ? 'message user-message' : 'message analyst-message'} lang={locale}>
         <EventLabel
           icon={
             user ? (
@@ -799,11 +1028,17 @@ export const EventView = memo(function EventView({ event }: { event: WorkspaceEv
             {t('ui.draft_some_figures_still_need_checking_review_before_acting_on_th')}
           </p>
         )}
-        <Prose value={d.text ?? d.content} report={!user} chartUrls={chartUrls} claims={claims} />
+        <Prose
+          value={d.text ?? d.content}
+          report={!user}
+          chartUrls={chartUrls}
+          claims={claims}
+          language={locale}
+        />
       </article>
     );
   }
-  if (event.type === 'activity') return <Activity event={event} />;
+  if (event.type === 'activity') return <Activity event={event} language={locale} />;
   if (event.type === 'tool') {
     if (/^(?:memory_|todo_|knowledge_)/.test(text(d.name))) return null;
     const status = text(d.status);
@@ -820,7 +1055,7 @@ export const EventView = memo(function EventView({ event }: { event: WorkspaceEv
       </div>
     );
   }
-  if (event.type === 'artifact') return <ArtifactChart event={event} />;
+  if (event.type === 'artifact') return <ArtifactChart event={event} language={locale} />;
   if (event.type === 'artifact_group') return null;
   if (event.type === 'error')
     return (

@@ -88,11 +88,13 @@ def seed_memory(root: Path, memory: AnalystMemory) -> int:
             "case.heuristic.cost_coverage",
             "data_quality",
             "Cost coverage awareness: unrecorded repair costs represent high-uncertainty events, "
-            "not zero cost. When defect records omit repair cost values, analysts and systems must "
-            "explicitly report valid observed cost coverage metrics and preserve the unknown status rather than "
+            "not zero cost. When reporting repair-cost totals, cost comparisons or financial "
+            "implications, explicitly report valid observed cost coverage metrics and preserve "
+            "the unknown status rather than "
             "imputing zero or treating missing costs as free repairs. Unrecorded events carry latent "
             "operational and financial risk, and financial impact analyses must communicate this "
-            "uncertainty to avoid misdirecting capital allocation.",
+            "uncertainty to avoid misdirecting capital allocation. Do not repeat this financial "
+            "caveat in unrelated greetings, definitions or capability explanations.",
         ),
         (
             "case.heuristic.gemba_action",
@@ -104,6 +106,18 @@ def seed_memory(root: Path, memory: AnalystMemory) -> int:
             "Analysts must partner with Shift Leads and machine operators to cross-reference data "
             "findings against physical tooling wear, shift transitions, material lots, and "
             "environmental variations before enacting corrective actions.",
+        ),
+        (
+            "case.reporting.adaptive_response",
+            "report_preference",
+            "Answer the current question directly, in the selected response language, with "
+            "detail proportional to the request. Plain prose can complete a simple question. "
+            "Use a compact evidence-bound table for comparisons or a registered inline chart "
+            "for relevant patterns when that format improves understanding. Do not force "
+            "visuals, interactive widgets, an executive template or an investigation into every "
+            "answer. Explain material uncertainty where it affects the decision. Preserve "
+            "locale-appropriate numeric formatting without appending a routine number-format "
+            "legend; explain notation only when the user asks about it.",
         ),
     ]
     for key, content in registry.get("adopted_assumptions", {}).items():

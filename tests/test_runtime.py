@@ -440,7 +440,7 @@ def test_live_sdk_qa_retry_retains_tool_outputs_and_omits_app_display_note(tmp_p
             assert len(qa_inputs) == 2 and all(
                 VI_NUMBER_NOTE not in item["report"] for item in qa_inputs
             )
-            assert result["report"].count(VI_NUMBER_NOTE) == 1
+            assert VI_NUMBER_NOTE not in result["report"]
             assert result["qa"]["suggestions"] == ["A shorter title may read better."]
             assert any(
                 item.get("type") == "function_call_output"
@@ -1068,5 +1068,72 @@ def test_qualitative_reply_verifies_frozen_scope_without_model_repair(tmp_path, 
             assert "run_case_study" not in {e["tool"] for e in tools.ledger.records()}
         finally:
             await tools.close()
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize(
+    ("language", "report", "expected"),
+    [
+        ("en", "The selected data needs further review before any action.", "completed"),
+        ("en", "Dữ liệu đang chọn cần được kiểm tra trước khi đề xuất hành động.", "unverified"),
+        ("vi", "Dữ liệu đang chọn cần được kiểm tra trước khi đề xuất hành động.", "completed"),
+        ("vi", "The selected data needs further review before any action.", "unverified"),
+    ],
+)
+def test_authored_reply_language_is_checked_before_accepting_semantic_qa(
+    tmp_path, language, report, expected
+):
+    async def scenario():
+        toolkit = AnalystTools(tmp_path / "run", [], memory_enabled=False)
+        events = []
+
+        class LanguageModel(Model):
+            def __init__(self, role):
+                self.role, self.history, self.usage = role, [], []
+
+            async def get_response(self, *args, **kwargs):
+                output = (
+                    {"verified": True, "errors": [], "suggestions": []}
+                    if self.role == "QA Verifier"
+                    else {"report": report}
+                )
+                return ModelResponse(
+                    output=[_message(json.dumps(output))],
+                    usage=Usage(requests=0),
+                    response_id=self.role,
+                )
+
+            async def stream_response(self, *args, **kwargs):
+                raise NotImplementedError
+                yield
+
+        runtime = AnalystRuntime(
+            Settings(
+                mode="live",
+                api_key="offline-test",
+                unbounded_runs=False,
+                qa_max_retries=0,
+                memory_enabled=False,
+            ),
+            toolkit,
+            lambda kind, data: events.append((kind, data)),
+            language=language,
+        )
+        runtime.model = LanguageModel
+        try:
+            result = await runtime.run("Review the available data.")
+            assert result["status"] == expected, result["qa"]
+            assert result["language"] == language
+            assert all(data["language"] == language for _, data in events)
+            if expected == "unverified":
+                assert not result["qa"]["verified"]
+                assert any("response language" in error for error in result["qa"]["errors"])
+                assert result["report"] == ""
+            else:
+                assert result["qa"]["verified"]
+                assert result["report"] == report
+        finally:
+            await toolkit.close()
 
     asyncio.run(scenario())

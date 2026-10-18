@@ -54,6 +54,7 @@ from .agent_views import (
     ranking_values,
     source_projection,
 )
+from .chart_views import create_chart_view, validate_chart_view
 from .claim_feedback import (
     citation_rows,
     numeric_role,
@@ -65,11 +66,11 @@ from .claim_feedback import (
 )
 from .evidence import EvidenceLedger, canonical, numeric_values, sha256
 from .localization import (
-    VI_NUMBER_NOTE,
     display_number,
     localize_report,
     normalize_language,
     report_number_format,
+    text_language,
     translate_text,
     vietnamese_metadata,
 )
@@ -171,9 +172,6 @@ _LABEL_FIELDS = {
 }
 _DATE_FIELDS = _LABEL_FIELDS - {"production_line", "category", "product_name"}
 _DRAFT_NARRATIVE_FIELDS = {"title", "description", "proposed_owner", "action_plan"}
-_VI_BUSINESS_NUMBER_NOTE = (
-    "Số trong báo cáo dùng dấu chấm tách hàng nghìn và dấu phẩy cho phần thập phân."
-)
 _MARKDOWN_LINK = re.compile(r"!?\[([^\]\n]*)\]\(([^)\n]+)\)")
 _HTTP_LINK = re.compile(r"https?://[^\s<>`]+", re.IGNORECASE)
 _AUTO_SCOPE = object()
@@ -280,16 +278,83 @@ def scenario_evidence(result):
     return output
 
 
-def source_schema_evidence(entries):
+def source_schema_evidence(entries, ledger=None):
     """Column names/types establish available inputs, never computed conclusions."""
     output = []
+    sealed = {}
+    if ledger is not None:
+        records = ledger.records()
+        if not ledger.verify_integrity(records):
+            sealed = {entry["execution_id"]: canonical(entry) for entry in records}
     for entry in entries:
         result = entry.get("result", {})
+        if not isinstance(result, dict) or result.get("ok") is False:
+            continue
         if (
-            entry.get("tool") != "dataset_profiler"
-            or not isinstance(result, dict)
-            or result.get("ok") is False
+            entry.get("tool") in {"dashboard_context", "dashboard_compare_scope"}
+            and entry.get("execution_kind") == "canonical_receipt_import"
+            and sealed.get(entry.get("execution_id")) == canonical(entry)
         ):
+            try:
+                context, analysis, _ = AnalystRuntime.validate_analysis_context(
+                    {
+                        "context": entry.get("analysis_context"),
+                        "analysis": result,
+                        "evidence": entry,
+                    }
+                )
+                upstream = entry["canonical_receipt"]
+                if any(
+                    upstream[key] != entry[key]
+                    for key in ("execution_id", "code_sha256", "result_sha256")
+                ):
+                    continue
+                metadata = analysis["metadata"]
+                schema = metadata.get("source_schema", {})
+                if not isinstance(schema, dict):
+                    continue
+                observed = schema.get("observed_field_types")
+                if (
+                    schema.get("container") != "array"
+                    or type(schema.get("row_count")) is not int
+                    or schema["row_count"] <= 0
+                    or not isinstance(observed, dict)
+                    or not observed
+                    or any(
+                        not isinstance(name, str)
+                        or not isinstance(types, list)
+                        or not types
+                        or any(not isinstance(value, str) for value in types)
+                        for name, types in observed.items()
+                    )
+                ):
+                    continue
+                output.append(
+                    {
+                        **{
+                            key: entry[key]
+                            for key in (
+                                "execution_id",
+                                "entry_sha256",
+                                "code_sha256",
+                                "result_sha256",
+                            )
+                        },
+                        "name": "Frozen HTTP defect source",
+                        "path": "$.metadata.source_schema",
+                        "context": context,
+                        "source_sha256": metadata["source_sha256"],
+                        "coverage": "complete_observed_top_level_fields",
+                        "scope_note": "Union of observed top-level fields over every received HTTP record before cleaning and event filters. This inventory does not establish nested fields, external sources or the product master's complete schema.",
+                        "row_count": schema["row_count"],
+                        "columns": [
+                            {"name": name, "types": types} for name, types in observed.items()
+                        ],
+                    }
+                )
+            except (KeyError, TypeError, ValueError):
+                continue
+        if entry.get("tool") != "dataset_profiler":
             continue
         datasets = result.get("datasets", {})
         items = (
@@ -1654,7 +1719,6 @@ def render_business_report(
     reference_numbers = {identity: index for index, identity in enumerate(visible, 1)}
     reference_counts: dict[str, int] = {}
     clean = markdown
-    clean = clean.replace(VI_NUMBER_NOTE, _VI_BUSINESS_NUMBER_NOTE, 1)
     language = normalize_language(language)
     title = "Báo cáo chất lượng" if language == "vi" else "Quality analysis"
     allowed_links = set(verified_links or ())
@@ -1983,6 +2047,7 @@ class AnalystRuntime:
         *,
         steering=None,
         initial_items=None,
+        referenced_presentation=None,
         analysis_context=None,
         analysis_service=None,
         language="en",
@@ -1997,6 +2062,10 @@ class AnalystRuntime:
         async def _safe_emit(event: str, data: Any = None) -> Any:
             if self._raw_emit is None:
                 return None
+            if isinstance(data, dict):
+                data = {**data, "language": self.language}
+                if event in {"reasoning_summary", "reasoning_part"}:
+                    data = self.public_summary_event(data)
             res = self._raw_emit(event, data) if data is not None else self._raw_emit(event)
             if inspect.isawaitable(res):
                 return await res
@@ -2006,6 +2075,9 @@ class AnalystRuntime:
         self.settings, self.toolkit = settings, toolkit
         self.steering = steering
         self.initial_items = initial_items or []
+        # Supplied only by the server's authenticated answer-reference resolver.
+        # This historical view metadata supplies no current measurement authority.
+        self.referenced_presentation = json.loads(canonical(referenced_presentation or []))
         self.prompt = ""
         self.simulation = settings.mode == "mock"
         self.budget = {"cost_usd": 0.0}
@@ -2034,6 +2106,7 @@ class AnalystRuntime:
         self.context_entry = None
         self.comparison_entries = []
         self._language = normalize_language(language)
+        self._public_summary_parts: dict[tuple, str] = {}
         if action_intent not in {"none", "draft_create", "draft_update"}:
             raise ValueError("Unsupported action intent")
         self._action_intent = action_intent
@@ -2046,6 +2119,7 @@ class AnalystRuntime:
         self.claim_identities = {}
         self.claim_namespace = uuid.uuid4().hex[:8]
         self.delivery_bindings = {}
+        self.delivery_chart_bindings = {}
         self.delivery_audit = {"verified": True, "errors": [], "artifacts": []}
         self.state_store, self.ui_handler = state_store, ui_handler
         self.product_tools = ProductTools(self)
@@ -2287,13 +2361,14 @@ class AnalystRuntime:
     def begin_delivery_proposal(self, report):
         """A new QA proposal may bind repaired files; an active one may not."""
         self.delivery_bindings = {}
+        self.delivery_chart_bindings = {}
         self.delivery_audit = {"verified": True, "errors": [], "artifacts": []}
         return self.delivery_packet(report, bind=True)
 
     def delivery_packet(self, report, *, bind=False, narrative_audit=None):
         """Bind selected paths once, then fail closed on manifest or file drift."""
         inventory = {item["path"]: item for item in self.toolkit.ledger.artifacts()}
-        selected, errors = [], []
+        selected, errors, charts = [], [], []
         artifact_sources = {
             entry["result"]["artifact"]["path"]: entry
             for entry in self.toolkit.ledger.records()
@@ -2331,6 +2406,24 @@ class AnalystRuntime:
                 current = inventory.get(path)
                 if current is None:
                     raise ValueError("Selected artifact is not registered in this run")
+                source_chart = None
+                if current.get("kind") == "source_chart" or PurePosixPath(path).name.startswith(
+                    "source-chart-"
+                ):
+                    chart_entry = self.verify_chart_receipt(path, current)
+                    chart_result = chart_entry["result"]
+                    source_chart = {
+                        "receipt_id": chart_entry["execution_id"],
+                        "artifact": chart_result["artifact"],
+                        "chart": chart_result["chart"],
+                        "source_claims": chart_result["source_claims"],
+                    }
+                    if bind and path not in self.delivery_chart_bindings:
+                        self.delivery_chart_bindings[path] = json.loads(canonical(source_chart))
+                    if self.delivery_chart_bindings.get(path) != source_chart:
+                        raise ValueError(
+                            "Selected chart binding changed after its delivery binding"
+                        )
                 fields = (
                     "path",
                     "name",
@@ -2370,7 +2463,10 @@ class AnalystRuntime:
                 ):
                     raise ValueError("Selected artifact bytes changed after its delivery binding")
                 selected.append(dict(frozen))
-            except (OSError, KeyError, TypeError, ValueError) as error:
+                if source_chart is not None:
+                    charts.append(source_chart)
+                    artifact_source_ids.add(source_chart["chart"]["source"]["execution_id"])
+            except (OSError, KeyError, IndexError, TypeError, ValueError) as error:
                 errors.append(f"Delivery {path}: {error}")
         visible = set(_CITATION.findall(report.report))
         source_ids = {claim.execution_id for claim in report.claims if claim.id in visible}
@@ -2422,6 +2518,7 @@ class AnalystRuntime:
             "artifacts": selected,
             "source_execution_ids": sorted(source_ids),
             "source_tables": list(bindings.values()),
+            "source_charts": charts,
             "scope": business_scope(self.toolkit.ledger, source_execution_ids=source_ids)
             if source_manifest.get("status") != "unavailable"
             else None,
@@ -2517,6 +2614,47 @@ class AnalystRuntime:
     @property
     def language(self):
         return self._language
+
+    def public_summary_event(self, data):
+        """Keep public provider text for audit and project a language-safe status.
+
+        Display snapshots replace one whole summary part. They never reinterpret
+        tiny deltas separately or present a generic task status as a translation.
+        The provider's original fields and item identities remain unchanged.
+        """
+        session = data.get("provider_session_id") or data.get("session_id")
+        turn = data.get("provider_turn_id") or data.get("turn_id") or data.get("response_id")
+        item = (
+            ("item", data["item_id"])
+            if data.get("item_id") is not None
+            else ("output", data.get("output_index"))
+        )
+        key = (session, turn, item, data.get("summary_index", 0))
+        # Legacy fixture events have no stable part identity. Treat them as
+        # standalone messages instead of merging unrelated agents' summaries.
+        identified = any(value is not None for value in (session, turn, item[1]))
+        previous = self._public_summary_parts.get(key, "") if identified else ""
+        if isinstance(data.get("delta"), str):
+            text = previous + data["delta"]
+        elif isinstance(data.get("text"), str) and data["text"]:
+            text = data["text"]
+        else:
+            text = previous
+        if identified:
+            self._public_summary_parts[key] = text
+        matches_language = text_language(text) == self.language
+        fallback = (
+            "Đang xem xét yêu cầu và bằng chứng để chuẩn bị câu trả lời."
+            if self.language == "vi"
+            else "Reviewing the request and evidence to prepare the answer."
+        )
+        return {
+            **data,
+            "display_text": text if matches_language else fallback,
+            "display_mode": "snapshot",
+            "display_localized": not matches_language,
+            "display_source": "provider_summary" if matches_language else "task_status",
+        }
 
     @property
     def action_intent(self):
@@ -2891,8 +3029,19 @@ class AnalystRuntime:
             "analysis_export",
             "todo_planner",
             "memory_recall",
+            "report_chart",
         }:
             numbers = []
+        if entry["tool"] == "report_chart":
+            # A rendered view copies source cells, never creates new measurements.
+            visible = {key: result[key] for key in ("ok", "error") if key in result}
+            if result.get("ok") is True:
+                visible.update(
+                    path=result["artifact"]["path"],
+                    chart_id=result["chart"]["id"],
+                    selection=result["chart"]["selection"],
+                    source_receipt_id=result["chart"]["source"]["execution_id"],
+                )
         uncitable_keys = False
         if not self.simulation and is_product_entry(entry):
             original_paths = Counter(number["path"] for number in numeric_values(result))
@@ -3177,6 +3326,95 @@ class AnalystRuntime:
             "placeholder": "[table:" + binding["id"] + "]",
             "markdown": view["markdown"],
         }
+
+    def report_chart_code(self):
+        """Retain the exact selector, renderer, glossary and issuing implementation."""
+        return "\n".join(
+            (
+                inspect.getsource(self.report_chart),
+                inspect.getsource(table_selection),
+                inspect.getsource(table_source_text),
+                tool_code(),
+            )
+        )
+
+    def report_chart(self, arguments):
+        """Render only selected original source cells and preserve their claim IDs."""
+        result = create_chart_view(
+            self.toolkit.ledger,
+            arguments,
+            language=self.language,
+            select_rows=table_selection,
+        )
+        chart = result["chart"]
+        source = next(
+            entry
+            for entry in self.toolkit.ledger.records()
+            if entry["execution_id"] == chart["source"]["execution_id"]
+        )
+        _, selected = table_selection(
+            source,
+            {
+                **{key: chart["selection"][key] for key in ("path", "offset", "limit")},
+                "columns": [chart["selection"]["x"], chart["selection"]["y"]],
+            },
+        )
+        self.model_receipt(source, selected)
+        claims = [
+            self.claim_catalog[self.claim_identities[(source["execution_id"], point["value_path"])]]
+            for point in chart["points"]
+            if point["value"] is not None
+        ]
+        return {**result, "source_claims": [claim.model_dump() for claim in claims]}
+
+    def verify_chart_receipt(self, path, artifact):
+        """Check a selected image against its sealed view and original source cells."""
+        records = self.toolkit.ledger.records()
+        if errors := self.toolkit.ledger.verify_integrity(records):
+            raise ValueError("Source-chart ledger integrity failed: " + "; ".join(errors))
+        entry = next(
+            (
+                item
+                for item in reversed(records)
+                if item["tool"] == "report_chart"
+                and isinstance(item.get("result"), dict)
+                and item.get("result", {}).get("ok") is True
+                and item["result"].get("artifact", {}).get("path") == path
+            ),
+            None,
+        )
+        if entry is None:
+            raise ValueError("Source chart requires a successful sealed report_chart receipt")
+        result = entry["result"]
+        if (
+            entry["code_sha256"] != sha256(self.report_chart_code())
+            or result["artifact"] != artifact
+            or artifact.get("kind") != "source_chart"
+            or path != "artifacts/source-chart-" + result["chart"]["id"] + ".png"
+        ):
+            raise ValueError(
+                "Source-chart artifact or renderer differs from its successful receipt"
+            )
+        registered = next(
+            (item for item in self.toolkit.ledger.artifacts() if item["path"] == path), None
+        )
+        if registered != artifact:
+            raise ValueError("Source-chart registry differs from its successful receipt")
+        target = self.toolkit.ledger.resolve_artifact(path)
+        if target.stat().st_size != artifact["size_bytes"]:
+            raise ValueError("Source-chart bytes differ from its successful receipt")
+        chart = result["chart"]
+        validate_chart_view(self.toolkit.ledger, chart, select_rows=table_selection)
+        expected_claims = [
+            self.claim_catalog[
+                self.claim_identities[(chart["source"]["execution_id"], point["value_path"])]
+            ].model_dump()
+            for point in chart["points"]
+            if point["value"] is not None
+        ]
+        if result["source_claims"] != expected_claims:
+            raise ValueError("Source-chart claim identities differ from the original source cells")
+        return entry
 
     async def operation(self, name, arguments):
         if self.operations_service is None or self.analysis_context is None:
@@ -3758,6 +3996,33 @@ class AnalystRuntime:
                         for claim in binding["claims"]
                     ],
                 }
+        elif name == "report_chart":
+            try:
+                result = self.report_chart(arguments)
+            except Exception as error:
+                result = {"ok": False, "error": f"{type(error).__name__}: {error}"}
+            entry = self.toolkit.ledger.record(name, self.report_chart_code(), result)
+            if result.get("ok") is True:
+                chart = result["chart"]
+                model_view = {
+                    "receipt_id": entry["execution_id"],
+                    "tool": name,
+                    "result": {
+                        "ok": True,
+                        "chart_id": chart["id"],
+                        "path": result["artifact"]["path"],
+                        "kind": chart["kind"],
+                        "selection": chart["selection"],
+                        "source_receipt_id": chart["source"]["execution_id"],
+                        "unit_note": chart["unit_note"],
+                        "rows_total": chart["rows_total"],
+                        "rows_returned": chart["rows_returned"],
+                    },
+                    "numeric_evidence": [
+                        {key: claim[key] for key in ("id", "path", "value")}
+                        for claim in result["source_claims"]
+                    ],
+                }
         elif name == "dashboard_date_sensitivity":
             try:
                 if arguments:
@@ -3934,6 +4199,34 @@ class AnalystRuntime:
                     "additionalProperties": False,
                 },
                 on_invoke_tool=table_invoke,
+                strict_json_schema=True,
+            )
+        )
+
+        async def chart_invoke(context, arguments):
+            return await self.invoke_tool(
+                "report_chart", json.loads(arguments), context.tool_call_id
+            )
+
+        result.append(
+            FunctionTool(
+                name="report_chart",
+                description="Create a real source-bound inline PNG chart from an original record-list path in a successful receipt. Choose exact x label and y measurement column keys, bar or line, and an explicit source page. The backend preserves original order and null gaps without aggregation or invented values. Select the returned exact path in chart_paths; this is an in-chat image, not a result export. Its numeric evidence keeps the original source paths and claim IDs.",
+                params_json_schema={
+                    "type": "object",
+                    "properties": {
+                        "receipt_id": {"type": "string"},
+                        "path": {"type": "string"},
+                        "x": {"type": "string"},
+                        "y": {"type": "string"},
+                        "kind": {"type": "string", "enum": ["bar", "line"]},
+                        "offset": {"type": "integer", "minimum": 0},
+                        "limit": {"type": "integer", "minimum": 1, "maximum": 100},
+                    },
+                    "required": ["receipt_id", "path", "x", "y", "kind", "offset", "limit"],
+                    "additionalProperties": False,
+                },
+                on_invoke_tool=chart_invoke,
                 strict_json_schema=True,
             )
         )
@@ -4519,7 +4812,12 @@ result
             entry["execution_id"]: entry
             for entry in self.toolkit.ledger.records()
             if entry["tool"]
-            not in {"draft_semantic_review", "report_semantic_review", "report_table"}
+            not in {
+                "draft_semantic_review",
+                "report_semantic_review",
+                "report_table",
+                "report_chart",
+            }
         }
         receipt_bindings = {
             (
@@ -4818,9 +5116,33 @@ result
                 errors.append("Delivered source-table binding changed before semantic QA")
             else:
                 table_support.append(view["support"])
+        chart_support = []
+        for source_chart in delivery.get("source_charts", []):
+            try:
+                artifact = source_chart["artifact"]
+                entry = self.verify_chart_receipt(artifact["path"], artifact)
+                expected = {
+                    "receipt_id": entry["execution_id"],
+                    **{key: entry["result"][key] for key in ("artifact", "chart", "source_claims")},
+                }
+                if source_chart != expected:
+                    raise ValueError("Delivered source-chart binding changed before semantic QA")
+                chart_support.append(expected)
+            except (OSError, KeyError, IndexError, TypeError, ValueError) as error:
+                errors.append("Source-chart verification failed before semantic QA: " + str(error))
         ui_backend_code = tool_code()
         ui_receipts_intact = not self.toolkit.ledger.verify_integrity()
         return {
+            **(
+                {
+                    "referenced_presentation": {
+                        "evidence_status": "Historical presentation context only; verify measurements with current-run receipts. No prior numeric claims, artifacts or action authority are imported.",
+                        "charts": self.referenced_presentation,
+                    }
+                }
+                if self.referenced_presentation
+                else {}
+            ),
             **(
                 {"canonical_definitions": self.source_definitions()}
                 if self.source_definitions()
@@ -4830,6 +5152,7 @@ result
             "ancestor_contexts": ancestor_contexts,
             "qualitative_support": qualitative,
             "table_support": table_support,
+            "chart_support": chart_support,
             "delivery": {
                 **delivery,
                 "source_manifest": {
@@ -4841,7 +5164,7 @@ result
             "verified_artifacts": [
                 {**artifact, "file_hash_verified": True} for artifact in delivery["artifacts"]
             ],
-            "source_schemas": source_schema_evidence(entries.values()),
+            "source_schemas": source_schema_evidence(entries.values(), self.toolkit.ledger),
             "source_catalog": self.source_catalog(),
             "verified_links": self.verified_links(delivery),
             "saved_draft_content": saved_content,
@@ -4906,7 +5229,10 @@ result
                 {
                     "state": "unavailable",
                     "reason": "missing_api_key",
-                    "label": "AI is unavailable because no API key is configured. Dashboard, scenarios, evidence and exports remain available.",
+                    "label": translate_text(
+                        "AI is unavailable because no API key is configured. Dashboard, scenarios, evidence and exports remain available.",
+                        self.language,
+                    ),
                 },
             )
             return {
@@ -4920,10 +5246,13 @@ result
                 "cost_usd": 0,
                 "elapsed_seconds": time.monotonic() - started,
                 "simulation": False,
+                "language": self.language,
+                "report_number_format": report_number_format(self.language),
             }
         turn1_effort = self.settings.reasoning_effort
         self.reasoning_effort = turn1_effort
         run_metadata = {
+            "question": prompt,
             "simulation": self.simulation,
             "model": self.settings.model,
             "runtime": ("OpenAI Agents API" if not self.simulation else "OpenAI Agents SDK"),
@@ -5016,8 +5345,6 @@ result
                 self.toolkit.ledger,
                 self.language,
             )
-            if self.language == "vi" and VI_NUMBER_NOTE not in output.report:
-                output.report = VI_NUMBER_NOTE + "\n\n" + output.report
             self.last_report = output
             audit = self.audit_report(output)
             inventory = {item["path"]: item for item in self.toolkit.ledger.artifacts()}
@@ -5097,11 +5424,12 @@ result
             qa_evidence, artifact_errors = self.qa_evidence(output, delivery=delivery)
             audit["errors"].extend(artifact_errors)
             audit["verified"] = not audit["errors"]
-            if self.language == "vi" and not re.search(
-                r"[À-ỹĐđ]", output.report.replace(VI_NUMBER_NOTE, "")
-            ):
+            authored_language = text_language(semantic_report)
+            if authored_language is not None and authored_language != self.language:
                 audit["errors"].append(
-                    "The report does not use the selected Vietnamese response language"
+                    "The report does not use the selected "
+                    + ("Vietnamese" if self.language == "vi" else "English")
+                    + " response language"
                 )
                 audit["verified"] = False
             qa_input = {

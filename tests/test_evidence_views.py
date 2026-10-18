@@ -582,11 +582,13 @@ def test_qa_receives_actual_zero_null_availability_and_workbook_delivery(tmp_pat
     assert result["workbook_delivery"] == delivery
 
 
-def test_business_html_changes_only_the_exact_known_number_note(tmp_path):
+def test_business_html_preserves_authored_number_note_without_rewriting_it(tmp_path):
     from analyst.localization import VI_NUMBER_NOTE
 
     prose = VI_NUMBER_NOTE + "\n\nNội dung gốc vẫn được giữ nguyên."
     report = AnalystReport(report=prose, claims=[])
     html = render_business_report(report.report, language="vi")
-    assert "Số trong báo cáo dùng dấu chấm tách hàng nghìn và dấu phẩy cho phần thập phân." in html
-    assert VI_NUMBER_NOTE not in html and report.report == prose
+    assert VI_NUMBER_NOTE in html and report.report == prose
+    assert (
+        "Số trong báo cáo dùng dấu chấm tách hàng nghìn và dấu phẩy cho phần thập phân." not in html
+    )

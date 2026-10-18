@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 
 LANGUAGES = ("en", "vi")
 REPORT_NUMBER_FORMAT = "en-US"
@@ -29,11 +30,149 @@ def request_language(body):
     return normalize_language(body.get("language", body.get("locale", "en")))
 
 
+def _language_prose(text):
+    """Ignore quoted/source syntax when identifying the surrounding request."""
+    text = re.sub(r"(?m)^(?: {0,3}>| {4}| {0,3}\t).*$", " ", str(text))
+    text = re.sub(r"```[\s\S]*?(?:```|$)|`[^`\n]*`", " ", text)
+    text = re.sub(r"\[claim:[^\]]*\]|https?://\S+", " ", text)
+    text = re.sub(
+        r"(?<![\w$])(?:"
+        r"(?:[A-Za-z]:)?[\w.$-]*(?:[/\\][\w.$\[\]-]+)+"
+        r"|[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*|\[(?:\d+|'[^'\n]+'|\"[^\"\n]+\")\])+"
+        r"|(?=[A-Za-z0-9_$]*(?:_|\d|[a-z][A-Z]))[A-Za-z_$][A-Za-z0-9_$]*"
+        r")(?![\w$])",
+        " ",
+        text,
+    )
+    text = re.sub(r'"[^"\n]*"|“[^”\n]*”|‘[^’\n]*’|(?<!\w)\'[^\'\n]*\'(?!\w)', " ", text)
+    return text
+
+
+def _plain_language_text(text):
+    return "".join(
+        char
+        for char in unicodedata.normalize("NFKD", text.casefold().replace("đ", "d"))
+        if not unicodedata.combining(char)
+    )
+
+
+_VI_REQUEST_PHRASES = re.compile(
+    r"\b(?:du lieu|so lieu|su kien|chi phi|so sanh|phan tich|tom tat|dieu tra|"
+    r"kiem tra|giai thich|bao cao|hien thi|cho toi|cho minh|giup toi|giup minh|"
+    r"tai sao|vi sao|the nao|bao nhieu|la gi|loi nay|loi nghiem trong|"
+    r"nguyen nhan|de xuat|khuyen nghi|hanh dong|canh bao|bo loc|pham vi|"
+    r"con nhom|hoan tac|kha nang|tra loi|tieng viet|tieng anh)\b"
+)
+_VI_ACCENT_WORDS = frozenset(
+    "đang đã được có không chưa cần hãy tôi mình bạn nào gì vì sao thì và hoặc "
+    "với của cho từ đến giữa những các này đó trong trên dưới hơn nhất nhiều ít "
+    "nhóm tháng năm dữ liệu lỗi sự kiện số chi phí giá trị tỷ lệ kết quả bảng "
+    "biểu đồ kiểm chứng bằng nguồn phân tích giải thích yêu cầu phản hồi tiếp "
+    "tục ngắn gọn thêm sửa đổi xem xét chuẩn bị xử lý báo cáo hoàn tất".split()
+)
+_EN_LANGUAGE_WORDS = frozenset(
+    "the a an is are was were be been being do does did can could would should "
+    "will what which why how where when who whose this that these those it its "
+    "they their them we our you your i me my please show compare explain "
+    "summarize summarise analyze analyse investigate prepare give tell check "
+    "review describe find list rank identify calculate define mean means cost "
+    "costs evidence hypothesis priorities question answer report results "
+    "analysis data source sources missing unknown available verify verified "
+    "checking reviewing preparing with without from for of to in on by at "
+    "and or but than more less most least highest lowest only first last "
+    "use using keep change filter filters scope continue shorter longer "
+    "trend trends month months monthly event events defect defects repair "
+    "critical count counts quality total rate share observed dashboard".split()
+)
+_AMBIGUOUS_FOLLOWUPS = frozenset(
+    {
+        "ok",
+        "okay",
+        "yes",
+        "no",
+        "sure",
+        "go on",
+        "continue",
+        "next",
+        "more",
+        "shorter",
+        "longer",
+        "again",
+        "thanks",
+        "thank you",
+        "tiep",
+        "tiep tuc",
+        "duoc",
+        "roi",
+        "uh",
+        "u",
+    }
+)
+
+
+def text_language(text):
+    """Return a supported language only when prose supplies a clear signal.
+
+    This local classifier has no model calls. Short acknowledgements, identifiers,
+    code and quoted labels intentionally remain undecided so the caller can keep
+    the conversation's last question language.
+    """
+    prose = _language_prose(text)
+    words = re.findall(r"[^\W\d_]+", prose.casefold(), re.UNICODE)
+    if not words:
+        return None
+    normalized = _plain_language_text(prose)
+    if re.sub(r"[^\w\s]", "", normalized).strip() in _AMBIGUOUS_FOLLOWUPS:
+        return None
+    accented = sum(word in _VI_ACCENT_WORDS for word in words)
+    phrases = len(_VI_REQUEST_PHRASES.findall(normalized))
+    english = sum(word in _EN_LANGUAGE_WORDS for word in words)
+    vietnamese = accented + phrases * 3
+    if vietnamese and vietnamese >= english:
+        return "vi"
+    if english >= 2 or (english and not vietnamese):
+        return "en"
+    return None
+
+
+def explicit_response_language(text):
+    """Find an authored response-language directive outside quotes and code."""
+    normalized = _plain_language_text(_language_prose(text))
+    explicit = []
+    patterns = (
+        r"\b(?:reply|respond|answer|write|summari[sz]e|explain)\s+"
+        r"(?:(?:this|it|briefly|entirely|only|to me)\s+)*(?:in|using)\s+"
+        r"(?:plain\s+)?(?P<language>english|vietnamese)\b",
+        r"\b(?:tra loi|phan hoi|viet|giai thich|tom tat|chuyen sang|su dung)\s+"
+        r"(?:(?:bang|sang|ngon ngu)\s+)*(?P<language>tieng anh|tieng viet|english|vietnamese)\b",
+        r"^\s*(?:please\s+)?(?:in\s+)?(?P<language>english|vietnamese|tieng anh|tieng viet)"
+        r"\s*[,!.]?\s*(?:please)?\s*[.!]?\s*$",
+    )
+    for pattern in patterns:
+        for match in re.finditer(pattern, normalized):
+            prefix = normalized[max(0, match.start() - 30) : match.start()]
+            if re.search(r"\b(?:do not|don't|dont|never|khong|dung)\s*$", prefix):
+                continue
+            explicit.append(
+                (match.end(), "en" if match["language"] in {"english", "tieng anh"} else "vi")
+            )
+    if explicit:
+        return max(explicit)[1]
+    return None
+
+
+def response_language(text, preferred="en"):
+    """Resolve this question's language, using prior language for ambiguity."""
+    preferred = normalize_language(preferred)
+    return explicit_response_language(text) or text_language(text) or preferred
+
+
 PHRASES = {
     "Analysis completed; queued instructions are retained after Stop": "Đã hoàn tất phân tích; chỉ dẫn đang chờ được giữ lại sau lệnh Dừng",
     "Analysis cancelled; saved evidence is retained": "Đã hủy phân tích; bằng chứng đã lưu được giữ lại",
     "The app restarted before this run finished. Send a prompt to continue; saved evidence is retained.": "Ứng dụng khởi động lại trước khi lượt chạy hoàn tất. Hãy gửi yêu cầu để tiếp tục; bằng chứng đã lưu được giữ lại.",
     "Lead Analyst is preparing the run": "Trưởng nhóm phân tích đang chuẩn bị lượt chạy",
+    "AI is unavailable because no API key is configured. Dashboard, scenarios, evidence and exports remain available.": "AI chưa khả dụng vì chưa cấu hình khóa API. Bạn vẫn có thể dùng Tổng quan, kịch bản, bằng chứng và chức năng xuất dữ liệu.",
     "Applying your updated instruction": "Đang áp dụng chỉ dẫn bổ sung của bạn",
     "Analysis completed and evidence checked": "Đã hoàn tất phân tích và kiểm tra bằng chứng",
     "Some claims remain unverified; inspect the QA result": "Một số số liệu chưa được kiểm chứng; hãy xem kết quả kiểm tra",
@@ -133,6 +272,7 @@ PHRASES = {
     "The frozen Dashboard context was not successfully verified and imported": "Chưa kiểm chứng và tiếp nhận thành công ngữ cảnh Tổng quan đã chốt",
     "No computational evidence was produced for this analysis": "Phân tích này chưa tạo ra bằng chứng tính toán",
     "The report does not use the selected Vietnamese response language": "Báo cáo chưa dùng ngôn ngữ trả lời tiếng Việt đã chọn",
+    "The report does not use the selected English response language": "Báo cáo chưa dùng ngôn ngữ trả lời tiếng Anh đã chọn",
     "Case-study independent verification did not pass": "Kiểm chứng độc lập của phân tích tình huống chưa đạt",
     "Report export failed: ": "Xuất báo cáo thất bại: ",
     "narrative verification failed: ": "kiểm chứng nội dung báo cáo thất bại: ",
@@ -364,12 +504,7 @@ def translate_text(text, language="en"):
 
 
 def localize_report(text, language="en"):
-    rendered = translate_text(text, language)
-    return (
-        VI_NUMBER_NOTE + "\n\n" + rendered
-        if language == "vi" and VI_NUMBER_NOTE not in rendered
-        else rendered
-    )
+    return translate_text(text, language)
 
 
 def vietnamese_metadata(value):

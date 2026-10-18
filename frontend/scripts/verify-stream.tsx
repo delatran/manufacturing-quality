@@ -8,6 +8,7 @@ import EventView, {
   resolveNumericClaim,
   formatEvidenceValue,
   citationPosition,
+  filterReportRows,
 } from '../src/EventView';
 import AgentWorkspace, {
   buildPromptMessage,
@@ -279,7 +280,8 @@ assert.match(
   'The business number is accompanied by an interactive citation badge',
 );
 assert.match(html, /not unique units/, 'Business caveats remain in the report');
-assert.doesNotMatch(html, /claim-reference|bbbbbbbb|Numeric evidence|secret-execution/);
+assert.doesNotMatch(html, /claim-reference|bbbbbbbb|Numeric evidence/);
+assert.match(html, /secret-execution/, 'Authored JSON examples remain visible as inert code');
 assert.doesNotMatch(html, /Technical bundle|verified_evidence\.zip/);
 assert.doesNotMatch(html, /<script>/);
 assert.doesNotMatch(html, /href="javascript:/);
@@ -289,10 +291,10 @@ assert.equal(
   originalReport,
   'Business rendering leaves canonical report, claims and QA untouched',
 );
-assert.match(
+assert.equal(
   businessReportText('12 [claim:a.rows[0].value] and 14 [claim:a.other[12].value].'),
-  /12\s*\[1\]\(#citation:1:a\.rows%5B0%5D\.value\)\s*and\s*14\s*\[2\]\(#citation:2:a\.other%5B12%5D\.value\)\./,
-  'Business rendering transforms claims into interactive citation badges',
+  '12 [claim:a.rows[0].value] and 14 [claim:a.other[12].value].',
+  'Preparse cleanup leaves claim markers for the source-aware Markdown projection',
 );
 assert.equal(
   businessReportText({ execution_id: 'raw-json' }),
@@ -303,27 +305,67 @@ assert.equal(
   businessReportText(
     'Quy ước số để đối chiếu bằng chứng: dấu phẩy phân tách hàng nghìn, dấu chấm phân tách phần thập phân.',
   ),
-  'Số trong báo cáo: dấu phẩy tách hàng nghìn, dấu chấm cho phần thập phân.',
+  '',
 );
 
-// Only the exact app-owned prefix at the start yields to the natural answer.
+// Old app-owned notes disappear wherever their standalone paragraph occurs.
 const numberFormatPrefix =
   'Định dạng số: dấu chấm phân tách hàng nghìn, dấu phẩy phân tách phần thập phân.';
 assert.equal(businessReportText(`${numberFormatPrefix}\n\nChào bạn!`), 'Chào bạn!');
 assert.equal(businessReportText(`${numberFormatPrefix}\r\n\r\nChào bạn!`), 'Chào bạn!');
 assert.equal(businessReportText(numberFormatPrefix), '');
-assert.equal(
-  businessReportText(`Chào bạn!\n\n${numberFormatPrefix}`),
-  `Chào bạn!\n\n${numberFormatPrefix}`,
-);
+assert.equal(businessReportText(`Chào bạn!\n\n${numberFormatPrefix}`), 'Chào bạn!');
 assert.equal(
   businessReportText(`${numberFormatPrefix}\n\nChào bạn!\n\n${numberFormatPrefix}`),
-  `Chào bạn!\n\n${numberFormatPrefix}`,
+  'Chào bạn!',
 );
-assert.equal(businessReportText(` ${numberFormatPrefix}`), ` ${numberFormatPrefix}`);
+for (const wrapper of [
+  ` ${numberFormatPrefix}`,
+  `   ${numberFormatPrefix}`,
+  `\uFEFF  ${numberFormatPrefix}  `,
+  `**${numberFormatPrefix}**`,
+  numberFormatPrefix.replace('Định dạng số:', '**Định dạng số:**'),
+  `> ${numberFormatPrefix}`,
+  `- ${numberFormatPrefix}`,
+  '### Số trong báo cáo: dấu phẩy tách hàng nghìn, dấu chấm cho phần thập phân.',
+])
+  assert.equal(businessReportText(`${wrapper}\n\nCâu trả lời.`), 'Câu trả lời.');
 assert.equal(
   businessReportText('Định dạng số: nội dung do người dùng viết.'),
   'Định dạng số: nội dung do người dùng viết.',
+);
+for (const authored of [
+  `The old answer said “${numberFormatPrefix}” and the user asked us to remove it.`,
+  `| Source note | Value |\n|---|---|\n| ${numberFormatPrefix} | 12 |`,
+  `~~~text\n${numberFormatPrefix}\n~~~`,
+  `Authored example:\n\n    ${numberFormatPrefix}\n\nKeep this paragraph.`,
+  `Authored example:\n\n\t${numberFormatPrefix}\n\nKeep this paragraph.`,
+  `Authored example:\n\n    first code line\n\n  \t${numberFormatPrefix}\n\nKeep this paragraph.`,
+  `Authored example:\n\n>     ${numberFormatPrefix}\n\nKeep this paragraph.`,
+  `Authored example:\n\n> \t${numberFormatPrefix}\n\nKeep this paragraph.`,
+  `Authored example:\n\n> >     ${numberFormatPrefix}\n\nKeep this paragraph.`,
+  `> ~~~text\n> ${numberFormatPrefix}\n> ~~~`,
+  `  >  ~~~text\n  > ${numberFormatPrefix}\n  > ~~~`,
+  `~~~text\n> ~~~\n${numberFormatPrefix}\n~~~`,
+  `~~~text\n~~~not-a-close\n${numberFormatPrefix}\n~~~`,
+  `~~~text\n    ~~~\n${numberFormatPrefix}\n~~~`,
+  `${numberFormatPrefix} Đây là ví dụ cần phân tích.`,
+  'Giá trị null là chưa biết chi phí, không phải chi phí bằng 0.',
+])
+  assert.equal(businessReportText(authored), authored, 'Meaningful authored source text survives');
+assert.equal(
+  businessReportText(
+    `    ~~~\n    ${numberFormatPrefix}\n    ~~~\n\n${numberFormatPrefix}\n\nKeep this paragraph.`,
+  ),
+  `    ~~~\n    ${numberFormatPrefix}\n    ~~~\n\n\nKeep this paragraph.`,
+  'Indented fences remain code while a following standalone app note is removed',
+);
+assert.equal(
+  businessReportText(
+    `> ~~~text\n> ${numberFormatPrefix}\n\n${numberFormatPrefix}\n\nKeep this paragraph.`,
+  ),
+  `> ~~~text\n> ${numberFormatPrefix}\n\n\nKeep this paragraph.`,
+  'A quoted fence cannot hide an ordinary app note outside that quote',
 );
 const prefixedReport = event('message', {
   role: 'assistant',
@@ -336,6 +378,64 @@ const prefixedReportHtml = renderToStaticMarkup(<EventView event={prefixedReport
 assert.match(prefixedReportHtml, /Chào bạn!/);
 assert.doesNotMatch(prefixedReportHtml, /Định dạng số:/);
 assert.equal(JSON.stringify(prefixedReport), prefixedReportSnapshot);
+
+const explorationRows = [
+  <tr key="line-one">
+    <td>Đường dây 1</td>
+    <td>
+      00123 <a href="#citation:1:private-source-id">[1]</a>
+    </td>
+  </tr>,
+  <tr key="line-two">
+    <td>Đường dây 2</td>
+    <td>12 [.*]</td>
+  </tr>,
+];
+assert.equal(filterReportRows(explorationRows, '  '), explorationRows);
+assert.deepEqual(filterReportRows(explorationRows, 'duong [.*]'), [explorationRows[1]]);
+assert.deepEqual(filterReportRows(explorationRows, 'ĐƯỜNG 00123'), [explorationRows[0]]);
+assert.deepEqual(filterReportRows(explorationRows, '[.*]'), [explorationRows[1]]);
+assert.deepEqual(filterReportRows(explorationRows, 'private-source-id'), []);
+assert.deepEqual(filterReportRows(explorationRows, 'unmatched'), []);
+
+const explorationReport = event('message', {
+  role: 'assistant',
+  language: 'vi',
+  text: [
+    '| Line | Events |',
+    '|---|---:|',
+    '| Đường dây 1 | 12 [claim:analysis.rows[0].value] |',
+    ...Array.from({ length: 6 }, (_, index) => `| Line ${index + 2} | ${index} |`),
+    '',
+    'Counts are logged events, not distinct defective units.',
+  ].join('\n'),
+  claims: report.data.claims,
+});
+const explorationSnapshot = JSON.stringify(explorationReport);
+const explorationHtml = renderToStaticMarkup(
+  <I18nProvider initialLocale="en" persist={false}>
+    <EventView event={explorationReport} />
+  </I18nProvider>,
+);
+assert.match(explorationHtml, /Tìm trong bảng/);
+assert.match(explorationHtml, /7 dòng/);
+assert.match(explorationHtml, /type="search"/);
+assert.match(explorationHtml, /aria-controls="[^"]+-table"/);
+assert.match(explorationHtml, /aria-live="polite"/);
+assert.match(explorationHtml, /Bằng chứng đối chiếu/);
+assert.match(explorationHtml, /not distinct defective units/);
+assert.match(explorationHtml, /lang="vi"/);
+assert.doesNotMatch(explorationHtml, /Find in table/);
+const explicitEnglish = renderToStaticMarkup(<EventView event={explorationReport} language="en" />);
+assert.match(explicitEnglish, /Find in table/);
+assert.match(explicitEnglish, /7 rows/);
+assert.match(explicitEnglish, /Evidence reference/);
+assert.doesNotMatch(html, /type="search"/, 'Small tables retain the simple answer presentation');
+const userTable = renderToStaticMarkup(
+  <EventView event={{ ...explorationReport, data: { ...explorationReport.data, role: 'user' } }} />,
+);
+assert.doesNotMatch(userTable, /type="search"/, 'User-authored tables are not adaptive answer UI');
+assert.equal(JSON.stringify(explorationReport), explorationSnapshot);
 
 const tableId = '0123456789abcdef01234567';
 const tableStart = `<!-- evidence-table:${tableId}:start -->`;
@@ -363,13 +463,13 @@ const boundTableMarkdown = [
 ].join('\n');
 assert.equal(
   businessReportText(`${tableStart}\nBody\n${tableEnd}`),
-  '\nBody\n',
-  'Only exact standalone table-origin marker lines are removed',
+  `${tableStart}\nBody\n${tableEnd}`,
+  'Preparse cleanup leaves table markers for the source-aware Markdown projection',
 );
 assert.equal(
   businessReportText(`${tableStart}\r\nBody\r\n${tableEnd}\r\n`),
-  '\nBody\r\n\n',
-  'Table-origin marker stripping supports CRLF report lines',
+  `${tableStart}\r\nBody\r\n${tableEnd}\r\n`,
+  'Preparse cleanup preserves CRLF source offsets for Markdown projection',
 );
 for (const sourceText of [
   `Source ${tableStart}`,
@@ -399,7 +499,7 @@ for (const locale of ['en', 'vi'] as const) {
     </I18nProvider>,
   );
   assert.equal(
-    (tableHtml.match(/<table>/g) || []).length,
+    (tableHtml.match(/<table(?:\s[^>]*)?>/g) || []).length,
     1,
     'The annotated result remains a GFM table',
   );
