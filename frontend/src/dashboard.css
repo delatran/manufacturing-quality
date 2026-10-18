@@ -2356,7 +2356,7 @@ html:has(.dashboard) {
 .dashboard .cost-histogram .histogram-row > div > span {
   background: var(--series);
 }
-.cost-histogram {
+.dashboard .cost-histogram {
   margin-top: 0;
   padding-top: 0;
   border-top: 0;
