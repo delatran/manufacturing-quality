@@ -19,6 +19,8 @@ export type FlowThinking = {
   simulation: boolean;
   done: boolean;
   stopped?: boolean;
+  durationMs?: number;
+  startedAt?: number;
 };
 export type FlowCallStatus =
   'pending' | 'running' | 'completed' | 'failed' | 'cancelled' | 'unconfirmed';
@@ -35,9 +37,16 @@ export type FlowCall = {
   executionId?: string;
   codeSha256?: string;
   durationMs?: number;
+  rationale?: string;
 };
 export type FlowAnswer = { kind: 'answer'; id: string; simulation: boolean };
-export type FlowDraft = { kind: 'draft'; id: string; text: string };
+export type FlowDraft = {
+  kind: 'draft';
+  id: string;
+  text: string;
+  messagePhase?: string;
+  done?: boolean;
+};
 export type FlowNote = {
   kind: 'note';
   id: string;
@@ -128,10 +137,13 @@ type Builder = FlowRun & {
   thinking: Map<string, FlowThinking>;
   calls: Map<string, FlowCall>;
   drafts: Map<string, FlowDraft>;
+  messagePhases: Map<string, string>;
+  plans: Map<string, FlowNote>;
   providerEvents: Set<string>;
   providerPhases: Map<string, FlowNote>;
   compactionIds: Set<string>;
   order: FlowStep[];
+  thinkingStarts: Map<string, number>;
 };
 
 // Only these tool contracts execute code/query supplied as arguments. Product
@@ -154,10 +166,13 @@ function builder(event: WorkspaceEvent, runId: string): Builder {
     thinking: new Map(),
     calls: new Map(),
     drafts: new Map(),
+    messagePhases: new Map(),
+    plans: new Map(),
     providerEvents: new Set(),
     providerPhases: new Map(),
     compactionIds: new Set(),
     order: [],
+    thinkingStarts: new Map(),
   };
 }
 
@@ -165,7 +180,12 @@ function note(id: string, label: string, detail: string, tone: 'info' | 'warn' =
   return { kind: 'note', id, tone, label, detail };
 }
 
-function ensureThinkingBlock(run: Builder, itemId: string, simulation: boolean): FlowThinking {
+function ensureThinkingBlock(
+  run: Builder,
+  itemId: string,
+  simulation: boolean,
+  time?: string,
+): FlowThinking {
   let block = run.thinking.get(itemId);
   if (!block) {
     block = {
@@ -179,12 +199,159 @@ function ensureThinkingBlock(run: Builder, itemId: string, simulation: boolean):
     run.order.push(block);
   }
   block.simulation ||= simulation;
+  const startedAt = time ? Date.parse(time) : NaN;
+  if (Number.isFinite(startedAt) && !block.startedAt) block.startedAt = startedAt;
   return block;
+}
+
+function extractArgumentField(raw: string, field: string): unknown {
+  if (!raw) return undefined;
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && field in parsed) {
+      return (parsed as Record<string, unknown>)[field];
+    }
+  } catch {
+    const regex = new RegExp(
+      `"${field}"\\s*:\\s*("(?:[^"\\\\]|\\\\.)*"|\\[[^\\]]*\\]|\\{[^\\}]*\\}|true|false|null|[0-9.]+)`,
+    );
+    const match = regex.exec(raw);
+    if (match) {
+      try {
+        return JSON.parse(match[1]);
+      } catch {
+        /* ignore */
+      }
+    }
+    const unclosedArray = new RegExp(`"${field}"\\s*:\\s*\\[([^\\]]*)`);
+    const arrayMatch = unclosedArray.exec(raw);
+    if (arrayMatch) {
+      const items = [...arrayMatch[1].matchAll(/"((?:[^"\\\\]|\\\\.)*)"/g)].map((m) => {
+        try {
+          return JSON.parse(`"${m[1]}"`);
+        } catch {
+          return m[1];
+        }
+      });
+      if (items.length) return items;
+    }
+    const unclosedString = new RegExp(`"${field}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)`);
+    const unclosedMatch = unclosedString.exec(raw);
+    if (unclosedMatch) {
+      try {
+        return JSON.parse(`"${unclosedMatch[1]}"`);
+      } catch {
+        return unclosedMatch[1];
+      }
+    }
+  }
+  return undefined;
+}
+
+function formatPlan(value: unknown): string {
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed.includes('\n')) {
+      const lines = trimmed
+        .split(/\r?\n/)
+        .map((s) => s.replace(/^\s*(?:[0-9]+[.)]|[-*•])\s*/, '').trim())
+        .filter(Boolean);
+      if (lines.length > 1) return lines.join(' → ');
+    }
+    return trimmed;
+  }
+  if (Array.isArray(value)) {
+    return value
+      .map((item) =>
+        record(item)
+          ? text(
+              record(item)!.title ?? record(item)!.text ?? record(item)!.name ?? record(item)!.step,
+            )
+          : text(item),
+      )
+      .filter(Boolean)
+      .join(' → ');
+  }
+  const rec = record(value);
+  if (rec) {
+    if (Array.isArray(rec.steps)) return formatPlan(rec.steps);
+    if (Array.isArray(rec.items)) return formatPlan(rec.items);
+    return text(rec.title ?? rec.text ?? rec.detail ?? rec.description);
+  }
+  return '';
+}
+
+function syncToolArguments(
+  run: Builder,
+  call: FlowCall,
+  argumentsValue: unknown,
+  commandText: string,
+  eventId: string,
+  directData?: Record<string, unknown>,
+) {
+  let argsRecord: Record<string, unknown> | undefined = record(argumentsValue);
+  if (!argsRecord && typeof argumentsValue === 'string') {
+    try {
+      const parsed = JSON.parse(argumentsValue);
+      if (record(parsed)) argsRecord = parsed as Record<string, unknown>;
+    } catch {
+      /* ignore */
+    }
+  }
+  if (!argsRecord && commandText) {
+    try {
+      const parsed = JSON.parse(commandText);
+      if (record(parsed)) argsRecord = parsed as Record<string, unknown>;
+    } catch {
+      /* ignore */
+    }
+  }
+
+  // 1. Parse rationale
+  let rationale =
+    argsRecord && typeof argsRecord.rationale === 'string'
+      ? argsRecord.rationale
+      : typeof directData?.rationale === 'string'
+        ? directData.rationale
+        : undefined;
+  if (!rationale && commandText) {
+    const extracted = extractArgumentField(commandText, 'rationale');
+    if (typeof extracted === 'string') rationale = extracted;
+  }
+  if (rationale && rationale.trim()) {
+    call.rationale = rationale.trim();
+  }
+
+  // 2. Extract plan
+  let planValue = argsRecord?.plan ?? directData?.plan;
+  if (planValue === undefined && commandText) {
+    planValue = extractArgumentField(commandText, 'plan');
+  }
+  if (planValue !== undefined) {
+    const formatted = formatPlan(planValue);
+    if (formatted) {
+      const planKey = call.id || 'plan-' + eventId;
+      let planNote = run.plans.get(planKey);
+      if (planNote) {
+        planNote.detail = formatted;
+      } else {
+        planNote = note('plan-' + planKey.replace(/^call-/, ''), 'plan', formatted);
+        run.plans.set(planKey, planNote);
+        const callIdx = run.order.indexOf(call);
+        if (callIdx >= 0) {
+          run.order.splice(callIdx, 0, planNote);
+        } else {
+          run.order.push(planNote);
+        }
+      }
+    }
+  }
 }
 
 /** Group the raw event history into one provider-ordered flow per run. */
 export function projectAgentFlow(events: WorkspaceEvent[]): Map<string, FlowRun> {
   const runs = new Map<string, Builder>();
+  const eventIds = new Set<string>();
   const reasoningAliases = new Map<string, string>();
   for (const event of events) {
     const d = event.data;
@@ -219,6 +386,9 @@ export function projectAgentFlow(events: WorkspaceEvent[]): Map<string, FlowRun>
   };
 
   for (const event of events) {
+    const eventKey = JSON.stringify([event.session_id, event.id]);
+    if (eventIds.has(eventKey)) continue;
+    eventIds.add(eventKey);
     const d = event.data || {};
     if (event.type === 'message' && d.role === 'user') {
       pendingPrompt = text(d.text ?? d.content);
@@ -258,7 +428,13 @@ export function projectAgentFlow(events: WorkspaceEvent[]): Map<string, FlowRun>
       case 'reasoning': {
         // One block per provider reasoning item; one part per summary/content index.
         const itemId = scopedItemId(text(d.item_id) || text(d.response_id) || 'stream');
-        const block = ensureThinkingBlock(run, itemId, d.simulation === true);
+        const block = ensureThinkingBlock(run, itemId, d.simulation === true, event.time);
+        if (event.time && !run.thinkingStarts.has(itemId)) {
+          const t = new Date(event.time).getTime();
+          if (Number.isFinite(t)) run.thinkingStarts.set(itemId, t);
+        }
+        if (count(d.duration_ms) > 0) block.durationMs = count(d.duration_ms);
+        else if (count(d.elapsed_ms) > 0) block.durationMs = count(d.elapsed_ms);
         const index = count(d.summary_index ?? d.content_index);
         let part = block.parts.find((item) => item.index === index);
         if (!part) {
@@ -274,12 +450,19 @@ export function projectAgentFlow(events: WorkspaceEvent[]): Map<string, FlowRun>
         const split = splitSummaryPart(part.raw);
         part.title = split.title;
         part.body = split.body;
-        if (final) part.done = true;
+        if (final) {
+          part.done = true;
+          if (event.time && run.thinkingStarts.has(itemId) && !block.durationMs) {
+            const start = run.thinkingStarts.get(itemId)!;
+            const end = new Date(event.time).getTime();
+            if (Number.isFinite(end) && end >= start) block.durationMs = end - start;
+          }
+        }
         break;
       }
       case 'reasoning_part': {
         const itemId = scopedItemId(text(d.item_id) || 'stream');
-        const block = ensureThinkingBlock(run, itemId, d.simulation === true);
+        const block = ensureThinkingBlock(run, itemId, d.simulation === true, event.time);
         const index = count(d.summary_index);
         let part = block.parts.find((item) => item.index === index);
         if (d.phase === 'added' && (block.done || part?.done)) break;
@@ -307,6 +490,13 @@ export function projectAgentFlow(events: WorkspaceEvent[]): Map<string, FlowRun>
       }
       case 'output_item': {
         const itemType = text(d.item_type);
+        if (itemType === 'message' && text(d.item_id) && text(d.message_phase)) {
+          const itemId = scopedItemId(text(d.item_id));
+          run.messagePhases.set(itemId, text(d.message_phase));
+          for (const [key, draft] of run.drafts) {
+            if (key.startsWith(itemId + ':content:')) draft.messagePhase = text(d.message_phase);
+          }
+        }
         if (
           d.phase === 'added' &&
           [
@@ -344,33 +534,80 @@ export function projectAgentFlow(events: WorkspaceEvent[]): Map<string, FlowRun>
           const call =
             run.calls.get(scopedItemId(text(d.item_id))) || run.calls.get(text(d.call_id));
           if (call) {
-            call.streaming = false;
             // Function completion confirms arguments, not the local execution.
-            if (d.status === 'cancelled') call.status = 'cancelled';
-            else if (['failed', 'incomplete'].includes(text(d.status))) call.status = 'failed';
-            else if (!['function_call', 'custom_tool_call'].includes(itemType))
+            if (d.status === 'cancelled') {
+              call.status = 'cancelled';
+              call.streaming = false;
+            } else if (['failed', 'incomplete'].includes(text(d.status))) {
+              call.status = 'failed';
+              call.streaming = false;
+            } else if (!['function_call', 'custom_tool_call'].includes(itemType)) {
               call.status = d.status === 'completed' ? 'completed' : 'unconfirmed';
+              call.streaming = false;
+            }
           }
         }
         if (itemType === 'reasoning') {
           if (text(d.item_id)) {
             const itemId = scopedItemId(text(d.item_id));
-            const block = ensureThinkingBlock(run, itemId, d.simulation === true);
+            const block = ensureThinkingBlock(run, itemId, d.simulation === true, event.time);
             if (d.phase === 'done') {
               block.done = true;
               for (const part of block.parts) part.done = true;
+              if (event.time && run.thinkingStarts.has(itemId) && !block.durationMs) {
+                const start = run.thinkingStarts.get(itemId)!;
+                const end = new Date(event.time).getTime();
+                if (Number.isFinite(end) && end >= start) block.durationMs = end - start;
+              }
             }
           }
         }
         break;
       }
+      case 'tool_arguments_delta':
       case 'tool_arguments': {
-        const call = run.calls.get(scopedItemId(text(d.item_id))) || run.calls.get(text(d.call_id));
-        if (!call) break;
-        if (d.phase === 'done') {
-          call.command = text(d.arguments) || call.command;
-          call.streaming = false;
-        } else call.command += text(d.delta);
+        const itemId = text(d.item_id);
+        const callId = text(d.call_id);
+        const scopedId = scopedItemId(itemId || callId || id);
+        let call =
+          (itemId ? run.calls.get(scopedItemId(itemId)) : undefined) ||
+          (callId ? run.calls.get(callId) : undefined);
+        if (!call) {
+          call = {
+            kind: 'call',
+            id: 'call-' + scopedId,
+            name: text(d.name) || 'tool',
+            command: '',
+            streaming: true,
+            status: 'pending',
+            outcome: '',
+            output: '',
+          };
+          if (itemId) run.calls.set(scopedItemId(itemId), call);
+          if (callId) run.calls.set(callId, call);
+          run.order.push(call);
+        }
+        const isDelta =
+          event.type === 'tool_arguments_delta' ||
+          d.phase === 'delta' ||
+          (d.delta !== undefined && d.phase !== 'done');
+        if (isDelta) {
+          if (['completed', 'failed', 'cancelled', 'unconfirmed'].includes(call.status)) break;
+          const delta = text(d.delta ?? d.arguments_delta ?? d.arguments);
+          call.command += delta;
+          call.streaming = true;
+        }
+        if (d.phase === 'done' || (event.type === 'tool_arguments' && d.arguments && !isDelta)) {
+          if (d.arguments) {
+            call.command = text(d.arguments) || call.command;
+          }
+          if (['completed', 'failed', 'cancelled', 'unconfirmed'].includes(call.status)) {
+            call.streaming = false;
+          } else {
+            call.streaming = true;
+          }
+        }
+        syncToolArguments(run, call, d.arguments, call.command, id, d);
         break;
       }
       case 'tool': {
@@ -393,7 +630,6 @@ export function projectAgentFlow(events: WorkspaceEvent[]): Map<string, FlowRun>
         run.calls.set('tool:' + toolId, call);
         if (callId) run.calls.set(callId, call);
         call.name = text(d.name) || call.name;
-        call.streaming = false;
         const status = text(d.status);
         call.status =
           status === 'completed'
@@ -405,6 +641,13 @@ export function projectAgentFlow(events: WorkspaceEvent[]): Map<string, FlowRun>
                 : status === 'unconfirmed'
                   ? 'unconfirmed'
                   : 'running';
+        if (
+          call.status === 'completed' ||
+          call.status === 'failed' ||
+          call.status === 'cancelled'
+        ) {
+          call.streaming = false;
+        }
         const command = text(d.code);
         if (executesArgumentCode(call.name)) {
           if (command) call.command = command;
@@ -422,6 +665,7 @@ export function projectAgentFlow(events: WorkspaceEvent[]): Map<string, FlowRun>
           if (command && status !== 'running' && command !== call.command)
             call.implementationSource = command;
         }
+        syncToolArguments(run, call, d.arguments, call.command, id, d);
         if (d.result !== undefined && d.result !== null) {
           call.outcome = callOutcome(d.result);
           call.output = stableJson(d.result);
@@ -434,13 +678,22 @@ export function projectAgentFlow(events: WorkspaceEvent[]): Map<string, FlowRun>
       case 'text_delta':
       case 'text_done': {
         const itemId = scopedItemId(text(d.item_id) || text(d.response_id) || 'stream');
-        let draft = run.drafts.get(itemId);
+        const partId = itemId + ':content:' + count(d.content_index);
+        let draft = run.drafts.get(partId);
         if (!draft) {
-          draft = { kind: 'draft', id: 'draft-' + itemId, text: '' };
-          run.drafts.set(itemId, draft);
+          draft = {
+            kind: 'draft',
+            id: 'draft-' + partId,
+            text: '',
+            messagePhase: run.messagePhases.get(itemId),
+          };
+          run.drafts.set(partId, draft);
           run.order.push(draft);
         }
+        if (text(d.message_phase)) draft.messagePhase = text(d.message_phase);
+        if (draft.done && event.type === 'text_delta') break;
         draft.text = event.type === 'text_done' ? text(d.text) : draft.text + text(d.delta);
+        if (event.type === 'text_done') draft.done = true;
         break;
       }
       case 'message': {
@@ -556,7 +809,7 @@ export function projectAgentFlow(events: WorkspaceEvent[]): Map<string, FlowRun>
         // Provider idle/completed describes its turn, not application delivery QA.
         // The local status event remains authoritative for the visible run state.
         const phase = text(d.phase) || text(d.provider_status);
-        const key = providerSessionId || 'provider';
+        const key = JSON.stringify([providerSessionId || 'provider', providerTurnId || 'session']);
         const previous = run.providerPhases.get(key);
         if (previous) previous.detail = phase;
         else {
@@ -613,7 +866,14 @@ export function projectAgentFlow(events: WorkspaceEvent[]): Map<string, FlowRun>
       prompt: run.prompt,
       compactions: run.compactions,
       // The accepted report is rendered once by EventView with delivery checks.
-      steps: run.order.filter((step) => step.kind !== 'draft' || (!hasAnswer && step.text)),
+      steps: run.order.filter(
+        (step) =>
+          step.kind !== 'draft' ||
+          (step.text &&
+            step.messagePhase !== 'final_answer' &&
+            !/^\s*(?:[[{]|```(?:json)?\s*[[{])/i.test(step.text) &&
+            (!hasAnswer || step.messagePhase === 'commentary')),
+      ),
     });
   }
   return result;

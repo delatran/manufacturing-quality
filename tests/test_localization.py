@@ -9,7 +9,7 @@ from copy import deepcopy
 import pytest
 from analyst.app import create_app
 from analyst.config import Settings
-from analyst.localization import VI_NUMBER_NOTE, localize_report, vietnamese_metadata
+from analyst.localization import PHRASES, VI_NUMBER_NOTE, localize_report, vietnamese_metadata
 from analyst.runtime import AnalystReport, AnalystRuntime, audit_report
 from analyst.store import SessionStore
 from analyst.tools import AnalystTools
@@ -29,6 +29,27 @@ def test_translation_preserves_numbers_claim_identifiers_code_and_links():
     assert vietnamese_metadata("Category 2") == "Nhóm hai"
     assert vietnamese_metadata("Moderate") == "Trung bình"
     assert vietnamese_metadata("Visual Inspection") == "Kiểm tra trực quan"
+
+
+def test_readable_metadata_translation_keeps_observed_values_and_protected_tokens():
+    source = (
+        "Part Three: trend\nLine Three: 123,456.90 [claim:known_3]. "
+        "January through June of 2024. `Line Three: 999` [source](report2024.md)"
+    )
+    translated = localize_report(source, "vi")
+    assert "Phần 3: xu hướng" in translated
+    assert "Chuyền 3: 123,456.90 [claim:known_3]" in translated
+    assert "tháng 1 – 6/2024" in translated
+    assert "`Line Three: 999` [source](report2024.md)" in translated
+
+
+def test_translation_rejects_changed_values_in_replacement_phrases(monkeypatch):
+    monkeypatch.setitem(PHRASES, "Observed amount 123.45", "Chi phí ghi nhận 999.00")
+    with pytest.raises(ValueError, match="changed numeric evidence tokens"):
+        localize_report("Observed amount 123.45", "vi")
+    monkeypatch.setitem(PHRASES, "Line Three", "Chuyền 4")
+    with pytest.raises(ValueError, match="changed numeric evidence tokens"):
+        localize_report("Line Three: 123.45", "vi")
 
 
 def test_vietnamese_sdk_context_report_preserves_exact_canonical_receipt_and_claims(tmp_path):

@@ -9,6 +9,7 @@
   --agent-warning-line: #eadcc1;
   --agent-danger: #b42f2f;
   --agent-danger-bg: #fcebea;
+  --agent-motion-enter: 180ms;
   color: var(--agent-ink);
   background: var(--agent-bg);
   min-height: calc(100dvh - 68px);
@@ -45,6 +46,7 @@
   font-size: 13px;
   line-height: 1.7;
   margin: 0;
+  max-width: 76ch;
 }
 .agent-workspace .agent-availability {
   display: flex;
@@ -225,15 +227,23 @@
 .agent-workspace .conversation-entry:empty {
   display: none;
 }
+.agent-workspace .conversation-entry:focus-visible {
+  outline: 2px solid var(--agent-accent);
+  outline-offset: 5px;
+  border-radius: 10px;
+}
 .agent-workspace .message {
   padding: 0;
   margin: 0;
 }
 .agent-workspace .user-message {
-  padding: 17px 20px;
-  border: 1px solid var(--agent-line);
-  border-radius: 6px;
+  padding: 16px 20px;
+  border: 1px solid transparent;
+  border-radius: 14px 14px 4px 14px;
   background: var(--surface-subtle);
+  max-width: 85%;
+  width: fit-content;
+  margin-left: auto;
 }
 .agent-workspace .event-label {
   color: var(--agent-muted);
@@ -265,14 +275,14 @@
 .agent-workspace .analyst-message {
   border: 1px solid var(--agent-line);
   background: var(--surface-raised);
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 24px 28px;
-  box-shadow: none;
+  box-shadow: 0 4px 18px color-mix(in srgb, var(--shadow-color) 16%, transparent);
 }
 .agent-workspace .analyst-message > .event-label {
   border-bottom: 1px solid var(--agent-line);
-  padding-bottom: 15px;
-  margin-bottom: 22px;
+  padding-bottom: 13px;
+  margin-bottom: 18px;
 }
 .agent-workspace .analyst-message .prose {
   color: var(--agent-ink);
@@ -497,10 +507,10 @@
 .agent-workspace .agent-followup {
   border-top: 1px solid var(--agent-line);
   margin: 28px 0 0;
-  padding: 24px 0 0;
+  padding: 20px 0 0;
   display: flex;
   align-items: flex-start;
-  gap: 25px;
+  gap: 18px;
   justify-content: space-between;
 }
 .agent-workspace .agent-followup h2 {
@@ -512,11 +522,19 @@
 }
 .agent-workspace .agent-followup-actions {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: stretch;
   gap: 8px;
-  max-width: 300px;
-  flex-shrink: 0;
+  max-width: 780px;
+  flex: 1;
+}
+.agent-workspace .agent-followup-actions button {
+  flex: 1;
+  text-align: left;
+  justify-content: space-between;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease;
 }
 .agent-workspace .agent-followup-actions button,
 .agent-workspace .agent-retry-button {
@@ -551,8 +569,9 @@
   color: var(--agent-warning);
 }
 .agent-workspace .composer-dock {
-  padding: 20px 32px max(16px, env(safe-area-inset-bottom));
-  background: var(--agent-bg);
+  padding: 16px 32px max(14px, env(safe-area-inset-bottom));
+  background: color-mix(in srgb, var(--agent-bg) 96%, transparent);
+  backdrop-filter: blur(10px);
 }
 .agent-workspace .composer-container {
   max-width: 1000px;
@@ -590,7 +609,7 @@
 .agent-workspace .composer:focus-within {
   border-color: var(--brand-primary);
   outline: 2px solid var(--brand-primary);
-  outline-offset: 3px;
+  outline-offset: 2px;
 }
 .agent-workspace .composer textarea {
   font-size: 14px;
@@ -698,6 +717,8 @@
   color: inherit;
   border: 0;
   padding: 3px;
+  min-width: 32px;
+  min-height: 32px;
 }
 .agent-workspace .composer-delivery-note {
   border: 1px solid var(--agent-warning-line);
@@ -737,17 +758,21 @@
   padding: 9px 13px;
   min-height: 44px;
   border: 1px solid var(--agent-line);
-  border-radius: 4px;
+  border-radius: 24px;
   background: var(--surface-raised);
   color: var(--agent-accent);
-  box-shadow: none;
+  box-shadow: 0 3px 12px color-mix(in srgb, var(--shadow-color) 30%, transparent);
   font-size: 12px;
   font-weight: 700;
   margin: -47px auto 10px;
 }
 /* The first question sits in the reading flow, ahead of optional saved work. */
 .agent-workspace.is-empty .agent-page-header {
-  padding-block: 22px 18px;
+  padding-block: 44px 24px;
+}
+.agent-workspace.is-empty .agent-page-header h1 {
+  font-size: clamp(28px, 3.3vw, 40px);
+  letter-spacing: -0.04em;
 }
 .agent-workspace.is-empty .agent-source-card {
   display: grid;
@@ -801,6 +826,8 @@
 .agent-workspace.is-empty .composer-dock {
   position: static;
   padding: 0 0 24px;
+  background: transparent;
+  backdrop-filter: none;
 }
 .agent-workspace .agent-intro {
   max-width: 70ch;
@@ -901,6 +928,45 @@
 }
 .agent-workspace .agent-scope-feedback .text-button {
   min-height: 44px;
+}
+
+.agent-workspace .agent-source-card.is-compact {
+  padding-block: 12px;
+  margin-bottom: 24px;
+}
+.agent-workspace .agent-source-card.is-compact .agent-source-summary > span {
+  margin-bottom: 3px;
+}
+.agent-workspace .agent-scope-details {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--agent-muted);
+}
+.agent-workspace .agent-scope-details > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  width: fit-content;
+  padding: 5px 0;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 600;
+}
+.agent-workspace .agent-scope-details > summary::-webkit-details-marker {
+  display: none;
+}
+.agent-workspace .agent-scope-details > summary > svg:last-child {
+  transition: transform 160ms ease;
+}
+.agent-workspace .agent-scope-details[open] > summary > svg:last-child {
+  transform: rotate(180deg);
+}
+.agent-workspace .agent-scope-details > summary:hover {
+  color: var(--agent-accent);
+}
+.agent-workspace :is(button, a, summary, [tabindex], textarea) {
+  scroll-margin-block: 100px calc(var(--agent-composer-height, 220px) + 24px);
 }
 
 /* Keep state and reading hierarchy consistent with the Dashboard. */
@@ -1151,7 +1217,7 @@
   }
   .agent-workspace .analyst-message {
     padding: 18px 16px;
-    border-radius: 6px;
+    border-radius: 10px;
   }
   .agent-workspace .analyst-message > .event-label {
     padding-bottom: 13px;
@@ -1218,11 +1284,11 @@
   }
   .agent-workspace .composer {
     padding: 13px 12px 10px;
-    border-radius: 6px;
+    border-radius: 10px;
   }
   .agent-workspace .composer textarea {
     font-size: 16px;
-    min-height: 48px;
+    min-height: 56px;
   }
   .agent-workspace .composer-context {
     gap: 7px;
@@ -1286,18 +1352,18 @@
   }
 }
 
-/* ---------- tranthiennhan.com xnhan Dark Forest & Editorial Styling ---------- */
+/* Warm Forest hierarchy and restrained interaction feedback. */
 .agent-workspace .agent-page-header {
-  animation: panel-reveal var(--motion-duration-medium) var(--motion-ease-out) both;
+  animation: agent-enter var(--agent-motion-enter) ease-out;
 }
 .agent-workspace .agent-page-header h1 {
   font-weight: 600;
   letter-spacing: -0.045em;
 }
 .agent-workspace .agent-availability {
-  font-family: var(--font-mono);
-  border-radius: 0.2rem;
-  border-color: var(--border-strong);
+  font-family: inherit;
+  border-radius: 20px;
+  border-color: var(--border-subtle);
 }
 .agent-workspace .agent-source-card {
   border-block: 1px solid var(--border-strong);
@@ -1306,9 +1372,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  font-family: var(--font-mono);
+  font-family: inherit;
   font-size: 11.5px;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--brand-primary);
 }
@@ -1357,16 +1423,16 @@
   color: var(--agent-muted);
 }
 .agent-workspace .composer {
-  border: 1px solid var(--border-strong);
-  border-radius: 0.3rem;
+  border: 1px solid var(--agent-line);
+  border-radius: 12px;
   background: var(--surface-raised);
-  box-shadow: 0 0.35rem 1.25rem color-mix(in srgb, var(--shadow-color) 22%, transparent);
+  box-shadow: 0 5px 22px color-mix(in srgb, var(--shadow-color) 24%, transparent);
   transition:
     border-color var(--motion-duration-fast) ease,
     box-shadow var(--motion-duration-fast) ease;
 }
 .agent-workspace .send-button {
-  border-radius: 0.22rem;
+  border-radius: 9px;
   transition:
     background-color var(--motion-duration-fast) ease,
     transform var(--motion-duration-fast) var(--motion-ease-out);
@@ -1381,8 +1447,8 @@
   color: var(--text-inverse);
   background: var(--surface-inverse);
   border: 1px solid var(--brand-primary);
-  border-radius: 0.25rem;
-  animation: panel-reveal var(--motion-duration-medium) var(--motion-ease-out) 60ms both;
+  border-radius: 12px;
+  animation: agent-enter var(--agent-motion-enter) ease-out;
 }
 .agent-workspace .agent-dot {
   width: 2rem;
@@ -1423,11 +1489,23 @@
 .agent-workspace .agent-welcome h2 {
   margin: 0 0 4px;
   color: var(--accent-signal-on-dark);
-  font-family: var(--font-mono);
-  font-size: 12px;
+  font-family: inherit;
+  font-size: 14px;
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.agent-workspace .agent-welcome-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 8px;
+}
+.agent-workspace .agent-welcome-heading > svg {
+  color: var(--accent-signal-on-dark);
+}
+.agent-workspace .agent-welcome-heading h2 {
+  margin: 0;
 }
 .agent-workspace .agent-welcome > p {
   margin: 0 0 14px;
@@ -1463,11 +1541,11 @@
 }
 .agent-workspace .agent-suggestion strong {
   color: var(--accent-signal-on-dark);
-  font-family: var(--font-mono);
-  font-size: 12px;
+  font-family: inherit;
+  font-size: 13px;
   font-weight: 600;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
 }
 .agent-workspace .agent-suggestion small {
   margin-top: 5px;
@@ -1490,12 +1568,16 @@
 .agent-workspace .agent-welcome :focus-visible {
   outline-color: var(--focus-on-dark);
 }
-.agent-workspace .conversation-entry {
-  animation: panel-reveal 300ms var(--motion-ease-out) both;
+.agent-workspace .pending-message {
+  animation: agent-enter var(--agent-motion-enter) ease-out;
 }
-.agent-workspace .analyst-message,
-.agent-workspace .user-message {
-  border-radius: 0.25rem;
+@keyframes agent-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1512,6 +1594,12 @@
   .agent-workspace .agent-suggestion:hover:not(:disabled) > svg {
     transform: none;
   }
+  .agent-workspace .send-button:not(:disabled):hover,
+  .agent-workspace .citation-badge:hover,
+  .agent-workspace .citation-badge:focus-visible,
+  .agent-workspace .citation-badge.is-active {
+    transform: none;
+  }
 }
 
 .agent-workspace .agent-chart {
@@ -1522,4 +1610,253 @@
   display: block;
   max-width: 100%;
   height: auto;
+}
+
+/* ---------- Citation Badges & Evidence Popovers ---------- */
+.agent-workspace .citation-badge-wrapper {
+  position: relative;
+  display: inline-flex;
+  vertical-align: baseline;
+  line-height: 1;
+  margin: 0 2px;
+}
+
+.agent-workspace .citation-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  font-family: inherit;
+  font-feature-settings: 'tnum';
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 1.5px 5px;
+  vertical-align: baseline;
+  position: relative;
+  top: -0.42em;
+  color: var(--agent-accent);
+  background: var(--surface-subtle);
+  border: 1px solid var(--agent-line);
+  border-radius: 4px;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    color 140ms ease,
+    background-color 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+  user-select: none;
+  outline: none;
+}
+
+.agent-workspace .citation-badge-bracket {
+  opacity: 0.6;
+  font-weight: 400;
+  font-size: 10px;
+}
+
+.agent-workspace .citation-badge-num {
+  font-weight: 700;
+}
+
+.agent-workspace .citation-badge:hover,
+.agent-workspace .citation-badge:focus-visible,
+.agent-workspace .citation-badge.is-active {
+  color: var(--agent-accent);
+  background: var(--surface-subtle);
+  border-color: var(--agent-accent);
+  box-shadow:
+    0 2px 6px -1px color-mix(in srgb, var(--agent-accent) 18%, transparent),
+    0 0 0 2px color-mix(in srgb, var(--agent-accent) 8%, transparent);
+}
+
+.agent-workspace .citation-badge.is-active {
+  background: var(--surface-subtle);
+  border-color: var(--agent-accent);
+}
+
+/* Citation Popover Container */
+/* Fixed positioning keeps evidence readable inside scrolling report tables.
+   The component clamps the panel to the viewport on open, scroll and resize. */
+.agent-workspace .citation-popover {
+  display: block;
+  position: fixed;
+  z-index: 120;
+  width: 290px;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+  box-sizing: border-box;
+  background: var(--surface-raised);
+  border: 1px solid var(--agent-line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--shadow-color-strong) 65%, transparent);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--agent-ink);
+  text-align: left;
+  pointer-events: auto;
+}
+
+.agent-workspace .citation-popover-footer {
+  display: block;
+}
+
+/* Header */
+.agent-workspace .citation-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 9px;
+  margin-bottom: 9px;
+  border-bottom: 1px solid var(--border-subtle, #e2e8f0);
+}
+
+.agent-workspace .citation-popover-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-primary, #1e293b);
+  text-transform: uppercase;
+}
+
+.agent-workspace .citation-popover-icon {
+  color: var(--agent-accent);
+  flex-shrink: 0;
+}
+
+.agent-workspace .citation-popover-badge-pill {
+  font-size: 10.5px;
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--agent-accent);
+  background: var(--surface-subtle);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Body rows */
+.agent-workspace .citation-popover-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.agent-workspace .citation-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.agent-workspace .citation-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--agent-muted, #64748b);
+  letter-spacing: 0.01em;
+}
+
+.agent-workspace .citation-val {
+  font-size: 12px;
+  color: var(--agent-ink, #0f172a);
+  word-break: break-all;
+}
+
+.agent-workspace .citation-metric {
+  font-weight: 600;
+  color: var(--agent-ink, #0f172a);
+}
+
+.agent-workspace .citation-value-num {
+  font-weight: 700;
+  color: var(--agent-ink);
+}
+
+.agent-workspace .citation-val-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  background: var(--surface-subtle, #f8fafc);
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  border-radius: 4px;
+  padding: 3px 6px 3px 8px;
+}
+
+.agent-workspace .citation-code {
+  font-family: var(--font-mono, 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace);
+  font-size: 11px;
+  color: var(--agent-ink);
+  background: transparent;
+  padding: 0;
+  border: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-workspace .citation-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: var(--agent-muted, #64748b);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    color 120ms ease,
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.agent-workspace .citation-copy-btn:hover {
+  color: var(--agent-ink, #0f172a);
+  background: var(--surface-raised);
+  border-color: var(--border-subtle, #cbd5e1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+/* Footer */
+.agent-workspace .citation-popover-footer {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle, #f1f5f9);
+}
+
+.agent-workspace .citation-verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--agent-accent);
+  letter-spacing: 0.01em;
+}
+
+.agent-workspace .report-table-scroll td .citation-badge-wrapper {
+  vertical-align: middle;
+}
+
+.agent-workspace .citation-badge:focus-visible,
+.agent-workspace .citation-copy-btn:focus-visible {
+  outline: 2px solid var(--agent-accent);
+  outline-offset: 2px;
+}
+@media (pointer: coarse) {
+  .agent-workspace .citation-copy-btn,
+  .agent-workspace .composer-error button {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }

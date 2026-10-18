@@ -1,7 +1,14 @@
 import assert from 'node:assert/strict';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import EventView, { chartArtifact, businessReportText, friendlyError } from '../src/EventView';
+import EventView, {
+  chartArtifact,
+  businessReportText,
+  friendlyError,
+  resolveNumericClaim,
+  formatEvidenceValue,
+  citationPosition,
+} from '../src/EventView';
 import AgentWorkspace, {
   buildPromptMessage,
   projectConversation,
@@ -266,12 +273,13 @@ const report = event('message', {
 const originalReport = JSON.stringify(report);
 const html = renderToStaticMarkup(<EventView event={report} />);
 assert.match(html, /<table>/, 'GFM tables remain semantic and horizontally scrollable');
-assert.match(html, /<td[^>]*>12<\/td>/, 'The business number is unchanged');
-assert.match(html, /not unique units/, 'Business caveats remain in the report');
-assert.doesNotMatch(
+assert.match(
   html,
-  /claim-reference|analysis\.rows|exec-a|bbbbbbbb|Numeric evidence|secret-execution/,
+  /<td[^>]*>12\s*<span class="citation-badge-wrapper/,
+  'The business number is accompanied by an interactive citation badge',
 );
+assert.match(html, /not unique units/, 'Business caveats remain in the report');
+assert.doesNotMatch(html, /claim-reference|bbbbbbbb|Numeric evidence|secret-execution/);
 assert.doesNotMatch(html, /Technical bundle|verified_evidence\.zip/);
 assert.doesNotMatch(html, /<script>/);
 assert.doesNotMatch(html, /href="javascript:/);
@@ -281,9 +289,10 @@ assert.equal(
   originalReport,
   'Business rendering leaves canonical report, claims and QA untouched',
 );
-assert.equal(
+assert.match(
   businessReportText('12 [claim:a.rows[0].value] and 14 [claim:a.other[12].value].'),
-  '12 and 14.',
+  /12\s*\[1\]\(#citation:1:a\.rows%5B0%5D\.value\)\s*and\s*14\s*\[2\]\(#citation:2:a\.other%5B12%5D\.value\)\./,
+  'Business rendering transforms claims into interactive citation badges',
 );
 assert.equal(
   businessReportText({ execution_id: 'raw-json' }),
@@ -296,6 +305,37 @@ assert.equal(
   ),
   'Số trong báo cáo: dấu phẩy tách hàng nghìn, dấu chấm cho phần thập phân.',
 );
+
+// Only the exact app-owned prefix at the start yields to the natural answer.
+const numberFormatPrefix =
+  'Định dạng số: dấu chấm phân tách hàng nghìn, dấu phẩy phân tách phần thập phân.';
+assert.equal(businessReportText(`${numberFormatPrefix}\n\nChào bạn!`), 'Chào bạn!');
+assert.equal(businessReportText(`${numberFormatPrefix}\r\n\r\nChào bạn!`), 'Chào bạn!');
+assert.equal(businessReportText(numberFormatPrefix), '');
+assert.equal(
+  businessReportText(`Chào bạn!\n\n${numberFormatPrefix}`),
+  `Chào bạn!\n\n${numberFormatPrefix}`,
+);
+assert.equal(
+  businessReportText(`${numberFormatPrefix}\n\nChào bạn!\n\n${numberFormatPrefix}`),
+  `Chào bạn!\n\n${numberFormatPrefix}`,
+);
+assert.equal(businessReportText(` ${numberFormatPrefix}`), ` ${numberFormatPrefix}`);
+assert.equal(
+  businessReportText('Định dạng số: nội dung do người dùng viết.'),
+  'Định dạng số: nội dung do người dùng viết.',
+);
+const prefixedReport = event('message', {
+  role: 'assistant',
+  text: `${numberFormatPrefix}\n\nChào bạn!`,
+  claims: [],
+  qa: { verified: true },
+});
+const prefixedReportSnapshot = JSON.stringify(prefixedReport);
+const prefixedReportHtml = renderToStaticMarkup(<EventView event={prefixedReport} />);
+assert.match(prefixedReportHtml, /Chào bạn!/);
+assert.doesNotMatch(prefixedReportHtml, /Định dạng số:/);
+assert.equal(JSON.stringify(prefixedReport), prefixedReportSnapshot);
 
 const tableId = '0123456789abcdef01234567';
 const tableStart = `<!-- evidence-table:${tableId}:start -->`;
@@ -369,9 +409,7 @@ for (const locale of ['en', 'vi'] as const) {
   );
   for (const cell of [
     '00123',
-    '12',
     '2026-01-02',
-    '0',
     'A|B &amp; C',
     'null',
     'false',
@@ -390,6 +428,16 @@ for (const locale of ['en', 'vi'] as const) {
       `Source table cell stays literal: ${cell}`,
     );
   }
+  assert.match(
+    tableHtml,
+    /<td>12\s*<span class="citation-badge-wrapper/,
+    'Source table numeric cell includes citation badge',
+  );
+  assert.match(
+    tableHtml,
+    /<td>0\s*<span class="citation-badge-wrapper/,
+    'Source table zero numeric cell includes citation badge',
+  );
   assert.match(
     tableHtml,
     /&lt;!-- evidence-table:ffffffffffffffffffffffff:start --&gt;/,
@@ -1193,6 +1241,96 @@ assert.equal(
 );
 assert.equal(JSON.stringify(savedInvestigation), savedInvestigationSnapshot);
 assert.equal(JSON.stringify(ownerDraft), ownerDraftSnapshot);
+
+// Verify incoming tool_arguments_delta events are mapped into the live event store
+const deltaHistory = [
+  event('tool_arguments_delta', {
+    call_id: 'call-stream',
+    item_id: 'item-stream',
+    delta: '{"param":',
+  }),
+  event('tool_arguments_delta', {
+    call_id: 'call-stream',
+    item_id: 'item-stream',
+    delta: '"value"}',
+  }),
+];
+const projectedDeltas = projectEvents(deltaHistory);
+assert.equal(
+  projectedDeltas.length,
+  1,
+  'tool_arguments_delta events are joined in the live event store',
+);
+assert.equal(projectedDeltas[0].type, 'tool_arguments');
+assert.equal(projectedDeltas[0].data.phase, 'delta');
+assert.equal(projectedDeltas[0].data.delta, '{"param":"value"}');
+
+// Citation details need an exact, unique identity; cohort metric names and
+// repeated JSON paths are not evidence identities.
+const sourceClaims = [
+  { id: 'claim-A', path: '$.count', metric: 'count', value: 12, execution_id: 'exec-A' },
+  { id: 'claim-B', path: '$.count', metric: 'count', value: 19, execution_id: 'exec-B' },
+];
+assert.equal(resolveNumericClaim(sourceClaims, 'claim-A'), sourceClaims[0]);
+assert.equal(resolveNumericClaim(sourceClaims, 'claim-a'), undefined);
+assert.equal(resolveNumericClaim(sourceClaims, '$.count'), undefined);
+assert.equal(resolveNumericClaim(sourceClaims, 'count'), undefined);
+assert.equal(resolveNumericClaim([sourceClaims[0]], '$.count'), sourceClaims[0]);
+assert.equal(resolveNumericClaim([sourceClaims[0], sourceClaims[0]], 'claim-A'), undefined);
+assert.equal(resolveNumericClaim(undefined, 'missing'), undefined);
+
+const fullArguments = event('tool_arguments', {
+  call_id: 'call-stream',
+  item_id: 'item-stream',
+  phase: 'done',
+  arguments: '{"param":"value"}',
+});
+const finalArguments = projectEvents([
+  ...deltaHistory,
+  fullArguments,
+  event('tool_arguments_delta', { call_id: 'call-stream', item_id: 'item-stream', delta: 'stale' }),
+]);
+assert.equal(finalArguments[0].data.delta, '{"param":"value"}');
+assert.equal(finalArguments[0].data.phase, 'done');
+
+assert.equal(formatEvidenceValue(12.3456, 'en'), '12.3456');
+assert.equal(formatEvidenceValue(0.00000003, 'en'), '0.00000003');
+assert.equal(formatEvidenceValue(0.00000003, 'vi'), '0,00000003');
+assert.equal(formatEvidenceValue(0, 'vi'), '0');
+assert.equal(formatEvidenceValue(undefined, 'en'), undefined);
+const malformedReference = event('message', {
+  role: 'assistant',
+  text: '[Reference](#citation:1:%E0%A4%A)',
+});
+assert.doesNotThrow(() => renderToStaticMarkup(<EventView event={malformedReference} />));
+
+// These assertions check viewport-placement arithmetic only. Actual fixed
+// containing blocks, table clipping and rendered bounds require browser replay.
+assert.deepEqual(
+  citationPosition(
+    { left: 310, top: 20, bottom: 38 },
+    { width: 290, height: 288 },
+    { left: 0, top: 0, width: 320, height: 568 },
+  ),
+  { left: 18, top: 46 },
+);
+assert.deepEqual(
+  citationPosition(
+    { left: 380, top: 560, bottom: 578 },
+    { width: 290, height: 288 },
+    { left: 0, top: 0, width: 390, height: 600 },
+  ),
+  { left: 88, top: 264 },
+);
+assert.deepEqual(
+  citationPosition(
+    { left: 220, top: 110, bottom: 128 },
+    { width: 176, height: 196 },
+    { left: 50, top: 100, width: 200, height: 220 },
+  ),
+  { left: 62, top: 112 },
+);
+
 console.log(
   'Verified lifecycle preservation, business conversation projection, chart selection and replay, suppressed historical exports, safe inline charts, source-table rendering and inert encoded links, clean reports, hidden technical traces, incomplete-result warnings, accessible EN/VI controls, durable same-run saved-work lookup, read-only localized source units, owner PATCH boundaries, and unchanged canonical evidence.',
 );

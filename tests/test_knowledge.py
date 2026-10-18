@@ -48,8 +48,19 @@ def test_offline_seed_no_network_and_stable_cache_identity(setup, monkeypatch):
     )
     assert status["status"] == "pending_no_api_key"
     assert not status["remote_verified"] and not effective.vector_store_id
-    assert status["memory_notes"] == 4
+    assert status["memory_notes"] == 7
     assert "Missing cost stays unknown" in memory.markdown_path.read_text()
+    assert "not a sourced plant procedure" in memory.markdown_path.read_text()
+    assert "does not prove a current safety hazard" in memory.markdown_path.read_text()
+    assert (
+        "Critical defects require immediate floor containment"
+        not in memory.markdown_path.read_text()
+    )
+    assert (
+        "unrecorded repair costs represent high-uncertainty events"
+        in memory.markdown_path.read_text()
+    )
+    assert "statistical signals are a compass" in memory.markdown_path.read_text()
     assert "666" not in memory.markdown_path.read_text()
     assert events[0][0] == "memory"
     again, _ = asyncio.run(prepare_knowledge(effective, memory))

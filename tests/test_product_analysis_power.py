@@ -301,4 +301,42 @@ async def test_unbounded_local_tool_resources_use_none_without_reset_failure(tmp
 def test_sql_schema_keeps_explicit_scope_and_strict_arguments():
     schema = next(item for item in product_schemas() if item["name"] == "analysis_sql")
     assert schema["strict"]
-    assert set(schema["parameters"]["required"]) == {"query", "filters"}
+    assert set(schema["parameters"]["required"]) == {"query", "filters", "rationale"}
+
+
+def test_analysis_tools_have_nullable_rationale_and_strict_decision_boundaries():
+    schemas = {item["name"]: item for item in product_schemas()}
+    analysis_tools = [
+        "analysis_query",
+        "analysis_compare",
+        "scenario_compare",
+        "analysis_records",
+        "analysis_provenance",
+        "analysis_sql",
+    ]
+    expected_desc = (
+        "One concise sentence explaining why this tool is chosen and which analytical "
+        "hypothesis or decision question it answers."
+    )
+    for name in analysis_tools:
+        tool = schemas[name]
+        props = tool["parameters"]["properties"]
+        assert "rationale" in props, f"Missing rationale in {name}"
+        assert props["rationale"]["description"] == expected_desc
+        assert props["rationale"]["type"] == ["string", "null"]
+        assert set(tool["parameters"]["required"]) == set(props)
+
+    # Decision boundaries check
+    assert "analysis_query" in schemas["analysis_sql"]["description"]
+    assert "analysis_sql" in schemas["analysis_query"]["description"]
+    assert "standard KPIs" in schemas["analysis_query"]["description"]
+
+
+@pytest.mark.asyncio
+async def test_analysis_tools_preserve_rationale_in_output(runtime):
+    test_rationale = "Hypothesis: line 2 defect spike driving warranty impact."
+    actual, context = await runtime.product_tools.call(
+        "analysis_query",
+        {"section": "kpis", "filters": filters(), "rationale": test_rationale},
+    )
+    assert actual.get("rationale") == test_rationale

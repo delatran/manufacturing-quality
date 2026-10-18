@@ -248,6 +248,12 @@ def vietnamese_subject(subject):
 async def test_prewrite_reports_all_bad_fields_without_rejecting_true_unit_scale(evidence_subject):
     runtime, tools, store, sid, _, _, _ = vietnamese_subject(evidence_subject)
     arguments = saved_arguments(runtime)
+    change = next(
+        c
+        for c in runtime.claim_catalog.values()
+        if c.path.endswith(".event_count_change") and c.value < 0
+    )
+    arguments["findings"][0] = f"Số sự kiện giảm -5 [claim:{change.id}]."
     arguments["next_steps"] = ["Inspect 999 unsupported events."]
     before = store.investigation(sid)
     rejected = json.loads(await runtime._call("investigation_update", arguments))

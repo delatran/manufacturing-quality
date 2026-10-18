@@ -149,3 +149,52 @@ def test_disabled_memory_has_no_storage_or_tools(tmp_path):
             await tools.close()
 
     asyncio.run(run())
+
+
+def test_tool_execution_schemas_support_rationale_and_preserve_envelope(tmp_path):
+    source = tmp_path / "data.csv"
+    source.write_text("id,val\n1,10\n2,20\n", encoding="utf-8")
+
+    async def run():
+        tools = AnalystTools(tmp_path / "run", [source])
+        try:
+            exec_schemas = {
+                s["name"]: s
+                for s in tools.schemas
+                if s["name"] in {"local_python_repl", "local_sql_engine", "dataset_profiler"}
+            }
+            for schema in exec_schemas.values():
+                assert "rationale" in schema["parameters"]["properties"]
+                assert schema["parameters"]["properties"]["rationale"]["description"] == (
+                    "One concise sentence explaining why this tool is chosen and which analytical hypothesis or decision question it answers."
+                )
+                assert set(schema["parameters"]["required"]) == set(
+                    schema["parameters"]["properties"]
+                )
+
+            repl_res = await tools.call(
+                "local_python_repl",
+                {
+                    "code": "result = {'status': 'completed', 'scope': {'test': '1'}, 'dataset_version': 'v1', 'policy_version': 'v1', 'result_reference': 'ref1', 'result': {'x': 42}}",
+                    "rationale": "Verify envelope preservation in repl",
+                },
+            )
+            assert repl_res.get("rationale") == "Verify envelope preservation in repl"
+            envelope_val = repl_res["result"]["value"]
+            assert envelope_val["status"] == "completed"
+            assert envelope_val["rationale"] == "Verify envelope preservation in repl"
+            assert envelope_val["result"] == {"x": 42}
+
+            sql_res = await tools.call(
+                "local_sql_engine",
+                {
+                    "query": "SELECT sum(val) AS total FROM data",
+                    "rationale": "Calculate aggregate total",
+                },
+            )
+            assert sql_res.get("rationale") == "Calculate aggregate total"
+            assert sql_res["result"]["rows"][0]["total"] == 30
+        finally:
+            await tools.close()
+
+    asyncio.run(run())

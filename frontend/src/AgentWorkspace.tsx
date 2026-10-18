@@ -1,6 +1,17 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import type { FormEvent, KeyboardEvent } from 'react';
-import { ArrowDown, ArrowRight, ArrowUp, CircleAlert, Square, Undo2, X } from 'lucide-react';
+import type { CSSProperties, FormEvent, KeyboardEvent } from 'react';
+import {
+  ArrowDown,
+  ArrowRight,
+  ArrowUp,
+  ChartNoAxesCombined,
+  ChevronDown,
+  CircleAlert,
+  MessageSquareText,
+  Square,
+  Undo2,
+  X,
+} from 'lucide-react';
 import {
   artifactUrl,
   createSession,
@@ -23,6 +34,7 @@ import { parseUiCommand } from './workspace-state';
 import type { DashboardData } from './dashboard-types';
 import type { UiCommand } from './workspace-state';
 import AgentScope, { questionScope } from './AgentScope';
+import { conversationScrollPosition } from './conversation-scroll';
 
 const storageKey = 'analyst.workspace.session.v1';
 const draftKey = 'analyst.workspace.draft.v2';
@@ -437,6 +449,7 @@ export default function AgentWorkspace({
   const cursor = useRef<string | number | undefined>(undefined);
   const composer = useRef<HTMLTextAreaElement>(null);
   const stream = useRef<HTMLDivElement>(null);
+  const conversationTail = useRef<HTMLDivElement>(null);
   const composerDock = useRef<HTMLElement>(null);
   const nearBottom = useRef(true);
   const pendingPrompt = useRef<string | null>(null);
@@ -783,34 +796,63 @@ export default function AgentWorkspace({
     return () => clearTimeout(timer);
   }, [awaitingPrompt]);
 
+  const scrollPosition = useCallback(() => {
+    const viewport = window.visualViewport;
+    return conversationScrollPosition({
+      scrollY: window.scrollY,
+      viewportTop: viewport?.offsetTop ?? 0,
+      viewportHeight: viewport?.height ?? window.innerHeight,
+      composerTop: composerDock.current?.getBoundingClientRect().top ?? window.innerHeight,
+      tailBottom: conversationTail.current?.getBoundingClientRect().bottom ?? 0,
+      documentHeight: document.documentElement.scrollHeight,
+      layoutHeight: document.documentElement.clientHeight,
+    });
+  }, []);
+  const followLatest = useCallback(() => {
+    window.scrollTo({ top: scrollPosition().target, behavior: 'instant' });
+  }, [scrollPosition]);
   useEffect(() => {
     const onScroll = () => {
-      if (!visible) return;
-      nearBottom.current =
-        window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 180;
+      if (!visible || !hasConversation) return;
+      nearBottom.current = scrollPosition().nearBottom;
       setShowLatest(!nearBottom.current);
     };
+    const onViewportChange = () => {
+      if (!visible || !hasConversation) return;
+      if (nearBottom.current) followLatest();
+      else setShowLatest(!scrollPosition().nearBottom);
+    };
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [visible]);
+    window.addEventListener('resize', onViewportChange);
+    window.visualViewport?.addEventListener('resize', onViewportChange);
+    window.visualViewport?.addEventListener('scroll', onViewportChange);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onViewportChange);
+      window.visualViewport?.removeEventListener('resize', onViewportChange);
+      window.visualViewport?.removeEventListener('scroll', onViewportChange);
+    };
+  }, [visible, hasConversation, scrollPosition, followLatest]);
   const scrollToLatest = () => {
     nearBottom.current = true;
     setShowLatest(false);
-    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' });
+    followLatest();
+    // The jump button now disappears. Give its keyboard focus a meaningful
+    // destination without triggering a second browser-controlled scroll.
+    const latestEntry = stream.current?.lastElementChild;
+    if (latestEntry instanceof HTMLElement) latestEntry.focus({ preventScroll: true });
   };
   useLayoutEffect(() => {
-    if (visible && hasConversation && nearBottom.current)
-      window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' });
-  }, [visibleEvents, awaitingPrompt, visible, hasConversation, composerHeight]);
+    if (visible && hasConversation && nearBottom.current) followLatest();
+  }, [visibleEvents, awaitingPrompt, visible, hasConversation, composerHeight, followLatest]);
   useEffect(() => {
     if (!stream.current) return;
     const observer = new ResizeObserver(() => {
-      if (visible && hasConversation && nearBottom.current)
-        window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' });
+      if (visible && hasConversation && nearBottom.current) followLatest();
     });
     observer.observe(stream.current);
     return () => observer.disconnect();
-  }, [visible, hasConversation]);
+  }, [visible, hasConversation, followLatest]);
   useEffect(() => {
     if (!composer.current) return;
     composer.current.style.height = 'auto';
@@ -959,6 +1001,7 @@ export default function AgentWorkspace({
   return (
     <div
       className={'workspace agent-workspace ' + (hasConversation ? 'has-conversation' : 'is-empty')}
+      style={{ '--agent-composer-height': `${composerHeight}px` } as CSSProperties}
     >
       <header className="agent-page-header">
         <div>
@@ -983,7 +1026,10 @@ export default function AgentWorkspace({
         )}
       </header>
 
-      <section className="agent-source-card" aria-label={t('ui.data_for_this_question')}>
+      <section
+        className={'agent-source-card' + (hasConversation ? ' is-compact' : '')}
+        aria-label={t('ui.data_for_this_question')}
+      >
         <div className="agent-source-top">
           <div className="agent-source-summary">
             <span>{t('ui.selected_scope')}</span>
@@ -1048,36 +1094,43 @@ export default function AgentWorkspace({
           </p>
         )}
         {activeKpis && (
-          <dl className="agent-scope-kpis" aria-label={t('ui.agent_scope_kpis_label')}>
-            <div>
-              <dt>{t('ui.dashboard_kpi_defects')}</dt>
-              <dd>{number(activeKpis.event_count)}</dd>
-            </div>
-            <div>
-              <dt>{t('ui.dashboard_kpi_critical')}</dt>
-              <dd className="is-critical">
-                {number(activeKpis.critical_count)}
-                {activeKpis.critical_share_pct != null && (
-                  <small> ({percent(activeKpis.critical_share_pct)})</small>
-                )}
-              </dd>
-            </div>
-            <div>
-              <dt>{t('ui.dashboard_kpi_rate')}</dt>
-              <dd>{number(activeKpis.reference_intensity_per_1000, 2)}</dd>
-            </div>
-            <div>
-              <dt>{t('ui.dashboard_kpi_cost')}</dt>
-              <dd>
-                {activeKpis.cost_available
-                  ? number(activeKpis.known_repair_cost, 0)
-                  : t('ui.unavailable')}
-                {activeKpis.cost_coverage_pct != null && (
-                  <small> ({percent(activeKpis.cost_coverage_pct)})</small>
-                )}
-              </dd>
-            </div>
-          </dl>
+          <details className="agent-scope-details">
+            <summary>
+              <ChartNoAxesCombined size={15} aria-hidden="true" />
+              <span>{t('ui.agent_scope_kpis_label')}</span>
+              <ChevronDown size={15} aria-hidden="true" />
+            </summary>
+            <dl className="agent-scope-kpis" aria-label={t('ui.agent_scope_kpis_label')}>
+              <div>
+                <dt>{t('ui.dashboard_kpi_defects')}</dt>
+                <dd>{number(activeKpis.event_count)}</dd>
+              </div>
+              <div>
+                <dt>{t('ui.dashboard_kpi_critical')}</dt>
+                <dd className="is-critical">
+                  {number(activeKpis.critical_count)}
+                  {activeKpis.critical_share_pct != null && (
+                    <small> ({percent(activeKpis.critical_share_pct)})</small>
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt>{t('ui.dashboard_kpi_rate')}</dt>
+                <dd>{number(activeKpis.reference_intensity_per_1000, 2)}</dd>
+              </div>
+              <div>
+                <dt>{t('ui.dashboard_kpi_cost')}</dt>
+                <dd>
+                  {activeKpis.cost_available
+                    ? number(activeKpis.known_repair_cost, 0)
+                    : t('ui.unavailable')}
+                  {activeKpis.cost_coverage_pct != null && (
+                    <small> ({percent(activeKpis.cost_coverage_pct)})</small>
+                  )}
+                </dd>
+              </div>
+            </dl>
+          </details>
         )}
       </section>
 
@@ -1120,7 +1173,19 @@ export default function AgentWorkspace({
             const flow =
               event.type === 'activity' && event.run_id ? flowRuns.get(event.run_id) : undefined;
             return (
-              <div className="conversation-entry" key={String(event.id)}>
+              <div
+                className="conversation-entry"
+                key={String(event.id)}
+                tabIndex={-1}
+                role="group"
+                aria-label={
+                  event.type === 'message'
+                    ? event.data.role === 'user'
+                      ? t('ui.you')
+                      : t('ui.quality_analyst_2')
+                    : t('ui.analyst_conversation')
+                }
+              >
                 {event.type === 'message' &&
                   event.data.role !== 'user' &&
                   event.run_id &&
@@ -1135,7 +1200,7 @@ export default function AgentWorkspace({
             );
           })}
           {awaitingPrompt && (
-            <article className="message user-message pending-message">
+            <article className="message user-message pending-message" tabIndex={-1}>
               <div className="event-label">
                 <span className="user-dot">{t('ui.y')}</span>
                 <span>{t('ui.you')}</span>
@@ -1205,31 +1270,8 @@ export default function AgentWorkspace({
               <ArrowRight size={15} />
             </button>
           )}
+        <div className="conversation-tail" ref={conversationTail} aria-hidden="true" />
       </main>
-
-      {!hasConversation && (
-        <section className="agent-welcome">
-          <h2>{t('ui.agent_suggestions')}</h2>
-          <p>{t('ui.edit_the_question_before_sending')}</p>
-          <div className="agent-suggestions">
-            {suggestions.slice(0, 3).map((suggestion) => (
-              <button
-                type="button"
-                className="agent-suggestion"
-                key={suggestion.id}
-                disabled={Boolean(awaitingPrompt)}
-                onClick={() => chooseSuggestion(suggestion)}
-              >
-                <span>
-                  <strong>{suggestion.title}</strong>
-                  <small>{suggestion.detail}</small>
-                </span>
-                <ArrowRight size={17} />
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
 
       <footer className="composer-dock" ref={composerDock}>
         <div className="composer-container">
@@ -1354,6 +1396,32 @@ export default function AgentWorkspace({
           </div>
         </div>
       </footer>
+      {!hasConversation && (
+        <section className="agent-welcome">
+          <div className="agent-welcome-heading">
+            <MessageSquareText size={19} aria-hidden="true" />
+            <h2>{t('ui.agent_suggestions')}</h2>
+          </div>
+          <p>{t('ui.edit_the_question_before_sending')}</p>
+          <div className="agent-suggestions">
+            {suggestions.slice(0, 3).map((suggestion) => (
+              <button
+                type="button"
+                className="agent-suggestion"
+                key={suggestion.id}
+                disabled={Boolean(awaitingPrompt)}
+                onClick={() => chooseSuggestion(suggestion)}
+              >
+                <span>
+                  <strong>{suggestion.title}</strong>
+                  <small>{suggestion.detail}</small>
+                </span>
+                <ArrowRight size={17} />
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

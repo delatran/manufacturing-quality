@@ -70,7 +70,41 @@ def seed_memory(root: Path, memory: AnalystMemory) -> int:
             + registry["source"]["sha256"]
             + ". "
             + registry["source"]["note"],
-        )
+        ),
+        (
+            "case.heuristic.severity_hierarchy",
+            "methodology",
+            "Severity prioritization heuristic, not a sourced plant procedure: review Critical "
+            "events with the Quality Engineer and Shift Lead before lower-severity cosmetic "
+            "burden, even when their volume is lower. A historical severity label alone does "
+            "not prove a current safety hazard, a failed function, or a confirmed cause. Ask "
+            "the responsible team to assess current risk and applicable containment procedures. "
+            "Quarantine, expanded inspection, or line stoppage are possible proposals only "
+            "when current evidence and the plant's authorized procedure support them. Review "
+            "cosmetic samples before proposing fixture, tooling, or handling changes; the "
+            "defect label cannot establish which intervention will work.",
+        ),
+        (
+            "case.heuristic.cost_coverage",
+            "data_quality",
+            "Cost coverage awareness: unrecorded repair costs represent high-uncertainty events, "
+            "not zero cost. When defect records omit repair cost values, analysts and systems must "
+            "explicitly report valid observed cost coverage metrics and preserve the unknown status rather than "
+            "imputing zero or treating missing costs as free repairs. Unrecorded events carry latent "
+            "operational and financial risk, and financial impact analyses must communicate this "
+            "uncertainty to avoid misdirecting capital allocation.",
+        ),
+        (
+            "case.heuristic.gemba_action",
+            "methodology",
+            "Gemba action principle: statistical signals are a compass for shop-floor verification "
+            "with Shift Leads, not an automatic judgment. Analytical models, anomaly detectors, "
+            "and Pareto summaries highlight where to investigate on the physical production line "
+            "(Gemba), but operational decisions require collaborative shop-floor confirmation. "
+            "Analysts must partner with Shift Leads and machine operators to cross-reference data "
+            "findings against physical tooling wear, shift transitions, material lots, and "
+            "environmental variations before enacting corrective actions.",
+        ),
     ]
     for key, content in registry.get("adopted_assumptions", {}).items():
         notes.append(

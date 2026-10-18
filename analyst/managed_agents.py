@@ -62,6 +62,13 @@ def managed_trace(event: Any) -> tuple[str, dict[str, Any]] | None:
         return "text_delta", {**base, "delta": item.get("delta", "")}
     if kind.endswith(".output_text.done"):
         return "text_done", {**base, "text": item.get("text", "")}
+    if kind.endswith(".function_call_arguments.delta") or kind.endswith(".arguments.delta"):
+        return "tool_arguments_delta", {
+            **base,
+            "call_id": item.get("call_id"),
+            "item_id": item.get("item_id"),
+            "delta": item.get("delta", ""),
+        }
     if kind.endswith(".reasoning_summary_text.delta"):
         return "reasoning_summary", {**base, "delta": item.get("delta", "")}
     if kind.endswith(".reasoning_summary_text.done"):

@@ -1519,3 +1519,82 @@ def test_real_runner_lead_guardrail_rejection_repairs_known_native_history(tmp_p
         == 1
     )
     assert all(len(provider.creates) == 1 and not provider.inputs for provider in qa_providers)
+
+
+def test_managed_trace_intercepts_tool_arguments_delta():
+    raw1 = event(
+        "agent.session.turn.function_call_arguments.delta",
+        session_id="sess_real",
+        turn_id="turn_real",
+        item_id="item_tool_1",
+        call_id="call_real_1",
+        delta='{"param":',
+    )
+    kind1, payload1 = managed_trace(raw1)
+    assert kind1 == "tool_arguments_delta"
+    assert payload1["call_id"] == "call_real_1"
+    assert payload1["item_id"] == "item_tool_1"
+    assert payload1["delta"] == '{"param":'
+    assert payload1["session_id"] == "sess_real"
+    assert payload1["turn_id"] == "turn_real"
+
+    raw2 = event(
+        "agent.session.turn.item.arguments.delta",
+        session_id="sess_real",
+        turn_id="turn_real",
+        item_id="item_tool_2",
+        call_id="call_real_2",
+        delta=' "value"}',
+    )
+    kind2, payload2 = managed_trace(raw2)
+    assert kind2 == "tool_arguments_delta"
+    assert payload2["call_id"] == "call_real_2"
+    assert payload2["item_id"] == "item_tool_2"
+    assert payload2["delta"] == ' "value"}'
+
+
+def test_managed_trace_emits_clean_telemetry_for_text_reasoning_and_output_items():
+    kind, payload = managed_trace(
+        event("agent.session.turn.output_text.delta", session_id="s1", delta="hello")
+    )
+    assert kind == "text_delta"
+    assert payload["delta"] == "hello"
+
+    kind, payload = managed_trace(
+        event("agent.session.turn.output_text.done", session_id="s1", text="hello world")
+    )
+    assert kind == "text_done"
+    assert payload["text"] == "hello world"
+
+    kind, payload = managed_trace(
+        event("agent.session.turn.reasoning_summary_text.delta", session_id="s1", delta="thinking")
+    )
+    assert kind == "reasoning_summary"
+    assert payload["delta"] == "thinking"
+
+    kind, payload = managed_trace(
+        event(
+            "agent.session.turn.reasoning_summary_text.done", session_id="s1", text="done thinking"
+        )
+    )
+    assert kind == "reasoning_summary"
+    assert payload["text"] == "done thinking"
+    assert payload["done"] is True
+
+    item_node = Node(
+        id="item_1", type="function_call", name="inspect", call_id="c1", status="in_progress"
+    )
+    kind, payload = managed_trace(
+        event("agent.session.turn.item.added", session_id="s1", item=item_node)
+    )
+    assert kind == "output_item"
+    assert payload["phase"] == "added"
+    assert payload["item_id"] == "item_1"
+    assert payload["call_id"] == "c1"
+
+    kind, payload = managed_trace(
+        event("agent.session.turn.item.done", session_id="s1", item=item_node)
+    )
+    assert kind == "output_item"
+    assert payload["phase"] == "done"
+    assert payload["item_id"] == "item_1"

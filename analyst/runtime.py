@@ -1992,7 +1992,18 @@ class AnalystRuntime:
         state_store=None,
         ui_handler=None,
     ):
-        self.settings, self.toolkit, self.emit = settings, toolkit, emit
+        self._raw_emit = emit
+
+        async def _safe_emit(event: str, data: Any = None) -> Any:
+            if self._raw_emit is None:
+                return None
+            res = self._raw_emit(event, data) if data is not None else self._raw_emit(event)
+            if inspect.isawaitable(res):
+                return await res
+            return res
+
+        self.emit = _safe_emit
+        self.settings, self.toolkit = settings, toolkit
         self.steering = steering
         self.initial_items = initial_items or []
         self.prompt = ""
@@ -2003,6 +2014,7 @@ class AnalystRuntime:
             "verified": False,
             "errors": ["Analysis has not been verified"],
         }
+        self.reasoning_effort: str = getattr(settings, "reasoning_effort", "medium")
         self.models = []
         self.case_entry = None
         self.applied_steering = []
@@ -2509,6 +2521,10 @@ class AnalystRuntime:
     @property
     def action_intent(self):
         return self._action_intent
+
+    def audit_report(self, report: AnalystReport) -> dict[str, Any]:
+        """Audit report claims, tables, formats, and evidence against the ledger."""
+        return audit_report(report, self.toolkit.ledger)
 
     def resolve_report(self, draft):
         """Resolve only identifiers issued from actual receipts in this run."""
@@ -4905,6 +4921,8 @@ result
                 "elapsed_seconds": time.monotonic() - started,
                 "simulation": False,
             }
+        turn1_effort = self.settings.reasoning_effort
+        self.reasoning_effort = turn1_effort
         run_metadata = {
             "simulation": self.simulation,
             "model": self.settings.model,
@@ -4921,7 +4939,7 @@ result
             "conversation_strategy": (
                 "managed_session_with_local_history" if not self.simulation else "local_history"
             ),
-            "reasoning_effort": self.settings.reasoning_effort,
+            "reasoning_effort": self.reasoning_effort,
             "limits": {
                 "tool_calls": self.run_limit("max_tool_calls"),
                 "seconds": self.run_limit("run_timeout_seconds"),
@@ -4977,6 +4995,11 @@ result
                 }
                 return GuardrailFunctionOutput(output_info=self.last_qa, tripwire_triggered=True)
             await self.reconcile_async_jobs()
+            if self.analysis_context is not None and self.context_entry is None:
+                # Qualitative replies may need no model-selected computation.
+                # Verify their frozen scope locally before semantic review,
+                # using the same integrity checks and failure receipts as tools.
+                await self._call("dashboard_context", {})
             output = self.resolve_report(output)
             # Review the authored answer's requested format separately from
             # mandatory presentation text. All deterministic audits below still
@@ -4996,7 +5019,7 @@ result
             if self.language == "vi" and VI_NUMBER_NOTE not in output.report:
                 output.report = VI_NUMBER_NOTE + "\n\n" + output.report
             self.last_report = output
-            audit = audit_report(output, self.toolkit.ledger)
+            audit = self.audit_report(output)
             inventory = {item["path"]: item for item in self.toolkit.ledger.artifacts()}
             chart_paths = []
             for path in output.deliverable_paths:

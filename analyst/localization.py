@@ -57,7 +57,7 @@ PHRASES = {
     "Scope metadata: ": "Thông tin phạm vi: ",
     "Canonical KPIs": "KPI theo định nghĩa chuẩn",
     "Logged defect events": "Sự kiện lỗi đã ghi nhận",
-    "Critical events": "Sự kiện nghiêm trọng",
+    "Critical events": "lỗi nghiêm trọng (Critical)",
     "Critical share in percent": "Tỷ trọng sự kiện nghiêm trọng theo phần trăm",
     "Sum of observed repair costs in unspecified local currency": "Tổng chi phí sửa chữa đã ghi nhận theo đơn vị tiền tệ của nguồn, chưa xác định loại tiền",
     "Observed cost coverage in percent": "Tỷ lệ sự kiện có chi phí hợp lệ theo phần trăm",
@@ -71,13 +71,13 @@ PHRASES = {
     ", respectively.": ".",
     "The canonical count change in percent is ": "Mức thay đổi số sự kiện theo phần trăm, tính theo định nghĩa chuẩn, là ",
     "A percentage change is unavailable because the opening count is zero.": "Không tính được phần trăm thay đổi vì số sự kiện đầu kỳ bằng không.",
-    "| Reporting month | Logged events | Critical events | Observed repair cost |": "| Tháng báo cáo | Sự kiện đã ghi nhận | Nghiêm trọng | Chi phí sửa chữa đã ghi nhận |",
+    "| Reporting month | Logged events | Critical events | Observed repair cost |": "| Tháng báo cáo | Sự kiện lỗi đã ghi nhận | lỗi nghiêm trọng (Critical) | Chi phí sửa chữa đã ghi nhận |",
     "Location and severity in the applied scope": "Vị trí và mức độ lỗi trong phạm vi đang áp dụng",
-    "| Location | Logged events | Critical events | Critical share in percent |": "| Vị trí | Sự kiện đã ghi nhận | Nghiêm trọng | Tỷ trọng nghiêm trọng theo phần trăm |",
+    "| Location | Logged events | Critical events | Critical share in percent |": "| Vị trí | Sự kiện lỗi đã ghi nhận | lỗi nghiêm trọng (Critical) | Tỷ trọng nghiêm trọng theo phần trăm |",
     "Within this applied scope, ": "Trong phạm vi đang áp dụng, ",
     " has the largest observed Critical count: ": " có số sự kiện nghiêm trọng đã ghi nhận cao nhất: ",
-    "Review representative failures and validate actual production, inspection exposure and reporting completeness before choosing corrective actions.": "Rà soát các trường hợp hỏng hóc tiêu biểu và xác minh sản lượng, số lượng kiểm tra cùng mức độ đầy đủ của việc ghi nhận trước khi chọn hành động khắc phục.",
-    "No logged events match this applied scope; location priorities cannot be inferred.": "Không có sự kiện đã ghi nhận phù hợp với phạm vi này; chưa thể suy ra vị trí cần ưu tiên.",
+    "Review representative failures and validate actual production, inspection exposure and reporting completeness before choosing corrective actions.": "Mổ xẻ mẫu lỗi thực tế (failure teardown) và xác minh sản lượng, số lượng kiểm tra cùng mức độ đầy đủ của việc ghi nhận trước khi chọn hành động khắc phục.",
+    "No logged events match this applied scope; location priorities cannot be inferred.": "Không có sự kiện lỗi đã ghi nhận phù hợp với phạm vi này; chưa thể suy ra vị trí cần ưu tiên.",
     "Any further SQL or Python work is exploratory and must identify its own scope and denominator. It cannot silently redefine the canonical Dashboard KPIs.": "Các phép tính SQL hoặc Python bổ sung mang tính thăm dò và phải nêu rõ phạm vi cùng mẫu số. Chúng không được âm thầm thay đổi định nghĩa KPI chuẩn của Tổng quan.",
     "A comparison may use another explicitly named scope from the same frozen snapshot without changing Dashboard filters.": "Có thể so sánh với một phạm vi khác được nêu rõ trên cùng bản dữ liệu đã chốt mà không đổi bộ lọc của Tổng quan.",
     "This fixture validates shared evidence and scope binding. Open-ended interpretation requires the configured live model.": "Mô phỏng này kiểm tra việc dùng chung bằng chứng và ràng buộc phạm vi. Diễn giải yêu cầu mở cần mô hình trực tuyến đã cấu hình.",
@@ -141,7 +141,7 @@ PHRASES = {
 PHRASES.update(
     {
         "Manufacturing quality analysis": "Phân tích chất lượng sản xuất",
-        "Historical review for January through June of year twenty twenty-four. The findings identify where logged defect burden and observed repair costs warrant investigation, with data limitations carried into each decision.": "Rà soát dữ liệu lịch sử từ tháng Một đến tháng Sáu năm hai nghìn không trăm hai mươi tư. Các phát hiện chỉ ra những nhóm lỗi và chi phí sửa chữa cần điều tra, đồng thời nêu rõ giới hạn dữ liệu khi ra quyết định.",
+        "Historical review for January through June of year twenty twenty-four. The findings identify where logged defect burden and observed repair costs warrant investigation, with data limitations carried into each decision.": "Rà soát dữ liệu lịch sử giai đoạn tháng 1 – 6/2024. Các phát hiện chỉ ra những nhóm lỗi và chi phí sửa chữa cần điều tra, đồng thời nêu rõ giới hạn dữ liệu khi ra quyết định.",
         "The period contains ": "Trong kỳ có ",
         "Source rows received": "Dòng dữ liệu nguồn đã nhận",
         "Duplicate copies removed": "Bản sao trùng đã loại bỏ",
@@ -152,7 +152,7 @@ PHRASES.update(
         "All source rows accounted for": "Đã đối soát toàn bộ dòng dữ liệu nguồn",
         "The quality workbook records the issues found, handling decisions, assumptions and their effect on results. Issue counts overlap and must not be added to infer removals.": "Workbook chất lượng dữ liệu ghi lại các vấn đề đã phát hiện, quyết định xử lý, giả định và ảnh hưởng đến kết quả. Số lượng các vấn đề có thể trùng nhau; không cộng chúng để suy ra số dòng bị loại.",
         "Monthly trend": "Xu hướng theo tháng",
-        "| Month | Events | Critical | Known repair cost |": "| Tháng | Sự kiện lỗi | Nghiêm trọng | Chi phí sửa chữa đã ghi nhận |",
+        "| Month | Events | Critical | Known repair cost |": "| Tháng | Sự kiện lỗi đã ghi nhận | lỗi nghiêm trọng (Critical) | Chi phí sửa chữa đã ghi nhận |",
         "Operational patterns": "Các mẫu hình cần lưu ý trong vận hành",
         "Only slash dates with an ambiguous month/day order are changed. The alternative interpretation and withholding scenarios change the in-scope evidence population, so lower totals are not savings or manufacturing improvement. These scenarios are not confidence intervals.": "Chỉ những ngày viết bằng dấu gạch chéo chưa rõ thứ tự tháng/ngày mới được thay đổi. Kịch bản diễn giải theo thứ tự còn lại và kịch bản tạm loại các dòng này làm thay đổi tập dữ liệu trong phạm vi phân tích, nên tổng số thấp hơn không thể hiện tiết kiệm hoặc cải thiện sản xuất. Các kịch bản này không phải khoảng tin cậy.",
         "Adopted month/day convention": "Quy ước tháng/ngày đang sử dụng",
@@ -166,11 +166,11 @@ PHRASES.update(
         "The current findings support targeted investigation. They do not establish current plant conditions, confirmed causes or measured savings.": "Các phát hiện hiện tại hỗ trợ xác định trọng tâm điều tra. Chúng chưa xác lập tình trạng hiện tại của nhà máy, nguyên nhân đã được xác nhận hoặc khoản tiết kiệm đã đo lường.",
         "The brief requires a web app dashboard and analytical answers, and contains no numerical answer key. Verified historical answers come from HTTP evidence and an independently reviewed oracle. The current owner requests Dashboard and Agent tabs, with Dashboard as the default, sharing datasets, KPI definitions, analytical filters and execution evidence.": "Đề bài yêu cầu ứng dụng bảng điều khiển và câu trả lời phân tích, không cung cấp đáp án số. Các kết quả lịch sử được kiểm chứng từ dữ liệu lấy qua HTTP và bộ đáp án đối chiếu được xây dựng độc lập. Theo yêu cầu hiện tại, ứng dụng có tab Tổng quan mặc định và tab Trợ lý AI, dùng chung dữ liệu, định nghĩa KPI, bộ lọc phân tích và bằng chứng thực thi.",
         "Scope and data quality": "Phạm vi và chất lượng dữ liệu",
-        "January through June of year twenty twenty-four contains ": "Từ tháng Một đến tháng Sáu năm hai nghìn không trăm hai mươi tư có ",
+        "January through June of year twenty twenty-four contains ": "Giai đoạn tháng 1 – 6/2024 có ",
         " logged defect events, including ": " sự kiện lỗi đã ghi nhận, trong đó có ",
-        " Critical events. Observed repair cost is ": " sự kiện nghiêm trọng. Chi phí sửa chữa đã ghi nhận là ",
+        " Critical events. Observed repair cost is ": " lỗi nghiêm trọng (Critical). Chi phí sửa chữa đã ghi nhận là ",
         " in unspecified local currency, with ": " theo đơn vị tiền tệ của nguồn chưa xác định loại tiền, với ",
-        "% cost coverage.": "% sự kiện có chi phí hợp lệ.",
+        "% cost coverage.": "% tỷ lệ sự kiện có chi phí hợp lệ.",
         "Counts refer to logged events, not distinct defective units. Unknown costs remain unknown. Actual production and inspection exposure, unit identifiers, reporting completeness and causal attribution are unavailable.": "Các số đếm phản ánh sự kiện lỗi đã ghi nhận, không phải số sản phẩm lỗi riêng biệt. Chi phí chưa xác định vẫn được giữ là chưa xác định. Chưa có sản lượng và số lượng kiểm tra thực tế, mã định danh từng sản phẩm, bằng chứng về mức độ đầy đủ của việc ghi nhận hoặc cơ sở kết luận nhân quả.",
         "| Disposition | Count |": "| Kết quả xử lý dữ liệu | Số lượng |",
         "raw_equals_removed_plus_quarantined_plus_clean": "Đối soát số dòng nguồn bằng dòng trùng đã bỏ cộng dòng cách ly cộng sự kiện sạch",
@@ -183,56 +183,56 @@ PHRASES.update(
         "Verified": "Đã kiểm chứng",
         "Failed": "Không đạt",
         "The completed workbook documents observed issues, row-level audit lineage, assumptions and before/after impacts. Issue counts overlap and must not be added to infer removals.": "Tệp Excel hoàn chỉnh ghi lại vấn đề đã phát hiện, nguồn gốc kiểm tra đến từng dòng, giả định và tác động trước/sau xử lý. Số lượng các vấn đề có thể trùng nhau; không cộng chúng để suy ra số dòng bị loại.",
-        "Part Three: trend": "Phần Ba: xu hướng",
-        "Logged events changed from ": "Số sự kiện đã ghi nhận thay đổi từ ",
+        "Part Three: trend": "Phần 3: xu hướng",
+        "Logged events changed from ": "Số sự kiện lỗi đã ghi nhận thay đổi từ ",
         " in January to ": " trong tháng Một lên ",
         " in June, an increase of ": " trong tháng Sáu, tăng ",
         "%. This is a negative workload signal that warrants investigation; it does not establish causal deterioration without actual output and inspection coverage.": "%. Đây là dấu hiệu gia tăng gánh nặng xử lý cần điều tra; chưa thể kết luận chất lượng sản xuất suy giảm khi thiếu sản lượng thực tế và thông tin về phạm vi kiểm tra.",
-        "| Month metadata | Events | Critical | Known repair cost |": "| Tháng | Sự kiện lỗi | Nghiêm trọng | Chi phí sửa chữa đã ghi nhận |",
+        "| Month metadata | Events | Critical | Known repair cost |": "| Tháng | Sự kiện lỗi đã ghi nhận | lỗi nghiêm trọng (Critical) | Chi phí sửa chữa đã ghi nhận |",
         "Location and severity": "Vị trí lỗi và mức độ nghiêm trọng",
-        "| Location | Events | Critical | Critical share |": "| Vị trí | Sự kiện lỗi | Nghiêm trọng | Tỷ trọng nghiêm trọng |",
-        "Surface has the most events; Component has the most Critical events and the highest Critical share, so focus failure review there. Exploratory association p-value is ": "Bề mặt có nhiều sự kiện nhất; linh kiện có nhiều sự kiện nghiêm trọng nhất và tỷ trọng nghiêm trọng cao nhất, nên ưu tiên rà soát hỏng hóc tại đây. Giá trị p của kiểm định mối liên hệ mang tính thăm dò là ",
+        "| Location | Events | Critical | Critical share |": "| Vị trí | Sự kiện lỗi đã ghi nhận | lỗi nghiêm trọng (Critical) | Tỷ trọng nghiêm trọng |",
+        "Surface has the most events; Component has the most Critical events and the highest Critical share, so focus failure review there. Exploratory association p-value is ": "Bề mặt có nhiều sự kiện nhất; linh kiện có nhiều lỗi nghiêm trọng (Critical) nhất và tỷ trọng nghiêm trọng cao nhất, nên ưu tiên rà soát hỏng hóc tại đây. Giá trị p của kiểm định mối liên hệ mang tính thăm dò là ",
         " and Cramer's V is ": " và hệ số V của Cramér là ",
         ". Expected-cell checks pass for this source; the association is small and does not prove a causal mechanism.": ". Dữ liệu này đạt kiểm tra về tần số kỳ vọng trong các ô; mức liên hệ nhỏ và không chứng minh cơ chế nhân quả.",
         "Other notable patterns and beyond-brief insights": "Các mẫu hình đáng chú ý và phát hiện ngoài yêu cầu",
-        "Workload and exposure rankings differ: ": "Thứ hạng theo số sự kiện và sản lượng tham chiếu khác nhau: ",
+        "Workload and exposure rankings differ: ": "Thứ hạng theo số sự cố lỗi và sản lượng tham chiếu khác nhau: ",
         " leads reference-output intensity at ": " có cường độ lỗi theo sản lượng tham chiếu cao nhất, ở mức ",
-        " logged events per thousand reference units. Verify actual exposure and product mix before assigning line causality.": " sự kiện đã ghi nhận trên mỗi nghìn đơn vị tham chiếu. Cần xác minh sản lượng thực tế và cơ cấu sản phẩm trước khi quy nguyên nhân cho dây chuyền.",
+        " logged events per thousand reference units. Verify actual exposure and product mix before assigning line causality.": " sự kiện lỗi đã ghi nhận trên mỗi nghìn đơn vị tham chiếu. Cần xác minh sản lượng thực tế và cơ cấu sản phẩm trước khi quy nguyên nhân cho chuyền.",
         " accounts for ": " chiếm ",
         " observed repair cost and ": " chi phí sửa chữa đã ghi nhận và ",
         "% of known cost. Maintenance and Finance should review repair mechanisms together with missing-cost capture.": "% tổng chi phí đã ghi nhận. Bộ phận Bảo trì và Tài chính nên cùng rà soát cách sửa chữa và việc bổ sung chi phí còn thiếu.",
         "Known repair burden is distributed: reaching the Pareto threshold requires ": "Chi phí sửa chữa đã ghi nhận phân tán trên nhiều sản phẩm: để đạt ngưỡng Pareto cần ",
-        " master products. Do not assume a generic eighty/twenty rule. Calendar coverage also leaves ": " sản phẩm trong danh mục chuẩn. Không mặc định áp dụng quy tắc tám mươi/hai mươi. Đồng thời có ",
+        " master products. Do not assume a generic eighty/twenty rule. Calendar coverage also leaves ": " sản phẩm trong danh mục chuẩn. Không mặc định áp dụng quy tắc 80/20. Đồng thời có ",
         " dates without logged events, so confirm reporting coverage before daily alerts.": " ngày không có sự kiện được ghi nhận; cần xác nhận mức độ đầy đủ của việc ghi nhận trước khi phát cảnh báo hằng ngày.",
         "Sensitivity of conclusions": "Độ nhạy của kết luận",
         "Only genuinely ambiguous slash dates are changed. The alternative interpretation and withholding scenarios change the in-scope evidence population, so lower totals are not savings or manufacturing improvement. These scenarios are not confidence intervals.": "Chỉ những ngày viết bằng dấu gạch chéo thực sự chưa rõ thứ tự tháng/ngày mới được thay đổi. Kịch bản diễn giải theo thứ tự còn lại và kịch bản tạm loại các dòng này làm thay đổi tập dữ liệu trong phạm vi phân tích, nên tổng số thấp hơn không thể hiện tiết kiệm hoặc cải thiện sản xuất. Các kịch bản này không phải khoảng tin cậy.",
-        "| Scenario | Events | Critical | Known cost | January-June count change | Historical candidates |": "| Kịch bản | Sự kiện lỗi | Nghiêm trọng | Chi phí đã ghi nhận | Thay đổi số sự kiện từ tháng Một đến tháng Sáu | Ngày cần kiểm tra trong lịch sử |",
+        "| Scenario | Events | Critical | Known cost | January-June count change | Historical candidates |": "| Kịch bản | Sự kiện lỗi đã ghi nhận | lỗi nghiêm trọng (Critical) | Chi phí đã ghi nhận | Thay đổi số sự kiện từ tháng 1 đến tháng 6 | Ngày cần kiểm tra trong lịch sử |",
         "primary_md": "Chính: tháng/ngày",
         "ambiguous_only_dm_stress": "Thử độ nhạy: đảo ngày/tháng của ngày chưa rõ",
         "withhold_ambiguous_raw_rows": "Tạm loại dòng có ngày chưa rõ",
-        "Component Critical burden, Line Three reference intensity and Functional known-cost priorities remain stable across these declared scenarios. Exact product ordering and historical candidate dates change. Confirm date convention with the source owner; candidate totals do not measure detector accuracy.": "Các ưu tiên về sự kiện nghiêm trọng ở linh kiện, cường độ tham chiếu của dây chuyền Ba và chi phí đã ghi nhận của lỗi chức năng vẫn giữ nguyên trong các kịch bản đã nêu. Thứ tự sản phẩm cụ thể và các ngày lịch sử cần kiểm tra thay đổi. Cần xác nhận quy ước ngày với bên quản lý dữ liệu nguồn; số ngày được sàng lọc không đo độ chính xác của bộ phát hiện.",
-        "Part Four: priorities, owners and success measures": "Phần Bốn: ưu tiên, người phụ trách và thước đo kết quả",
-        "Investigate Critical defects at Component": "Điều tra lỗi nghiêm trọng tại linh kiện",
-        "Investigate Critical defects at ": "Điều tra lỗi nghiêm trọng tại ",
-        "Review these defect records with operators, inspect representative failures and verify causes before choosing corrective actions.": "Cùng nhân viên vận hành rà soát các bản ghi lỗi, kiểm tra các trường hợp hỏng hóc tiêu biểu và xác minh nguyên nhân trước khi chọn biện pháp khắc phục.",
+        "Component Critical burden, Line Three reference intensity and Functional known-cost priorities remain stable across these declared scenarios. Exact product ordering and historical candidate dates change. Confirm date convention with the source owner; candidate totals do not measure detector accuracy.": "Các ưu tiên về lỗi nghiêm trọng (Critical) ở linh kiện, cường độ tham chiếu của Chuyền 3 và chi phí đã ghi nhận của lỗi chức năng vẫn giữ nguyên trong các kịch bản đã nêu. Thứ tự sản phẩm cụ thể và các ngày lịch sử cần kiểm tra thay đổi. Cần xác nhận quy ước ngày với bên quản lý dữ liệu nguồn; số ngày được sàng lọc không đo độ chính xác của bộ phát hiện.",
+        "Part Four: priorities, owners and success measures": "Phần 4: ưu tiên, người phụ trách và thước đo kết quả",
+        "Investigate Critical defects at Component": "Điều tra lỗi nghiêm trọng (Critical) tại linh kiện",
+        "Investigate Critical defects at ": "Điều tra lỗi nghiêm trọng (Critical) tại ",
+        "Review these defect records with operators, inspect representative failures and verify causes before choosing corrective actions.": "Cùng nhân viên vận hành rà soát các bản ghi lỗi, mổ xẻ mẫu lỗi thực tế (failure teardown) và xác minh nguyên nhân trước khi chọn biện pháp khắc phục.",
         "Quality Engineer and relevant Production Team Leader": "Kỹ sư Chất lượng và Trưởng nhóm Sản xuất liên quan",
-        "Track Critical events and their share at this location with actual inspected/produced units and comparable inspection coverage; set a target after baseline validation.": "Theo dõi số sự kiện nghiêm trọng và tỷ trọng tại vị trí này, kèm số lượng kiểm tra/sản xuất thực tế và phạm vi kiểm tra tương đương; đặt mục tiêu sau khi xác minh đường cơ sở.",
-        "Validate the burden on Line Three": "Xác minh gánh nặng lỗi trên dây chuyền Ba",
+        "Track Critical events and their share at this location with actual inspected/produced units and comparable inspection coverage; set a target after baseline validation.": "Theo dõi số lỗi nghiêm trọng (Critical) và tỷ trọng tại vị trí này, kèm số lượng kiểm tra/sản xuất thực tế và phạm vi kiểm tra tương đương; đặt mục tiêu sau khi xác minh đường cơ sở.",
+        "Validate the burden on Line Three": "Xác minh gánh nặng lỗi trên Chuyền 3",
         "Validate the burden on ": "Xác minh gánh nặng lỗi trên ",
-        "Compare product and defect mix, confirm actual output and inspection coverage, then investigate recurring failures with the line team.": "So sánh cơ cấu sản phẩm và loại lỗi, xác nhận sản lượng thực tế cùng phạm vi kiểm tra, rồi phối hợp với nhóm vận hành dây chuyền điều tra hỏng hóc lặp lại.",
-        "Line Three Team Leader with Production Planning": "Trưởng nhóm dây chuyền Ba phối hợp với bộ phận Kế hoạch Sản xuất",
+        "Compare product and defect mix, confirm actual output and inspection coverage, then investigate recurring failures with the line team.": "So sánh cơ cấu sản phẩm và loại lỗi, xác nhận sản lượng thực tế cùng phạm vi kiểm tra, rồi phối hợp với nhóm vận hành chuyền điều tra hỏng hóc lặp lại.",
+        "Line Three Team Leader with Production Planning": "Trưởng nhóm Chuyền 3 phối hợp với bộ phận Kế hoạch Sản xuất",
         " Team Leader with Production Planning": ": Trưởng nhóm phối hợp với bộ phận Kế hoạch Sản xuất",
-        "Recalculate events per actual produced/inspected units and repeat Critical-event counts at matched exposure; no reduction target is inferred from this case.": "Tính lại số sự kiện theo số lượng sản xuất/kiểm tra thực tế và theo dõi lại số sự kiện nghiêm trọng trên cơ sở quy mô tương đương; không suy ra mục tiêu giảm lỗi từ bộ dữ liệu này.",
+        "Recalculate events per actual produced/inspected units and repeat Critical-event counts at matched exposure; no reduction target is inferred from this case.": "Tính lại số sự kiện theo số lượng sản xuất/kiểm tra thực tế và theo dõi lại số lỗi nghiêm trọng (Critical) trên cơ sở quy mô tương đương; không suy ra mục tiêu giảm lỗi từ bộ dữ liệu này.",
         "Review Functional repair burden and cost capture": "Rà soát chi phí sửa chữa lỗi chức năng và việc ghi nhận chi phí",
         "Investigate high-intensity Category 4 products": "Điều tra sản phẩm Nhóm 4 có cường độ lỗi cao",
         "Investigate high-intensity ": "Điều tra nhóm sản phẩm có cường độ lỗi cao: ",
         "Investigate repair cost per event on ": "Điều tra chi phí sửa chữa mỗi sự kiện tại ",
         " Team Leader with Maintenance and Finance": ": Trưởng nhóm phối hợp với bộ phận Bảo trì và Tài chính",
-        "Compare design, materials and process steps of the highest-intensity products in this category with lower-intensity products on the same line; review representative failures before changing the process.": "So sánh thiết kế, vật liệu và các bước công đoạn của những sản phẩm có cường độ lỗi cao nhất trong nhóm này với sản phẩm cường độ thấp hơn trên cùng chuyền; xem xét các lỗi đại diện trước khi thay đổi quy trình.",
+        "Compare design, materials and process steps of the highest-intensity products in this category with lower-intensity products on the same line; review representative failures before changing the process.": "So sánh thiết kế, vật liệu và các bước công đoạn của những sản phẩm có cường độ lỗi cao nhất trong nhóm này với sản phẩm cường độ thấp hơn trên cùng chuyền; mổ xẻ mẫu lỗi thực tế (failure teardown) trước khi thay đổi quy trình.",
         "Process Engineering with Quality Engineer and Production Team Leaders": "Kỹ thuật quy trình cùng Kỹ sư chất lượng và các Trưởng nhóm sản xuất",
-        "Track this category's reference intensity on each line and its ratio to the rest of the line, with Critical share; set a reduction target after actual output is confirmed.": "Theo dõi cường độ lỗi tham chiếu của nhóm này trên từng chuyền và tỷ lệ so với phần còn lại của chuyền, kèm tỷ trọng nghiêm trọng; đặt mục tiêu giảm sau khi xác nhận sản lượng thực tế.",
+        "Track this category's reference intensity on each line and its ratio to the rest of the line, with Critical share; set a reduction target after actual output is confirmed.": "Theo dõi cường độ lỗi tham chiếu của nhóm này trên từng chuyền và tỷ lệ so với phần còn lại của chuyền, kèm tỷ trọng lỗi nghiêm trọng (Critical); đặt mục tiêu giảm sau khi xác nhận sản lượng thực tế.",
         "Break down repair cost by repair route, labour, parts and rework with Maintenance; confirm cost-recording rules with Finance; compare the same category on other lines before attributing the gap to the line.": "Cùng bộ phận Bảo trì tách chi phí sửa chữa theo cách sửa, nhân công, vật tư và làm lại; xác nhận quy tắc ghi nhận chi phí với Tài chính; so sánh cùng nhóm sản phẩm trên các chuyền khác trước khi quy chênh lệch cho chuyền.",
-        "Track average known repair cost per event on this line against other lines for the same category, with cost coverage; set a savings target only after repair-cost records are verified.": "Theo dõi chi phí sửa chữa trung bình mỗi sự kiện của chuyền này so với các chuyền khác trong cùng nhóm sản phẩm, kèm tỷ lệ có dữ liệu chi phí; chỉ đặt mục tiêu tiết kiệm sau khi đã xác minh bản ghi chi phí sửa chữa.",
+        "Track average known repair cost per event on this line against other lines for the same category, with cost coverage; set a savings target only after repair-cost records are verified.": "Theo dõi chi phí sửa chữa trung bình mỗi sự kiện của chuyền này so với các chuyền khác trong cùng nhóm sản phẩm, kèm tỷ lệ sự kiện có chi phí hợp lệ; chỉ đặt mục tiêu tiết kiệm sau khi đã xác minh bản ghi chi phí sửa chữa.",
         " repair burden and cost capture": " và việc ghi nhận chi phí sửa chữa",
         "Review costly recurring repairs with Maintenance, reconcile missing/invalid costs with Finance, and verify corrective-action economics.": "Cùng bộ phận Bảo trì rà soát các sửa chữa lặp lại có chi phí cao, đối soát chi phí thiếu/không hợp lệ với Tài chính và xác minh hiệu quả kinh tế của biện pháp khắc phục.",
         "Maintenance Lead, Quality Engineer and Finance": "Trưởng bộ phận Bảo trì, Kỹ sư Chất lượng và bộ phận Tài chính",
@@ -248,17 +248,43 @@ PHRASES.update(
         ". Raw defect JSON is fetched over HTTP into memory and never saved. The master and workbook template are read-only inputs. ": ". JSON lỗi nguồn được lấy qua HTTP vào bộ nhớ và không lưu thành tệp. Danh mục sản phẩm và mẫu Excel là đầu vào chỉ đọc. ",
         " contains aggregate tool results, source hashes and code hashes; ": " chứa kết quả tổng hợp của công cụ, mã băm nguồn và mã băm mã thực thi; ",
         " maps report claims to exact numeric paths. The runtime attaches its execution ID when recording the tool result in the run ledger.": " ánh xạ các số liệu trong báo cáo đến đúng đường dẫn giá trị. Hệ thống gắn mã lần thực thi khi ghi kết quả công cụ vào sổ bằng chứng của lượt chạy.",
-        "Monthly logged events and Critical events": "Sự kiện lỗi đã ghi nhận và sự kiện nghiêm trọng theo tháng",
+        "Monthly logged events and Critical events": "Sự kiện lỗi đã ghi nhận và lỗi nghiêm trọng (Critical) theo tháng",
         "January": "Tháng Một",
         "February": "Tháng Hai",
         "March": "Tháng Ba",
         "April": "Tháng Tư",
         "May": "Tháng Năm",
         "June": "Tháng Sáu",
-        "Line One": "Dây chuyền Một",
-        "Line Two": "Dây chuyền Hai",
-        "Line Three": "Dây chuyền Ba",
-        "Line Four": "Dây chuyền Bốn",
+        "Line One": "Chuyền 1",
+        "Line Two": "Chuyền 2",
+        "Line Three": "Chuyền 3",
+        "Line Four": "Chuyền 4",
+        "Line 1": "Chuyền 1",
+        "Line 2": "Chuyền 2",
+        "Line 3": "Chuyền 3",
+        "Line 4": "Chuyền 4",
+        "Line-1": "Chuyền 1",
+        "Line-2": "Chuyền 2",
+        "Line-3": "Chuyền 3",
+        "Line-4": "Chuyền 4",
+        "logged defect events": "sự kiện lỗi đã ghi nhận",
+        "Logged defect events": "Sự kiện lỗi đã ghi nhận",
+        "Critical events": "lỗi nghiêm trọng (Critical)",
+        "critical events": "lỗi nghiêm trọng (Critical)",
+        "Critical Events": "Lỗi nghiêm trọng (Critical)",
+        "containment check": "chốt kiểm soát khoanh vùng tức thời (containment)",
+        "Containment check": "Chốt kiểm soát khoanh vùng tức thời (containment)",
+        "containment checks": "chốt kiểm soát khoanh vùng tức thời (containment)",
+        "Containment checks": "Chốt kiểm soát khoanh vùng tức thời (containment)",
+        "tear down representative failures": "mổ xẻ mẫu lỗi thực tế (failure teardown)",
+        "Tear down representative failures": "Mổ xẻ mẫu lỗi thực tế (failure teardown)",
+        "teardown representative failures": "mổ xẻ mẫu lỗi thực tế (failure teardown)",
+        "Teardown representative failures": "Mổ xẻ mẫu lỗi thực tế (failure teardown)",
+        "cost coverage": "tỷ lệ sự kiện có chi phí hợp lệ",
+        "Cost coverage": "Tỷ lệ sự kiện có chi phí hợp lệ",
+        "January through June of year twenty twenty-four": "giai đoạn tháng 1 – 6/2024",
+        "January through June of 2024": "giai đoạn tháng 1 – 6/2024",
+        "January to June 2024": "giai đoạn tháng 1 – 6/2024",
         "Surface": "Bề mặt",
         "Component": "Linh kiện",
         "Internal": "Bên trong",
@@ -276,6 +302,27 @@ _PROTECTED = re.compile(r"\[claim:((?:[^\[\]]|\[\d+\])+)\]|`[^`]*`|\]\([^)]*\)")
 _NUMBERS = re.compile(r"[-+]?\d[\d,]*(?:\.\d+)?(?:[eE][-+]?\d+)?%?")
 
 
+def _display_numbers(text):
+    """Normalize known metadata wording without exempting evidence from checks."""
+    aliases = {
+        "January through June of year twenty twenty-four": "1 6/2024",
+        "January through June of 2024": "1 6/2024",
+        "January to June 2024": "1 6/2024",
+        "January-June": "1 6",
+        "Line One": "Line 1",
+        "Line Two": "Line 2",
+        "Line Three": "Line 3",
+        "Line Four": "Line 4",
+        "Part Three": "Part 3",
+        "Part Four": "Part 4",
+        "eighty/twenty": "80/20",
+    }
+    for source, target in aliases.items():
+        text = text.replace(source, target)
+    text = re.sub(r"\bLine[-_ ]+(\d+)\b", r"Line \1", text)
+    return _NUMBERS.findall(text)
+
+
 def translate_text(text, language="en"):
     if normalize_language(language) == "en":
         return text
@@ -286,12 +333,32 @@ def translate_text(text, language="en"):
         return "\x00PROTECTED" + str(len(protected) - 1) + "\x00"
 
     rendered = _PROTECTED.sub(preserve, text)
+
+    translated_phrases: list[tuple[str, str, str]] = []
     for source, target in sorted(PHRASES.items(), key=lambda pair: len(pair[0]), reverse=True):
-        rendered = rendered.replace(source, target)
+        if source in rendered:
+            token = f"\x00PHRASE_{len(translated_phrases)}\x00"
+            translated_phrases.append((token, source, target))
+            rendered = rendered.replace(source, token)
+
+    check_text = rendered
+    check_rendered = rendered
+    for token, source, target in translated_phrases:
+        rendered = rendered.replace(token, target)
+        check_text = check_text.replace(token, source)
+        check_rendered = check_rendered.replace(token, target)
+
     rendered = re.sub(
         r"\x00PROTECTED(\d+)\x00", lambda match: protected[int(match.group(1))], rendered
     )
-    if _NUMBERS.findall(rendered) != _NUMBERS.findall(text):
+    check_text = re.sub(
+        r"\x00PROTECTED(\d+)\x00", lambda match: protected[int(match.group(1))], check_text
+    )
+    check_rendered = re.sub(
+        r"\x00PROTECTED(\d+)\x00", lambda match: protected[int(match.group(1))], check_rendered
+    )
+
+    if _display_numbers(check_rendered) != _display_numbers(check_text):
         raise ValueError("Display translation changed numeric evidence tokens")
     return rendered
 

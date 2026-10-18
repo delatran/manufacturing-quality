@@ -10,14 +10,41 @@ import re
 import time
 from collections.abc import Callable, Sequence
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import duckdb
 import pandas as pd
+from pydantic import BaseModel, ConfigDict
 
 from .evidence import EvidenceLedger, canonical, sha256
 from .execution import PythonSession
 from .memory import AnalystMemory
+
+
+class ToolEnvelope(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    status: Literal["completed", "failed", "partial"]
+    scope: dict[str, str]
+    dataset_version: str | None
+    policy_version: str | None
+    result_reference: str
+    result: dict[str, Any]
+    rationale: str | None = None
+
+
+def preserve_tool_envelope(output: Any, *, rationale: str | None = None) -> Any:
+    """Preserve envelope fields and attach the public purpose of the tool call."""
+    if isinstance(output, ToolEnvelope):
+        dumped = output.model_dump()
+        if rationale is not None and dumped.get("rationale") is None:
+            dumped["rationale"] = rationale
+        return dumped
+    if isinstance(output, dict) and {"status", "scope", "result"}.issubset(output):
+        envelope = dict(output)
+        if rationale is not None and envelope.get("rationale") is None:
+            envelope["rationale"] = rationale
+        return envelope
+    return output
 
 
 def load_frames(path: Path) -> dict[str, pd.DataFrame]:
@@ -34,7 +61,11 @@ def load_frames(path: Path) -> dict[str, pd.DataFrame]:
     raise ValueError("Supported input formats: CSV, JSON, JSONL and XLSX")
 
 
-def function_schema(name: str, description: str, properties: dict) -> dict:
+def function_schema(
+    name: str,
+    description: str,
+    properties: dict,
+) -> dict:
     return {
         "type": "function",
         "name": name,
@@ -43,6 +74,8 @@ def function_schema(name: str, description: str, properties: dict) -> dict:
         "parameters": {
             "type": "object",
             "properties": properties,
+            # Strict provider schemas require every property. Nullable values
+            # express optional content; local callers may still omit rationale.
             "required": list(properties),
             "additionalProperties": False,
         },
@@ -130,21 +163,25 @@ class AnalystTools:
     @property
     def schemas(self) -> list[dict]:
         string = {"type": "string"}
+        rationale = {
+            "type": ["string", "null"],
+            "description": "One concise sentence explaining why this tool is chosen and which analytical hypothesis or decision question it answers.",
+        }
         schemas = [
             function_schema(
                 "local_python_repl",
                 "Execute a persistent Python analysis cell. Set result to a JSON serializable aggregate. pd, np, scipy, plt, INPUT_PATHS and ARTIFACT_DIR are provided. Imports use an allowlist; files can only read approved inputs and write run artifacts. This local runner is not an OS sandbox.",
-                {"code": string},
+                {"code": string, "rationale": rationale},
             ),
             function_schema(
                 "local_sql_engine",
                 "Run read-only DuckDB SQL over approved CSV, JSON and XLSX tables. Query SELECT * FROM information_schema.tables to discover names. No external file access or COPY.",
-                {"query": string},
+                {"query": string, "rationale": rationale},
             ),
             function_schema(
                 "dataset_profiler",
                 "Profile an approved dataset: schema, missingness, uniqueness and numeric distributions, without returning raw rows.",
-                {"path": string},
+                {"path": string, "rationale": rationale},
             ),
             function_schema(
                 "todo_planner",
@@ -231,6 +268,8 @@ class AnalystTools:
         schema = next((item for item in self.schemas if item["name"] == name), None)
         if schema is None:
             raise ValueError(f"Unknown local tool: {name}")
+        if "rationale" in schema["parameters"]["properties"] and "rationale" not in arguments:
+            arguments = {**arguments, "rationale": None}
         jsonschema.validate(arguments, schema["parameters"])
         started = time.perf_counter()
         async with self._lock:
@@ -272,9 +311,19 @@ class AnalystTools:
                 elif name == "memory_recall" and memory is not None:
                     result = memory.recall(arguments["query"])
                 elif name.startswith("memory_") and memory is not None:
-                    result = memory.store(**arguments, update=name == "memory_update")
+                    memory_args = {k: v for k, v in arguments.items() if k != "rationale"}
+                    result = memory.store(**memory_args, update=name == "memory_update")
                 else:
                     raise ValueError(f"Unknown local tool: {name}")
+                if isinstance(result, BaseModel):
+                    result = result.model_dump()
+                elif isinstance(result, dict) and isinstance(result.get("value"), BaseModel):
+                    result["value"] = result["value"].model_dump()
+                result = preserve_tool_envelope(result, rationale=arguments.get("rationale"))
+                if isinstance(result, dict) and "value" in result:
+                    result["value"] = preserve_tool_envelope(
+                        result["value"], rationale=arguments.get("rationale")
+                    )
                 self._ensure_sources_unchanged()
             except Exception as error:
                 result = {"ok": False, "error": f"{type(error).__name__}: {error}"}
@@ -285,6 +334,9 @@ class AnalystTools:
                     for part in path.relative_to(self.run_dir / "artifacts").parts
                 ):
                     artifacts.append(self.ledger.register_artifact(path))
+            metadata: dict[str, Any] = {}
+            if arguments.get("rationale") is not None:
+                metadata["rationale"] = arguments["rationale"]
             return self.ledger.record(
                 name,
                 code,
@@ -292,6 +344,7 @@ class AnalystTools:
                 self.sources,
                 elapsed_seconds=time.perf_counter() - started,
                 artifacts=artifacts,
+                **metadata,
             )
 
     def _load_sql(self) -> None:

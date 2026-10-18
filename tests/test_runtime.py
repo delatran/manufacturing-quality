@@ -6,7 +6,10 @@ from copy import deepcopy
 
 import pytest
 from agents import (
+    Model,
+    ModelResponse,
     Runner,
+    Usage,
 )
 from analyst.config import Settings
 from analyst.evidence import EvidenceLedger, canonical, sha256
@@ -19,6 +22,7 @@ from analyst.runtime import (
     AnalystReport,
     AnalystRuntime,
     NumericClaim,
+    ReportDraft,
     _message,
     audit_exported_reports,
     audit_report,
@@ -832,6 +836,236 @@ def test_bound_refresh_failure_status_is_carried_without_mutating_canonical_anal
             assert result["artifacts"] == result["delivery"]["artifacts"] == []
             assert all("sensitivity" not in item["title"].lower() for item in tools.todos)
             assert tools.todos[1]["title"] == "Read canonical scope and verify KPI evidence"
+        finally:
+            await tools.close()
+
+    asyncio.run(scenario())
+
+
+def test_signed_source_values_are_preserved_in_report_resolution(tmp_path):
+    ledger = EvidenceLedger(tmp_path / "ledger")
+    entry = ledger.record(
+        "analysis_compare",
+        "# test receipt",
+        {"ok": True, "change": -15.5},
+        execution_kind="bounded_analysis",
+    )
+    claim = NumericClaim(
+        id="change",
+        execution_id=entry["execution_id"],
+        path="$.change",
+        value=-15.5,
+        code_sha256=entry["code_sha256"],
+    )
+
+    class DummyTools:
+        def __init__(self):
+            self.ledger = ledger
+            self.run_dir = tmp_path
+
+    runtime = AnalystRuntime(Settings(mode="mock"), DummyTools(), lambda *_: None, language="vi")
+    runtime.claim_catalog = {claim.id: claim}
+    report = runtime.resolve_report(ReportDraft(report="Chênh lệch là [value:change]."))
+    assert "-15,5 [claim:change]" in report.report
+    assert runtime.audit_report(report)["verified"] is True
+    unsupported = AnalystReport(
+        report="Change is 15.5 [claim:change].", claims=[claim], number_format="en-US"
+    )
+    assert audit_report(unsupported, ledger)["verified"] is False
+    assert claim.value == -15.5
+
+
+@pytest.mark.parametrize(
+    ("configured", "expected"),
+    [("medium", ["medium", "medium", "medium"]), ("max", ["max", "max", "max"])],
+)
+def test_repairs_preserve_configured_reasoning_effort(tmp_path, configured, expected):
+    async def scenario():
+        tools = AnalystTools(tmp_path / "run", [])
+        efforts = []
+        runtime_holder = []
+
+        class TrackingModel(Model):
+            def __init__(self, role):
+                self.role, self.step, self.history, self.usage = role, 0, [], []
+
+            async def get_response(self, system_instructions, input, **kwargs):
+                self.step += 1
+                if self.role == "Lead Analyst":
+                    efforts.append(runtime_holder[0].reasoning_effort)
+                    return ModelResponse(
+                        output=[_message(json.dumps({"report": "Draft response"}))],
+                        usage=Usage(requests=0),
+                        response_id=f"step_{self.step}",
+                    )
+                elif self.role == "QA Verifier":
+                    verified = len(efforts) >= 3
+                    return ModelResponse(
+                        output=[
+                            _message(
+                                json.dumps(
+                                    {
+                                        "verified": verified,
+                                        "errors": [] if verified else ["Needs correction"],
+                                        "suggestions": [],
+                                    }
+                                )
+                            )
+                        ],
+                        usage=Usage(requests=0),
+                        response_id=f"qa_{self.step}",
+                    )
+
+            async def stream_response(self, *args, **kwargs):
+                raise NotImplementedError
+                yield
+
+        async def noop_emit(*args, **kwargs):
+            pass
+
+        runtime = AnalystRuntime(
+            Settings(
+                mode="live", api_key="offline-test", qa_max_retries=2, reasoning_effort=configured
+            ),
+            tools,
+            noop_emit,
+        )
+        runtime_holder.append(runtime)
+        runtime.model = lambda role: TrackingModel(role)
+        result = await runtime.run("Investigate the defect pattern")
+        assert result["status"] == "completed"
+        assert efforts == expected
+
+    asyncio.run(scenario())
+
+
+def test_read_only_numeric_audit_still_requires_semantic_review(tmp_path):
+    async def scenario():
+        tools = AnalystTools(tmp_path / "run", [])
+        qa_called = []
+
+        entry = tools.ledger.record(
+            "analysis_query",
+            "# original computation",
+            {"ok": True, "count": 42},
+            execution_kind="bounded_analysis",
+        )
+        claim = NumericClaim(
+            id="c42",
+            execution_id=entry["execution_id"],
+            path="$.count",
+            value=42,
+            code_sha256=entry["code_sha256"],
+        )
+
+        class ModelWithQATracking(Model):
+            def __init__(self, role):
+                self.role, self.step, self.history, self.usage = role, 0, [], []
+
+            async def get_response(self, system_instructions, input, **kwargs):
+                self.step += 1
+                if self.role == "QA Verifier":
+                    qa_called.append(True)
+                    return ModelResponse(
+                        output=[
+                            _message(
+                                json.dumps({"verified": True, "errors": [], "suggestions": []})
+                            )
+                        ],
+                        usage=Usage(requests=0),
+                        response_id="qa_1",
+                    )
+                return ModelResponse(
+                    output=[
+                        _message(json.dumps({"report": "Observed count is [value:c42] events."}))
+                    ],
+                    usage=Usage(requests=0),
+                    response_id="lead_1",
+                )
+
+            async def stream_response(self, *args, **kwargs):
+                raise NotImplementedError
+                yield
+
+        async def noop_emit(*args, **kwargs):
+            pass
+
+        runtime = AnalystRuntime(
+            Settings(mode="live", api_key="offline-test", qa_max_retries=1),
+            tools,
+            noop_emit,
+        )
+        runtime.claim_catalog = {"c42": claim}
+        runtime.model = lambda role: ModelWithQATracking(role)
+
+        result = await runtime.run("Descriptive summary of event count")
+        assert result["status"] == "completed"
+        assert result["qa"]["verified"] is True
+        assert len(qa_called) == 1
+
+        reviews = [
+            e["result"]
+            for e in tools.ledger.records()
+            if e["tool"] == "report_semantic_review" and e["result"].get("phase") == "reviewed"
+        ]
+        assert len(reviews) == 1
+        assert reviews[0]["qa_verdict"]["verified"] is True
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("corrupt", [False, True])
+def test_qualitative_reply_verifies_frozen_scope_without_model_repair(tmp_path, corrupt):
+    async def scenario():
+        payload = canonical_context(tmp_path)
+        if corrupt:
+            payload["analysis"]["kpis"]["event_count"] = 999
+        tools = AnalystTools(tmp_path / "run", [], memory_enabled=False)
+        roles = []
+
+        class QualitativeModel(Model):
+            def __init__(self, role):
+                self.role = role
+                self.history, self.usage = [], []
+
+            async def get_response(self, *args, **kwargs):
+                roles.append(self.role)
+                output = (
+                    {"verified": True, "errors": [], "suggestions": []}
+                    if self.role == "QA Verifier"
+                    else {"report": "I can help you understand the selected quality data."}
+                )
+                return ModelResponse(
+                    output=[_message(json.dumps(output))],
+                    usage=Usage(requests=0),
+                    response_id=self.role,
+                )
+
+            async def stream_response(self, *args, **kwargs):
+                raise NotImplementedError
+                yield
+
+        runtime = AnalystRuntime(
+            Settings(
+                mode="live",
+                api_key="offline-test",
+                unbounded_runs=False,
+                qa_max_retries=0,
+                memory_enabled=False,
+            ),
+            tools,
+            lambda *_: None,
+            analysis_context=payload,
+        )
+        runtime.model = QualitativeModel
+        try:
+            result = await runtime.run("Hello, what can you help me with?")
+            assert roles == ["Lead Analyst", "QA Verifier"]
+            assert result["status"] == ("unverified" if corrupt else "completed"), result
+            receipts = [e for e in tools.ledger.records() if e["tool"] == "dashboard_context"]
+            assert len(receipts) == 1
+            assert (receipts[0]["result"].get("ok") is False) is corrupt
+            assert "run_case_study" not in {e["tool"] for e in tools.ledger.records()}
         finally:
             await tools.close()
 

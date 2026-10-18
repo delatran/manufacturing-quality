@@ -1,5 +1,5 @@
-import { Check, ChevronDown, CircleAlert, Clock, LoaderCircle } from 'lucide-react';
-import { useState } from 'react';
+import { Check, ChevronDown, CircleAlert, Clock, Lightbulb, LoaderCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useI18n } from './i18n';
 import { analysisStatus } from './EventView';
 import type { Translate } from './i18n';
@@ -12,6 +12,124 @@ import { completedFlowStates, stoppedFlowStates } from './agent-flow';
 function duration(value: number | undefined): string {
   if (!value || value <= 0) return '';
   return value < 1000 ? Math.round(value) + 'ms' : (value / 1000).toFixed(1) + 's';
+}
+
+function friendlyToolLabel(name: string, locale: string = 'vi'): string {
+  const labelsVi: Record<string, string> = {
+    dashboard_context: 'Đọc phạm vi Dashboard',
+    analysis_query: 'Truy vấn sổ cái chất lượng',
+    analysis_compare: 'Đối chiếu kịch bản',
+    analysis_sql: 'Phân tích SQL',
+    scenario_compare: 'Thử nghiệm giả định',
+    analysis_records: 'Truy xuất bản ghi lỗi',
+    analysis_provenance: 'Kiểm tra nguồn dữ liệu',
+    ui_command: 'Điều khiển giao diện',
+    investigation_update: 'Cập nhật hồ sơ điều tra',
+    local_python_repl: 'Chạy mã Python',
+    local_sql_engine: 'Thực thi truy vấn SQL',
+    ordered_analysis: 'Phân tích tuần tự',
+    memory_read: 'Đọc bộ nhớ ngữ cảnh',
+    memory_write: 'Ghi nhớ ngữ cảnh',
+    web_search: 'Tìm kiếm web',
+    web_search_call: 'Tìm kiếm web',
+    file_search: 'Tìm kiếm tệp',
+    file_search_call: 'Tìm kiếm tệp',
+    code_interpreter_call: 'Trình thông dịch mã',
+  };
+  const labelsEn: Record<string, string> = {
+    dashboard_context: 'Read Dashboard scope',
+    analysis_query: 'Query the quality ledger',
+    analysis_compare: 'Compare scenarios',
+    analysis_sql: 'Analyze with SQL',
+    scenario_compare: 'Test a scenario',
+    analysis_records: 'Look up defect records',
+    analysis_provenance: 'Check data provenance',
+    ui_command: 'Update the workspace view',
+    investigation_update: 'Update the investigation',
+    local_python_repl: 'Run Python code',
+    local_sql_engine: 'Run a SQL query',
+    ordered_analysis: 'Run the analysis',
+    memory_read: 'Recall context',
+    memory_write: 'Save context',
+    web_search: 'Search the web',
+    web_search_call: 'Search the web',
+    file_search: 'Search files',
+    file_search_call: 'Search files',
+    code_interpreter_call: 'Run code',
+  };
+  const map = locale === 'vi' ? labelsVi : labelsEn;
+  return map[name] || labelsVi[name] || name;
+}
+
+function extractRationale(command: string | undefined): string | undefined {
+  if (!command) return undefined;
+  try {
+    const data = JSON.parse(command);
+    if (data && typeof data === 'object') {
+      if (typeof data.rationale === 'string' && data.rationale.trim()) return data.rationale.trim();
+      if (typeof data.plan === 'string' && data.plan.trim()) return data.plan.trim();
+    }
+  } catch {
+    // not JSON
+  }
+  return undefined;
+}
+
+type MicroKpi = { label: string; value: string };
+
+function formatKpiLabel(key: string, locale: string): string {
+  const viLabels: Record<string, string> = {
+    event_count: 'Sự kiện',
+    critical_count: 'Nghiêm trọng',
+    total_cost: 'Tổng chi phí',
+    cost: 'Chi phí',
+    defect_rate: 'Tỷ lệ lỗi',
+    rows: 'Bản ghi',
+    count: 'Số lượng',
+    total: 'Tổng cộng',
+    anomalies: 'Bất thường',
+    findings: 'Phát hiện',
+    score: 'Điểm số',
+    rate: 'Tỷ lệ',
+  };
+  const enLabels: Record<string, string> = {
+    event_count: 'Events',
+    critical_count: 'Critical',
+    total_cost: 'Total Cost',
+    cost: 'Cost',
+    defect_rate: 'Defect Rate',
+    rows: 'Rows',
+    count: 'Count',
+    total: 'Total',
+    anomalies: 'Anomalies',
+    findings: 'Findings',
+    score: 'Score',
+    rate: 'Rate',
+  };
+  const map = locale === 'vi' ? viLabels : enLabels;
+  if (map[key]) return map[key];
+  return key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function extractMicroKpis(step: FlowCall, locale: string): MicroKpi[] {
+  if (step.status !== 'completed' || !step.output) return [];
+  try {
+    const data = JSON.parse(step.output);
+    if (!data || typeof data !== 'object' || data.ok === false) return [];
+    const source = data.kpis && typeof data.kpis === 'object' ? data.kpis : data;
+    // Only explicit business counts have an unambiguous display unit here.
+    // Arbitrary numeric receipt fields include IDs, limits, costs and ratios.
+    return ['event_count', 'critical_count', 'rows', 'count']
+      .filter((key) => typeof source[key] === 'number' && Number.isFinite(source[key]))
+      .map((key) => ({
+        label: formatKpiLabel(key, locale),
+        value: new Intl.NumberFormat(locale === 'vi' ? 'vi-VN' : 'en-US', {
+          maximumFractionDigits: 20,
+        }).format(source[key]),
+      }));
+  } catch {
+    return [];
+  }
 }
 
 function noteLabel(label: string, t: Translate): string {
@@ -88,7 +206,7 @@ function StepIcon({ step }: { step: FlowStep }) {
       step.status === 'cancelled' ? (
       <Clock size={14} />
     ) : (
-      <LoaderCircle className="spin" size={14} />
+      <LoaderCircle size={14} />
     );
   if (step.kind === 'thinking')
     return step.done ? (
@@ -96,103 +214,200 @@ function StepIcon({ step }: { step: FlowStep }) {
     ) : step.stopped ? (
       <Clock size={14} />
     ) : (
-      <LoaderCircle className="spin" size={14} />
+      <LoaderCircle size={14} />
     );
   if (step.kind === 'answer') return <Check size={14} />;
   return <Clock size={13} />;
 }
 
-function Step({ step }: { step: FlowStep }) {
-  const { t } = useI18n();
-  const [receiptOpen, setReceiptOpen] = useState(false);
-  if (step.kind === 'thinking') {
-    const empty = step.parts.every((part) => !part.title && !part.body);
-    return (
-      <li
-        className={
-          'flow-step is-thinking ' +
-          (step.done ? 'is-done' : step.stopped ? 'is-stopped' : 'is-active')
-        }
-      >
-        <span className="flow-bullet" aria-hidden="true">
-          <StepIcon step={step} />
-        </span>
-        <div className="flow-body">
-          <div className="flow-headline">
-            <span className="flow-kind">{t('ui.agent_flow_thinking')}</span>
-            {step.stopped && <small>{t('ui.agent_flow_unconfirmed')}</small>}
-            {step.simulation && <small>{t('ui.agent_flow_simulated')}</small>}
-          </div>
-          {empty ? (
-            <p className="flow-dim">{t('ui.agent_flow_encrypted_reasoning')}</p>
+function ThinkingStep({ step }: { step: Extract<FlowStep, { kind: 'thinking' }> }) {
+  const { t, locale } = useI18n();
+  const [open, setOpen] = useState(false);
+  const [now, setNow] = useState(Date.now);
+  const empty = step.parts.every((part) => !part.title && !part.body);
+  const isActive = !step.done && !step.stopped;
+
+  useEffect(() => {
+    if (!isActive || !step.startedAt) return;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [isActive, step.startedAt]);
+
+  const elapsed = step.startedAt ? Math.max(0, (now - step.startedAt) / 1000) : undefined;
+  const recordedDuration = duration(step.durationMs);
+  const sectionCount = step.parts.filter((part) => part.title || part.body).length;
+
+  return (
+    <li
+      className={
+        'flow-step is-thinking ' +
+        (step.done ? 'is-done' : step.stopped ? 'is-stopped' : 'is-active') +
+        (open ? ' is-open' : '')
+      }
+    >
+      <span className="flow-bullet" aria-hidden="true">
+        <StepIcon step={step} />
+      </span>
+      <div className="flow-body">
+        <div className="flow-headline">
+          {step.done ? (
+            <button
+              type="button"
+              className="flow-thinking-pill"
+              onClick={() => setOpen((prev) => !prev)}
+              aria-expanded={open}
+            >
+              <span className="flow-kind">{t('ui.agent_flow_thinking')}</span>
+              <span className="flow-pill-badge">
+                {locale === 'vi'
+                  ? `${sectionCount} phần tóm tắt`
+                  : `${sectionCount} summary ${sectionCount === 1 ? 'section' : 'sections'}`}
+                {recordedDuration && ` · ${recordedDuration}`}
+              </span>
+              <ChevronDown
+                className={'flow-chevron ' + (open ? 'is-open' : '')}
+                size={13}
+                aria-hidden="true"
+              />
+            </button>
           ) : (
-            <div className="flow-thoughts">
-              {step.parts.map((part) => (
-                <div className="flow-thought" key={part.index}>
-                  {part.title && <strong>{part.title}</strong>}
-                  {part.body && <p>{part.body}</p>}
-                </div>
-              ))}
-            </div>
+            <>
+              <span className="flow-kind">{t('ui.agent_flow_thinking')}</span>
+              {isActive && elapsed !== undefined && (
+                <span
+                  className="flow-live-timer"
+                  role="timer"
+                  aria-live="off"
+                  aria-label={
+                    locale === 'vi'
+                      ? 'Thời gian từ cập nhật đầu tiên'
+                      : 'Time since the first update'
+                  }
+                >
+                  {Math.floor(elapsed)}s
+                </span>
+              )}
+            </>
           )}
+          {step.stopped && <small>{t('ui.agent_flow_unconfirmed')}</small>}
+          {step.simulation && <small>{t('ui.agent_flow_simulated')}</small>}
         </div>
-      </li>
-    );
-  }
-  if (step.kind === 'call') {
-    const length = duration(step.durationMs);
-    return (
-      <li className={'flow-step is-call status-' + step.status}>
-        <span className="flow-bullet" aria-hidden="true">
-          <StepIcon step={step} />
-        </span>
-        <div className="flow-body">
-          <p className="flow-headline">
+        {empty ? (
+          <p className="flow-dim">{t('ui.agent_flow_encrypted_reasoning')}</p>
+        ) : (
+          <div className="flow-thoughts">
+            {step.parts.map((part) => (
+              <div className="flow-thought" key={part.index}>
+                {part.title && <strong>{part.title}</strong>}
+                {part.body && <p>{part.body}</p>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </li>
+  );
+}
+
+function CallStep({ step }: { step: FlowCall }) {
+  const { t, locale } = useI18n();
+  const [receiptOpen, setReceiptOpen] = useState(false);
+  const length = duration(step.durationMs);
+  const rationale = step.rationale || extractRationale(step.command);
+  const microKpis = extractMicroKpis(step, locale);
+
+  return (
+    <li className={'flow-step is-call status-' + step.status}>
+      <span className="flow-bullet" aria-hidden="true">
+        <StepIcon step={step} />
+      </span>
+      <div className="flow-body">
+        <p className="flow-headline">
+          <span className="flow-friendly-name">{friendlyToolLabel(step.name, locale)}</span>
+          <span className="flow-state">{callStatus(step, t)}</span>
+          {length && <small>{length}</small>}
+        </p>
+        {rationale && (
+          <div className="flow-rationale">
+            <span className="flow-rationale-badge">
+              <Lightbulb size={12} aria-hidden="true" />
+              <span>{locale === 'vi' ? 'Mục đích' : 'Purpose'}</span>
+            </span>
+            <p className="flow-rationale-text">{rationale}</p>
+          </div>
+        )}
+        {step.outcome && (
+          <div className="flow-outcome-block">
+            {microKpis.length > 0 && (
+              <div
+                className="flow-micro-kpis"
+                aria-label={
+                  locale === 'vi' ? 'Số liệu từ kết quả công cụ' : 'Figures from the tool result'
+                }
+              >
+                {microKpis.map((kpi, idx) => (
+                  <div className="flow-micro-kpi-chip" key={idx}>
+                    <span className="flow-kpi-label">{kpi.label}</span>
+                    <span className="flow-kpi-val">{kpi.value}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        {(step.command ||
+          step.output ||
+          step.executionId ||
+          step.codeSha256 ||
+          step.implementationSource) && (
+          <details
+            className="flow-receipt"
+            onToggle={(event) => setReceiptOpen(event.currentTarget.open)}
+          >
+            <summary>
+              {t('ui.agent_flow_receipt')}
+              <ChevronDown className="flow-chevron" size={13} aria-hidden="true" />
+            </summary>
             <code className="flow-name">{step.name || t('ui.agent_flow_tool')}</code>
-            <span className="flow-state">{callStatus(step, t)}</span>
-            {length && <small>{length}</small>}
-          </p>
-          {step.command && (
-            <pre className={'flow-command ' + (step.streaming ? 'is-streaming' : '')}>
-              <code>{step.command}</code>
-            </pre>
-          )}
-          {step.outcome && (
+            {step.command && (
+              <pre className={'flow-command ' + (step.streaming ? 'is-streaming' : '')}>
+                <code>{step.command}</code>
+              </pre>
+            )}
             <p className="flow-outcome">
               <span aria-hidden="true">⎿</span>
               <span>{step.outcome}</span>
             </p>
-          )}
-          {(step.output || step.executionId || step.codeSha256 || step.implementationSource) && (
-            <details
-              className="flow-receipt"
-              onToggle={(event) => setReceiptOpen(event.currentTarget.open)}
-            >
-              <summary>
-                {t('ui.agent_flow_receipt')}
-                <ChevronDown className="flow-chevron" size={13} aria-hidden="true" />
-              </summary>
-              {step.output && (
-                <pre>
-                  <code>{step.output}</code>
-                </pre>
-              )}
-              {receiptOpen && step.implementationSource && (
-                <pre>
-                  <code>{step.implementationSource}</code>
-                </pre>
-              )}
-              {(step.executionId || step.codeSha256) && (
-                <p className="flow-identity">
-                  {step.executionId && <span>exec {step.executionId.slice(0, 12)}</span>}
-                  {step.codeSha256 && <span>sha {step.codeSha256.slice(0, 12)}</span>}
-                </p>
-              )}
-            </details>
-          )}
-        </div>
-      </li>
-    );
+            {step.output && (
+              <pre>
+                <code>{step.output}</code>
+              </pre>
+            )}
+            {receiptOpen && step.implementationSource && (
+              <pre>
+                <code>{step.implementationSource}</code>
+              </pre>
+            )}
+            {(step.executionId || step.codeSha256) && (
+              <p className="flow-identity">
+                {step.executionId && <span>exec {step.executionId.slice(0, 12)}</span>}
+                {step.codeSha256 && <span>sha {step.codeSha256.slice(0, 12)}</span>}
+              </p>
+            )}
+          </details>
+        )}
+      </div>
+    </li>
+  );
+}
+
+function Step({ step }: { step: FlowStep }) {
+  const { t, locale } = useI18n();
+  if (step.kind === 'thinking') {
+    return <ThinkingStep step={step} />;
+  }
+  if (step.kind === 'call') {
+    return <CallStep step={step} />;
   }
   if (step.kind === 'answer') {
     return (
@@ -218,8 +433,16 @@ function Step({ step }: { step: FlowStep }) {
         </span>
         <div className="flow-body">
           <div className="flow-headline">
-            <span className="flow-kind">{t('ui.agent_flow_draft')}</span>
-            <small>{t('ui.agent_flow_draft_unverified')}</small>
+            <span className="flow-kind">
+              {step.messagePhase === 'commentary'
+                ? locale === 'vi'
+                  ? 'Cập nhật tiến độ'
+                  : 'Progress update'
+                : t('ui.agent_flow_draft')}
+            </span>
+            {step.messagePhase !== 'commentary' && (
+              <small>{t('ui.agent_flow_draft_unverified')}</small>
+            )}
           </div>
           <p className="flow-dim">{step.text}</p>
         </div>
@@ -232,7 +455,7 @@ function Step({ step }: { step: FlowStep }) {
         <span className="flow-bullet" aria-hidden="true">
           <StepIcon step={step} />
         </span>
-        <div className="flow-body" role="alert">
+        <div className="flow-body">
           <p className="flow-headline">
             <span className="flow-kind">{t('ui.agent_flow_stopped')}</span>
             {step.code && <small>{step.code}</small>}
@@ -257,14 +480,63 @@ function Step({ step }: { step: FlowStep }) {
   );
 }
 
+function currentStepSummary(step: FlowStep, t: Translate, locale: string) {
+  if (step.kind === 'call')
+    return {
+      label: friendlyToolLabel(step.name, locale),
+      detail: step.rationale || extractRationale(step.command),
+    };
+  // Public reasoning summaries belong to the opt-in timeline. They can contain
+  // model-oriented planning language rather than a user-facing progress update.
+  if (step.kind === 'thinking') return { label: t('ui.agent_flow_thinking') };
+  if (step.kind === 'note') {
+    if (step.label === 'review')
+      return {
+        label: noteLabel(step.label, t),
+        detail:
+          step.tone === 'info' && step.detail === 'verified'
+            ? t('ui.agent_flow_review_verified')
+            : step.tone === 'warn'
+              ? locale === 'vi'
+                ? 'Đang rà soát lại câu trả lời trước khi gửi.'
+                : 'Reviewing the answer again before delivery.'
+              : locale === 'vi'
+                ? 'Đang rà soát câu trả lời trước khi gửi.'
+                : 'Reviewing the answer before delivery.',
+      };
+    // Context identifiers and artifact paths remain available in the timeline,
+    // while the primary update describes their recorded purpose.
+    const contextNote =
+      step.label === 'file' ||
+      step.label === 'knowledge_prepare' ||
+      step.label === 'recalled' ||
+      step.label.startsWith('memory');
+    return {
+      label: noteLabel(step.label, t),
+      detail: contextNote ? undefined : noteDetail(step, t),
+    };
+  }
+  if (step.kind === 'draft')
+    return {
+      label: locale === 'vi' ? 'Cập nhật tiến độ' : 'Progress update',
+      detail: step.text,
+    };
+  if (step.kind === 'failure') return { label: t('ui.agent_flow_stopped'), detail: step.message };
+  return { label: t('ui.agent_flow_answer'), detail: t('ui.agent_flow_answer_below') };
+}
+
 export default function AgentFlow({ run }: { run: FlowRun }) {
-  const { t, number } = useI18n();
+  const { t, number, locale } = useI18n();
+  // The native disclosure retains a person's choice across live updates. A
+  // different run gets its own default without moving focus or scrolling.
+  const [disclosure, setDisclosure] = useState<{ runId: string; open: boolean } | null>(null);
   const halted = stoppedFlowStates.has(run.state);
   const active = !halted && !completedFlowStates.has(run.state);
   // Keep the full event projection intact, while omitting completed reasoning
   // items without public content from the visible timeline.
   const visibleSteps = run.steps.filter(
     (step) =>
+      !(step.kind === 'note' && step.label === 'provider') &&
       !(
         step.kind === 'thinking' &&
         step.done &&
@@ -278,6 +550,30 @@ export default function AgentFlow({ run }: { run: FlowRun }) {
   if (run.background) meta.push(t('ui.agent_flow_background'));
   if (run.compactions)
     meta.push(t('ui.agent_flow_compaction', { value0: number(run.compactions) }));
+  const providerStatuses = [
+    ...new Set(
+      run.steps.flatMap((step) =>
+        step.kind === 'note' && step.label === 'provider' ? [noteDetail(step, t)] : [],
+      ),
+    ),
+  ].filter(Boolean);
+  const calls = visibleSteps.filter((step) => step.kind === 'call');
+  const completedCalls = calls.filter((step) => step.status === 'completed').length;
+  const callCount = calls.length
+    ? locale === 'vi'
+      ? `${number(completedCalls)}/${number(calls.length)} lượt công cụ hoàn tất`
+      : `${number(completedCalls)} of ${number(calls.length)} tool calls completed`
+    : locale === 'vi'
+      ? 'Chưa ghi nhận lượt công cụ'
+      : 'No tool calls recorded';
+  const currentStep = visibleSteps.at(-1);
+  const current = currentStep ? currentStepSummary(currentStep, t, locale) : undefined;
+  const issue = [...visibleSteps]
+    .reverse()
+    .find((step) => step.kind === 'failure' || (step.kind === 'call' && step.status === 'failed'));
+  const issueDetail =
+    issue?.kind === 'failure' ? issue.message : issue?.kind === 'call' ? issue.outcome : '';
+  const timelineOpen = disclosure?.runId === run.runId ? disclosure.open : halted;
   return (
     <section
       className={'agent-flow ' + (halted ? 'is-stopped' : active ? 'is-active' : 'is-done')}
@@ -286,29 +582,85 @@ export default function AgentFlow({ run }: { run: FlowRun }) {
       <header className="agent-flow-head">
         <span className="agent-flow-title">
           {halted ? (
-            <CircleAlert size={15} />
+            <CircleAlert size={15} aria-hidden="true" />
           ) : active ? (
-            <LoaderCircle className="spin" size={15} />
+            <LoaderCircle className="spin" size={15} aria-hidden="true" />
           ) : (
-            <Check size={15} />
+            <Check size={15} aria-hidden="true" />
           )}
           {t('ui.agent_flow_label')}
         </span>
-        {(!active || ['queued', 'qa', 'verifying'].includes(run.state)) && (
-          <span className="flow-state" role="status">
-            {analysisStatus(run.state, t)}
-          </span>
-        )}
-        {meta.length > 0 && <span className="agent-flow-meta">{meta.join(' · ')}</span>}
+        <span className="flow-state" role="status" aria-atomic="true">
+          {analysisStatus(run.state, t)}
+        </span>
       </header>
-      {run.steps.length === 0 ? (
-        <p className="flow-dim agent-flow-empty">{t('ui.agent_flow_waiting')}</p>
-      ) : (
-        <ol className="agent-flow-steps">
-          {visibleSteps.map((step) => (
-            <Step step={step} key={step.id} />
-          ))}
-        </ol>
+      {active && (
+        <div className="agent-flow-current">
+          <span className="agent-flow-current-label">
+            {locale === 'vi' ? 'Cập nhật gần nhất' : 'Latest update'}
+          </span>
+          <p className="agent-flow-current-title">
+            {current?.label || t('ui.agent_flow_waiting')}
+            {currentStep?.kind === 'call' && (
+              <span className="flow-state">{callStatus(currentStep, t)}</span>
+            )}
+          </p>
+          {current?.detail && <p className="agent-flow-current-detail">{current.detail}</p>}
+        </div>
+      )}
+      {(halted || issue) && (
+        <div className="agent-flow-alert">
+          <CircleAlert size={15} aria-hidden="true" />
+          <div>
+            <strong>
+              {halted
+                ? analysisStatus(run.state, t)
+                : locale === 'vi'
+                  ? 'Có bước xử lý gặp lỗi'
+                  : 'A processing step encountered an issue'}
+            </strong>
+            {issueDetail && <p>{issueDetail}</p>}
+          </div>
+        </div>
+      )}
+      {visibleSteps.length > 0 && (
+        <details
+          className="agent-flow-timeline"
+          open={timelineOpen}
+          onToggle={(event) => {
+            const open = event.currentTarget.open;
+            if (open !== timelineOpen) setDisclosure({ runId: run.runId, open });
+          }}
+        >
+          <summary className="agent-flow-disclosure">
+            <span>{locale === 'vi' ? 'Các bước xử lý' : 'Processing steps'}</span>
+            <span
+              className="agent-flow-counts"
+              data-completed-calls={completedCalls}
+              data-total-calls={calls.length}
+            >
+              {callCount}
+            </span>
+            <ChevronDown className="flow-chevron" size={14} aria-hidden="true" />
+          </summary>
+          <ol className="agent-flow-steps" aria-live="off">
+            {visibleSteps.map((step) => (
+              <Step step={step} key={step.id} />
+            ))}
+          </ol>
+        </details>
+      )}
+      {(meta.length > 0 || providerStatuses.length > 0) && (
+        <details className="agent-flow-details">
+          <summary>
+            {locale === 'vi' ? 'Chi tiết xử lý' : 'Processing details'}
+            <ChevronDown className="flow-chevron" size={13} aria-hidden="true" />
+          </summary>
+          {meta.length > 0 && <p className="agent-flow-meta">{meta.join(' · ')}</p>}
+          {providerStatuses.length > 0 && (
+            <p className="agent-flow-meta">{providerStatuses.join(' · ')}</p>
+          )}
+        </details>
       )}
     </section>
   );

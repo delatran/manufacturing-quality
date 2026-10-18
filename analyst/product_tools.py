@@ -5,10 +5,9 @@ from __future__ import annotations
 import json
 from dataclasses import asdict, fields
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 import jsonschema
-from pydantic import BaseModel, ConfigDict
 
 from .analysis_sql import execute_snapshot_query
 from .case_study.analytics import Scope
@@ -17,6 +16,7 @@ from .claim_feedback import field_feedback
 from .dashboard import SORT_FIELDS
 from .evidence import canonical, sha256
 from .report_output import unit_note
+from .tools import ToolEnvelope as ToolEnvelope
 from .tools import function_schema
 
 TOOLS_VERSION = "dashboard-analysis-v14"
@@ -57,16 +57,6 @@ SECTIONS = [
 PANELS = ["dashboard", "records", "evidence", "investigation", "brief"]
 
 
-class ToolEnvelope(BaseModel):
-    model_config = ConfigDict(extra="allow")
-    status: Literal["completed", "failed", "partial"]
-    scope: dict[str, str]
-    dataset_version: str | None
-    policy_version: str | None
-    result_reference: str
-    result: dict[str, Any]
-
-
 class InvestigationEvidenceError(ValueError):
     def __init__(self, failures):
         self.fields = [item["field"] for item in failures]
@@ -97,6 +87,10 @@ def product_schemas():
         "maxLength": 600,
         "description": "One concise visible plan for a multi-step investigation, included with its first useful analysis call. Null for simple questions or later calls. Never include private reasoning.",
     }
+    rationale = {
+        "type": ["string", "null"],
+        "description": "One concise sentence explaining why this tool is chosen and which analytical hypothesis or decision question it answers.",
+    }
     hypothesis = {
         "type": "object",
         "properties": {
@@ -116,16 +110,17 @@ def product_schemas():
     return [
         function_schema(
             "analysis_query",
-            "Read the requested report section in the current scope or a labelled alternative scope. Null filters preserve the run scope. Quality and cleaning_impact always use the full canonical snapshot and explicitly disclose that event filters and scenarios do not apply. Backend computes every metric. Use schema for columns and options. Collections include a small preview and exact next_call for optional detail, not a requirement to read every row.",
+            "Read standard KPIs and report sections in the current scope or a labelled alternative scope. Primary tool for standard metrics, aggregations, and predefined sections (overview, kpis, trend, lines, costs, etc.). Null filters preserve the run scope. Quality and cleaning_impact always use the full canonical snapshot and explicitly disclose that event filters and scenarios do not apply. Backend computes every metric. Use schema for columns and options. Collections include a small preview and exact next_call for optional detail, not a requirement to read every row. Do not use analysis_sql when analysis_query provides the section.",
             {
                 "section": {"type": "string", "enum": SECTIONS},
                 "filters": scope_schema(),
                 "plan": plan,
+                "rationale": rationale,
             },
         ),
         function_schema(
             "analysis_compare",
-            "Compare two periods/scopes and decompose their event-count difference by one dimension. Can be the first data call: the server verifies the frozen context. Returns period totals, central difference/reconciliation and a ranked contribution preview. Contributions describe changes, not causes. Change dimension only to test a relevant competing explanation; do not page the entire cohort for a reconciled summary.",
+            "Compare two periods or scopes and decompose their event-count difference by one dimension. Use this tool specifically for period-over-period or scope-to-scope variance decomposition (by production_line, category, defect_type, etc.). Can be the first data call: the server verifies the frozen context. Returns period totals, central difference/reconciliation and a ranked contribution preview. Contributions describe changes, not causes. Change dimension only to test a relevant competing explanation; do not page the entire cohort for a reconciled summary.",
             {
                 "baseline_filters": scope_schema(),
                 "comparison_filters": scope_schema(),
@@ -142,16 +137,21 @@ def product_schemas():
                     ],
                 },
                 "plan": plan,
+                "rationale": rationale,
             },
         ),
         function_schema(
             "scenario_compare",
-            "Compute the selected assumption against canonical on the same dataset and filters. exclude_cost_10 removes those values from financial availability only; ambiguous_dm changes ambiguous-date parsing; year_2024 hypothesizes correcting out-of-period years. Canonical data is never changed. Use ui_command to display the scenario only when the user asks to try it.",
-            {"scenario": {"type": "string", "enum": SCENARIOS}, "plan": plan},
+            "Compute the selected assumption against canonical on the same dataset and filters. Use this tool exclusively to evaluate predefined sensitivity scenarios (exclude_cost_10, ambiguous_dm, year_2024); do not use for ad-hoc filtering. exclude_cost_10 removes those values from financial availability only; ambiguous_dm changes ambiguous-date parsing; year_2024 hypothesizes correcting out-of-period years. Canonical data is never changed. Use ui_command to display the scenario only when the user asks to try it.",
+            {
+                "scenario": {"type": "string", "enum": SCENARIOS},
+                "plan": plan,
+                "rationale": rationale,
+            },
         ),
         function_schema(
             "analysis_records",
-            "Page retained records for explicit filters on the frozen dataset. Null preserves the immutable run base, never follows UI implicitly. Use defect_date to drill into an exact anomaly day without changing the monthly analysis scope; null includes all selected days. Repeat query filters to inspect its evidence. Source row identities link to analysis_provenance. Unknown repair costs stay null.",
+            "Page retained records for explicit filters on the frozen dataset. Use this tool to inspect individual record details, sample defects, or drill into specific defect dates; do not use to compute cohort-level aggregates. Null preserves the immutable run base, never follows UI implicitly. Use defect_date to drill into an exact anomaly day without changing the monthly analysis scope; null includes all selected days. Repeat query filters to inspect its evidence. Source row identities link to analysis_provenance. Unknown repair costs stay null.",
             {
                 "page": {"type": "integer", "minimum": 1},
                 "page_size": {"type": "integer", "minimum": 1, "maximum": 100},
@@ -165,16 +165,18 @@ def product_schemas():
                     "pattern": r"^\d{4}-\d{2}-\d{2}$",
                 },
                 "filters": scope_schema(),
+                "rationale": rationale,
             },
         ),
         function_schema(
             "analysis_provenance",
-            "Read source identity and normalization audit for one defect ID or original source row, including quarantined/out-of-period variants. Choose only one selector. Both null reads source schema, full-source quality and cleaning rules. Provenance does not imply that every audited row belongs to the selected event scope.",
+            "Read source identity and normalization audit for one defect ID or original source row, including quarantined/out-of-period variants. Use this tool for tracing ingestion provenance, data cleaning rules, and audit logs of individual records; do not use for standard KPI reporting or aggregate comparisons. Choose only one selector. Both null reads source schema, full-source quality and cleaning rules. Provenance does not imply that every audited row belongs to the selected event scope.",
             {
                 "defect_id": {"type": ["integer", "null"], "minimum": 1},
                 "source_row": {"type": ["integer", "null"], "minimum": 1},
                 "limit": {"type": "integer", "minimum": 1, "maximum": 100},
                 "filters": scope_schema(),
+                "rationale": rationale,
             },
         ),
         function_schema(
@@ -202,8 +204,12 @@ def product_schemas():
         ),
         function_schema(
             "analysis_sql",
-            "Run a custom read-only DuckDB SELECT over events and products in an explicit frozen Dashboard scope. Null filters preserve the run scope. events contains canonical retained event columns; products contains the selected reference product catalog. Discover columns with SELECT * FROM events LIMIT 0 and SELECT * FROM products LIMIT 0. Joins, CTEs, window functions and statistical aggregates are supported. Original inputs are read-only; external files, extensions and writes are unavailable. SQL and full results are retained as registered artifacts and evidence. These are analyst-derived results, so disclose assumptions and distinguish association from cause; use analysis_query for canonical KPI definitions.",
-            {"query": {"type": "string", "minLength": 1}, "filters": scope_schema()},
+            "Run a custom read-only DuckDB SELECT over events and products in an explicit frozen Dashboard scope. Use analysis_sql ONLY for custom cross-table joins, complex CTEs, window functions, or statistical aggregates not available through analysis_query. Use analysis_query for standard KPIs and report sections. Null filters preserve the run scope. events contains canonical retained event columns; products contains the selected reference product catalog. Discover columns with SELECT * FROM events LIMIT 0 and SELECT * FROM products LIMIT 0. Original inputs are read-only; external files, extensions and writes are unavailable. SQL and full results are retained as registered artifacts and evidence. These are analyst-derived results, so disclose assumptions and distinguish association from cause.",
+            {
+                "query": {"type": "string", "minLength": 1},
+                "filters": scope_schema(),
+                "rationale": rationale,
+            },
         ),
     ]
 
@@ -232,6 +238,19 @@ class ProductTools:
             and "plan" not in arguments
         ):
             arguments = {**arguments, "plan": None}
+        if (
+            name
+            in {
+                "analysis_query",
+                "analysis_compare",
+                "scenario_compare",
+                "analysis_records",
+                "analysis_provenance",
+                "analysis_sql",
+            }
+            and "rationale" not in arguments
+        ):
+            arguments = {**arguments, "rationale": None}
         if (
             name
             in {
@@ -339,6 +358,11 @@ class ProductTools:
                         else {}
                     ),
                 },
+                **(
+                    {"rationale": arguments["rationale"]}
+                    if arguments.get("rationale") is not None
+                    else {}
+                ),
             }, payload["context"]
         if name == "analysis_compare":
             result = await runtime.analysis_service.compare_periods(
@@ -361,6 +385,11 @@ class ProductTools:
                 "comparison": compact_context(result["comparison"]),
                 "decomposition": result["decomposition"],
                 "source_status": result.get("status", {}),
+                **(
+                    {"rationale": arguments["rationale"]}
+                    if arguments.get("rationale") is not None
+                    else {}
+                ),
             }, context
         if name == "scenario_compare":
             result = await runtime.analysis_service.compare_scenario(
@@ -372,6 +401,11 @@ class ProductTools:
                 "selected": compact_context(result["selected"]),
                 "comparison": result["comparison"],
                 "source_status": result.get("status", {}),
+                **(
+                    {"rationale": arguments["rationale"]}
+                    if arguments.get("rationale") is not None
+                    else {}
+                ),
             }, context
         if name == "analysis_records":
             target = await runtime.read_dashboard_context(
@@ -383,7 +417,16 @@ class ProductTools:
                 "ok": True,
                 **await runtime.analysis_service.records(
                     target["context"]["context_id"],
-                    **{key: value for key, value in arguments.items() if key != "filters"},
+                    **{
+                        key: value
+                        for key, value in arguments.items()
+                        if key not in {"filters", "rationale"}
+                    },
+                ),
+                **(
+                    {"rationale": arguments["rationale"]}
+                    if arguments.get("rationale") is not None
+                    else {}
                 ),
             }, target["context"]
         if name == "analysis_provenance":
@@ -401,6 +444,11 @@ class ProductTools:
                         defect_id=arguments["defect_id"],
                         source_row=arguments["source_row"],
                         limit=arguments["limit"],
+                    ),
+                    **(
+                        {"rationale": arguments["rationale"]}
+                        if arguments.get("rationale") is not None
+                        else {}
                     ),
                 }, context
             snapshot = await runtime.analysis_service.snapshot_for_context(context["context_id"])
@@ -423,6 +471,11 @@ class ProductTools:
                 "canonical_retained_event": retained,
                 "quality": snapshot.quality if defect_id is None else None,
                 "interpretation": "Audit covers the complete source before current filters. Retained events are canonical; scenario assumptions are separately disclosed in the scope.",
+                **(
+                    {"rationale": arguments["rationale"]}
+                    if arguments.get("rationale") is not None
+                    else {}
+                ),
             }, context
         if name == "ui_command":
             if runtime.ui_handler is None:
@@ -474,6 +527,11 @@ class ProductTools:
                 "artifacts": artifacts,
                 "limitations": target["analysis"].get("metadata", {}).get("limitations", []),
                 "interpretation": "Custom SQL computed from the exact selected canonical inputs. Query expressions define these results; they do not establish causal effects, historical exposure or canonical KPI equivalence.",
+                **(
+                    {"rationale": arguments["rationale"]}
+                    if arguments.get("rationale") is not None
+                    else {}
+                ),
             }, target_context
         raise ValueError("Unsupported product tool")
 

@@ -57,6 +57,28 @@ export function projectEvents(events: WorkspaceEvent[]): WorkspaceEvent[] {
       key = `reasoning:${summaryScope}:${String(d.item_id)}:${String(d.summary_index ?? 0)}`;
     else if (event.type === 'reasoning' && (d.response_id || d.summary_id))
       key = `reasoning:${summaryScope}:${String(d.response_id || d.summary_id)}`;
+    else if (event.type === 'tool_arguments_delta' || event.type === 'tool_arguments') {
+      const toolCallKey = d.item_id
+        ? `${summaryScope}:${String(d.item_id)}`
+        : d.call_id
+          ? `${run}:${String(d.call_id)}`
+          : toolId
+            ? `${run}:${String(toolId)}`
+            : undefined;
+      if (toolCallKey) key = `tool_arguments:${toolCallKey}`;
+    }
+    let mapped = event;
+    if (event.type === 'tool_arguments_delta') {
+      mapped = {
+        ...event,
+        type: 'tool_arguments',
+        data: {
+          ...d,
+          phase: d.phase ?? 'delta',
+          delta: d.delta ?? d.arguments ?? '',
+        },
+      };
+    }
     let position = key ? positions.get(key) : undefined;
     if (
       event.type === 'reasoning' &&
@@ -84,12 +106,26 @@ export function projectEvents(events: WorkspaceEvent[]): WorkspaceEvent[] {
           : d.final === true
             ? next
             : before + next;
+      } else if (event.type === 'tool_arguments_delta' || event.type === 'tool_arguments') {
+        const before = String(prior.data.delta || '');
+        const next = String(d.delta ?? d.arguments ?? '');
+        const final =
+          d.phase === 'done' ||
+          (d.arguments !== undefined &&
+            d.phase !== 'delta' &&
+            event.type !== 'tool_arguments_delta');
+        if (prior.data.phase === 'done' && !final) return;
+        data.delta = final ? String(d.arguments ?? d.delta ?? before) : before + next;
+        if (final) data.phase = 'done';
+        if (d.arguments !== undefined || prior.data.arguments !== undefined) {
+          data.arguments = d.arguments !== undefined ? d.arguments : prior.data.arguments;
+        }
       }
-      result[position] = { ...event, id: prior.id, data };
+      result[position] = { ...mapped, id: prior.id, data };
     } else {
       position = result.length;
       if (key) positions.set(key, position);
-      result.push(event);
+      result.push(mapped);
     }
     reasoningPosition = event.type === 'reasoning' ? position : undefined;
     previous = event;

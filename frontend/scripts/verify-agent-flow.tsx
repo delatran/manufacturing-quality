@@ -589,8 +589,9 @@ for (const state of ['running', 'qa']) {
         ? 'Instructions sent to the active analysis'
         : 'Đã gửi hướng dẫn vào phân tích đang chạy';
     const appliedLabel = locale === 'en' ? 'Instructions applied' : 'Đã áp dụng hướng dẫn';
-    assert.ok(appliedMarkup.indexOf(receivedLabel) < appliedMarkup.indexOf(submittedLabel));
-    assert.ok(appliedMarkup.indexOf(submittedLabel) < appliedMarkup.indexOf(appliedLabel));
+    const appliedTimeline = appliedMarkup.match(/<ol[^>]*>([\s\S]*?)<\/ol>/)?.[1] || '';
+    assert.ok(appliedTimeline.indexOf(receivedLabel) < appliedTimeline.indexOf(submittedLabel));
+    assert.ok(appliedTimeline.indexOf(submittedLabel) < appliedTimeline.indexOf(appliedLabel));
   }
 }
 
@@ -1171,6 +1172,403 @@ for (const locale of ['en', 'vi'] as const) {
   assert.doesNotMatch(
     cleanupMarkup,
     />Analysis stopped<|>Đã dừng phân tích<|Stop requested|Đã yêu cầu dừng/,
+  );
+}
+
+// 10. Streaming tool arguments, rationale parsing, and plan extraction
+const streamingHistory = [
+  event('status', { state: 'running' }, 'run-stream'),
+  event(
+    'output_item',
+    {
+      phase: 'added',
+      item_type: 'function_call',
+      item_id: 'fc_stream',
+      call_id: 'call_stream',
+      name: 'analysis_query',
+    },
+    'run-stream',
+  ),
+  event(
+    'tool_arguments_delta',
+    {
+      item_id: 'fc_stream',
+      call_id: 'call_stream',
+      delta:
+        '{"rationale":"Check defect trends","plan":["Inspect Line-3","Compare costs"],"query":"SELECT',
+    },
+    'run-stream',
+  ),
+];
+const streamedRun = projectAgentFlow(streamingHistory).get('run-stream')!;
+const streamedCall = streamedRun.steps.find((s) => s.kind === 'call');
+assert.ok(streamedCall && streamedCall.kind === 'call');
+assert.equal(
+  streamedCall.streaming,
+  true,
+  'Streaming call maintains streaming = true while arriving',
+);
+assert.equal(streamedCall.command.startsWith('{"rationale":'), true);
+assert.equal(
+  streamedCall.rationale,
+  'Check defect trends',
+  'Rationale is parsed and stored on FlowCall',
+);
+
+const planStep = streamedRun.steps.find((s) => s.kind === 'note' && s.label === 'plan');
+assert.ok(
+  planStep && planStep.kind === 'note',
+  'Plan is extracted and projected as a FlowNote step',
+);
+assert.equal(planStep.detail, 'Inspect Line-3 → Compare costs');
+assert.ok(
+  streamedRun.steps.indexOf(planStep) < streamedRun.steps.indexOf(streamedCall),
+  'Plan step is projected before the tool call',
+);
+
+// Append more delta and verify completion
+const completedStreamHistory = [
+  ...streamingHistory,
+  event(
+    'tool_arguments_delta',
+    {
+      item_id: 'fc_stream',
+      call_id: 'call_stream',
+      delta: ' count(*) FROM defects"}',
+    },
+    'run-stream',
+  ),
+  event(
+    'tool',
+    {
+      name: 'analysis_query',
+      tool_id: 'tool_s1',
+      call_id: 'call_stream',
+      status: 'running',
+    },
+    'run-stream',
+  ),
+  event(
+    'tool',
+    {
+      name: 'analysis_query',
+      tool_id: 'tool_s1',
+      call_id: 'call_stream',
+      status: 'completed',
+      result: { ok: true, rows: 100 },
+    },
+    'run-stream',
+  ),
+];
+const completedRun = projectAgentFlow(completedStreamHistory).get('run-stream')!;
+const completedCall = completedRun.steps.find((s) => s.kind === 'call');
+assert.ok(completedCall && completedCall.kind === 'call');
+assert.equal(
+  completedCall.streaming,
+  false,
+  'Streaming call resets streaming = false once status is completed',
+);
+assert.equal(completedCall.status, 'completed');
+assert.equal(completedCall.rationale, 'Check defect trends');
+
+// Replayed persisted events must not duplicate unfinished provider deltas.
+const persistedReplay = event('reasoning', { item_id: 'persisted', text: 'One summary.' });
+const once = projectAgentFlow([persistedReplay, persistedReplay]).get('run-1')!;
+assert.equal(once.steps[0].kind === 'thinking' && once.steps[0].parts[0].body, 'One summary.');
+
+// Public commentary survives accepted delivery, while structured final output
+// stays hidden even before the app has delivered its verified report.
+const phaseHistory = [
+  event('output_item', {
+    item_id: 'commentary',
+    item_type: 'message',
+    phase: 'added',
+    message_phase: 'commentary',
+  }),
+  event('text_done', {
+    item_id: 'commentary',
+    content_index: 0,
+    text: 'I will compare both halves.',
+  }),
+  event('text_done', {
+    item_id: 'commentary',
+    content_index: 1,
+    text: 'Then I will check cost coverage.',
+  }),
+  event('text_delta', { item_id: 'commentary', content_index: 0, delta: 'Stale replay' }),
+  event('text_done', {
+    item_id: 'structured',
+    text: '{"report":"Never show raw structured output"}',
+  }),
+  event('text_done', { item_id: 'final', text: 'Unverified final narrative' }),
+  event('output_item', {
+    item_id: 'final',
+    item_type: 'message',
+    phase: 'done',
+    message_phase: 'final_answer',
+  }),
+];
+const phasesBeforeDelivery = projectAgentFlow(phaseHistory).get('run-1')!;
+assert.deepEqual(
+  phasesBeforeDelivery.steps.filter((step) => step.kind === 'draft').map((step) => step.text),
+  ['I will compare both halves.', 'Then I will check cost coverage.'],
+);
+const phasesAfterDelivery = projectAgentFlow([
+  ...phaseHistory,
+  event('message', { role: 'assistant', text: 'Verified report' }),
+  event('status', { state: 'completed' }),
+]).get('run-1')!;
+assert.equal(phasesAfterDelivery.steps.filter((step) => step.kind === 'draft').length, 2);
+
+// Timing comes from saved timestamps, with no invented duration or aspect count.
+const noTiming = projectAgentFlow([
+  {
+    ...event('reasoning', { item_id: 'no-timing', text: 'One public section.', final: true }),
+    time: '',
+  },
+  {
+    ...event('output_item', { item_id: 'no-timing', item_type: 'reasoning', phase: 'done' }),
+    time: '',
+  },
+  event('status', { state: 'completed' }),
+]).get('run-1')!;
+for (const locale of ['en', 'vi'] as const) {
+  const markup = renderToStaticMarkup(
+    <I18nProvider initialLocale={locale} persist={false}>
+      <AgentFlow run={noTiming} />
+    </I18nProvider>,
+  );
+  assert.doesNotMatch(markup, /1\.2s|aspects|khía cạnh|Thought for|Đã suy nghĩ/);
+  assert.match(markup, locale === 'vi' ? /1 phần tóm tắt/ : /1 summary section/);
+}
+const timed = projectAgentFlow([event('reasoning', { item_id: 'timed', text: 'Checking.' })]).get(
+  'run-1',
+)!;
+assert.equal(
+  timed.steps[0].kind === 'thinking' && timed.steps[0].startedAt,
+  Date.parse('2026-10-17T00:00:00Z'),
+);
+
+// Failed and cancelled calls cannot resume their argument cursor on replay.
+for (const status of ['failed', 'cancelled']) {
+  const stoppedCall = projectAgentFlow([
+    event('tool_arguments', {
+      call_id: 'terminal-call',
+      arguments: '{"scope":"Line-3"}',
+      phase: 'done',
+    }),
+    event('tool', {
+      call_id: 'terminal-call',
+      tool_id: 'terminal-tool',
+      name: 'analysis_query',
+      status,
+    }),
+    event('tool_arguments_delta', { call_id: 'terminal-call', delta: 'stale' }),
+  ])
+    .get('run-1')!
+    .steps.find((step) => step.kind === 'call');
+  assert.ok(stoppedCall && stoppedCall.kind === 'call');
+  assert.equal(stoppedCall.status, status);
+  assert.equal(stoppedCall.streaming, false);
+  assert.equal(stoppedCall.command, '{"scope":"Line-3"}');
+}
+
+// Provider transport lifecycle and model configuration stay in opt-in details.
+// Replayed phases update their own turn, without adding generic timeline rows.
+const lifecycleRun = projectAgentFlow([
+  event('status', { state: 'running' }),
+  event('model_started', { model: 'gpt-6-luna', background: true, reasoning: { effort: 'max' } }),
+  event('memory', { action: 'knowledge_prepare' }),
+  event('provider_phase', native({ phase: 'created' })),
+  event('provider_phase', native({ phase: 'in_progress' })),
+  event('provider_phase', native({ phase: 'requires_action' })),
+  event('provider_phase', native({ phase: 'in_progress', turn_id: 'turn-2' })),
+  event('qa', { status: 'retrying', issues: [] }),
+]).get('run-1')!;
+assert.deepEqual(
+  lifecycleRun.steps.flatMap((step) =>
+    step.kind === 'note' && step.label === 'provider' ? [step.detail] : [],
+  ),
+  ['requires_action', 'in_progress'],
+);
+for (const locale of ['en', 'vi'] as const) {
+  const markup = renderToStaticMarkup(
+    <I18nProvider initialLocale={locale} persist={false}>
+      <AgentFlow run={lifecycleRun} />
+    </I18nProvider>,
+  );
+  const header = markup.match(/<header[^>]*>([\s\S]*?)<\/header>/)?.[1] ?? '';
+  const timeline = markup.match(/<ol[^>]*>([\s\S]*?)<\/ol>/)?.[1] ?? '';
+  assert.doesNotMatch(header, /gpt-6-luna|\bmax\b|background|chạy nền/);
+  assert.doesNotMatch(timeline, /Processing status|Trạng thái xử lý/);
+  assert.match(markup, /<details class="agent-flow-details">[\s\S]*gpt-6-luna/);
+  assert.match(
+    timeline,
+    locale === 'vi' ? /Chuẩn bị hướng dẫn phân tích/ : /Preparing analysis guidance/,
+  );
+  assert.match(markup, locale === 'vi' ? /Chi tiết xử lý/ : /Processing details/);
+}
+
+// Recorded work stays accessible without competing with the delivered report.
+// Native details starts compact, while a failure is visible outside disclosure.
+for (const locale of ['en', 'vi'] as const) {
+  const renderFlow = (flow: typeof run) =>
+    renderToStaticMarkup(
+      <I18nProvider initialLocale={locale} persist={false}>
+        <AgentFlow run={flow} />
+      </I18nProvider>,
+    );
+  const completedMarkup = renderFlow(run);
+  const completedDisclosure = completedMarkup.match(/<details class="agent-flow-timeline"([^>]*)>/);
+  assert.ok(completedDisclosure, 'Recorded timeline remains available');
+  assert.doesNotMatch(completedDisclosure[1], /\bopen\b/, 'Delivered runs start compact');
+  assert.doesNotMatch(
+    completedMarkup,
+    /agent-flow-current|role="alert"|class="[^"]*\bspin\b[^"]*"/,
+  );
+  assert.match(completedMarkup, /data-completed-calls="2" data-total-calls="2"/);
+  assert.match(
+    completedMarkup,
+    locale === 'vi' ? /2\/2 lượt công cụ hoàn tất/ : /2 of 2 tool calls completed/,
+  );
+  assert.match(completedMarkup, /<ol class="agent-flow-steps" aria-live="off">/);
+
+  const workingFlow = projectAgentFlow([
+    event('status', { state: 'running' }),
+    event('reasoning', { item_id: 'first-summary', text: 'Reading scope first.' }),
+    event('tool', { tool_id: 'scope', name: 'dashboard_context', status: 'completed' }),
+    event('tool_arguments', {
+      call_id: 'query-call',
+      phase: 'done',
+      arguments: '{"rationale":"Compare the selected months."}',
+    }),
+    event('tool', {
+      tool_id: 'query',
+      call_id: 'query-call',
+      name: 'analysis_query',
+      status: 'running',
+    }),
+  ]).get('run-1')!;
+  const workingMarkup = renderFlow(workingFlow);
+  const currentPanel = workingMarkup.match(
+    /<div class="agent-flow-current">([\s\S]*?)<\/div>/,
+  )?.[1];
+  assert.ok(currentPanel, 'Live work remains visible while the full timeline is collapsed');
+  assert.match(currentPanel, /Compare the selected months\./);
+  assert.match(workingMarkup, /data-completed-calls="1" data-total-calls="2"/);
+  assert.equal(
+    (workingMarkup.match(/class="[^"]*\bspin\b[^"]*"/g) || []).length,
+    1,
+    'Only the current run indicator animates, not every recorded unfinished item',
+  );
+  assert.match(workingMarkup, locale === 'vi' ? /Đọc phạm vi Dashboard/ : /Read Dashboard scope/);
+  assert.doesNotMatch(workingMarkup, /[\u{1F300}-\u{1FAFF}]|\b(?:25|50|75|100)%/u);
+  assert.doesNotMatch(
+    workingMarkup.match(/<details class="agent-flow-timeline"([^>]*)>/)?.[1] || '',
+    /\bopen\b/,
+    'Live runs reveal their latest recorded work without opening verbose history',
+  );
+
+  const summaryFlow = projectAgentFlow([
+    event('status', { state: 'running' }),
+    event('reasoning', {
+      item_id: 'optional-public-summary',
+      text: '**Recommending checks for classification**\n\nI should recommend checks. I need to cite evidence [value:1071].',
+    }),
+  ]).get('run-1')!;
+  const summaryMarkup = renderFlow(summaryFlow);
+  const summaryPrimary = summaryMarkup.match(
+    /<div class="agent-flow-current">([\s\S]*?)<\/div>/,
+  )?.[1];
+  assert.ok(summaryPrimary);
+  assert.doesNotMatch(
+    summaryPrimary,
+    /Recommending checks for classification|I should recommend checks|I need to cite evidence|\[value:/,
+    'Model-oriented public summaries never become the primary progress message',
+  );
+  assert.match(summaryPrimary, locale === 'vi' ? /Suy luận/ : /Thinking/);
+  const summaryTimeline = summaryMarkup.match(/<ol[^>]*>([\s\S]*?)<\/ol>/)?.[1] || '';
+  assert.match(summaryTimeline, /Recommending checks for classification/);
+  assert.match(
+    summaryTimeline,
+    /I should recommend checks\. I need to cite evidence \[value:1071\]\./,
+  );
+
+  const reviewerInstruction =
+    'Phân tích chỉ có số liệu tổng hợp; hãy giữ giới hạn suy luận và sửa claim [value:1071].';
+  const reviewFlow = projectAgentFlow([
+    event('status', { state: 'running' }),
+    event('qa', { status: 'retrying', verified: false, issues: [reviewerInstruction] }),
+  ]).get('run-1')!;
+  const reviewMarkup = renderFlow(reviewFlow);
+  const reviewPrimary = reviewMarkup.match(
+    /<div class="agent-flow-current">([\s\S]*?)<\/div>/,
+  )?.[1];
+  assert.ok(reviewPrimary);
+  assert.doesNotMatch(reviewPrimary, /Phân tích chỉ có số liệu tổng hợp|hãy giữ|\[value:/);
+  assert.match(
+    reviewPrimary,
+    locale === 'vi'
+      ? /Đang rà soát lại câu trả lời trước khi gửi\./
+      : /Reviewing the answer again before delivery\./,
+  );
+  const reviewTimeline = reviewMarkup.match(/<ol[^>]*>([\s\S]*?)<\/ol>/)?.[1] || '';
+  assert.ok(reviewTimeline.includes(reviewerInstruction));
+  const ambiguousReview = renderFlow(
+    projectAgentFlow([
+      event('qa', { status: 'retrying', verified: false, issues: ['verified'] }),
+    ]).get('run-1')!,
+  );
+  const ambiguousPrimary = ambiguousReview.match(
+    /<div class="agent-flow-current">([\s\S]*?)<\/div>/,
+  )?.[1];
+  assert.doesNotMatch(
+    ambiguousPrimary || '',
+    /Numbers verified against source|Đã đối chiếu khớp số liệu nguồn/,
+    'Reviewer text alone cannot claim that verification succeeded',
+  );
+
+  for (const internalNote of [
+    event('memory', { action: 'memory_recall', key: 'private/context-snapshot.json' }),
+    event('artifact', { path: 'private/receipt-output.json' }),
+  ]) {
+    const internalMarkup = renderFlow(projectAgentFlow([internalNote]).get('run-1')!);
+    const internalPrimary = internalMarkup.match(
+      /<div class="agent-flow-current">([\s\S]*?)<\/div>/,
+    )?.[1];
+    assert.ok(internalPrimary);
+    assert.doesNotMatch(internalPrimary, /private\//);
+    assert.match(internalMarkup, /private\//, 'Recorded paths remain in the optional timeline');
+  }
+
+  const failedFlow = projectAgentFlow([
+    event('tool', {
+      name: 'analysis_query',
+      tool_id: 'failed-query',
+      status: 'failed',
+      result: { ok: false, error: 'Selected source could not be read.' },
+    }),
+    event('error', { code: 'source_unavailable', message: 'Selected source could not be read.' }),
+    event('status', { state: 'failed' }),
+  ]).get('run-1')!;
+  const failedMarkup = renderFlow(failedFlow);
+  assert.match(failedMarkup, /<details class="agent-flow-timeline" open="">/);
+  assert.match(failedMarkup, /data-completed-calls="0" data-total-calls="1"/);
+  const failureNotice = failedMarkup.match(
+    /<div class="agent-flow-alert">([\s\S]*?)<\/div><\/div>/,
+  )?.[1];
+  assert.match(failureNotice || '', /Selected source could not be read\./);
+  assert.ok(
+    failedMarkup.indexOf('agent-flow-alert') < failedMarkup.indexOf('agent-flow-timeline'),
+    'Failure remains visible even when a person closes the timeline',
+  );
+  assert.doesNotMatch(failedMarkup, /class="[^"]*\bspin\b[^"]*"|role="alert"/);
+
+  const recoveredMarkup = renderFlow({ ...failedFlow, state: 'completed' });
+  assert.match(recoveredMarkup, /agent-flow-alert[\s\S]*Selected source could not be read\./);
+  assert.doesNotMatch(
+    recoveredMarkup.match(/<details class="agent-flow-timeline"([^>]*)>/)?.[1] || '',
+    /\bopen\b/,
   );
 }
 
