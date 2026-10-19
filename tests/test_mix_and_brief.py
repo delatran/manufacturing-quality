@@ -177,6 +177,46 @@ def test_brief_reformats_backend_numbers_without_inventing_values(data, language
         assert text.startswith("# Quality brief: whole plant")
 
 
+@pytest.mark.parametrize("language", ["en", "vi"])
+def test_brief_cost_shares_name_the_linked_known_cost_population(language):
+    source = [
+        row(1, 1, 1, 100),
+        row(2, 1, 1, None),
+        row(3, 2, 1, 1),
+        row(4, 2, 1, 1),
+        row(5, 99, 1, 50),
+    ]
+    snapshot = build_snapshot(
+        source,
+        {
+            "source_url": "https://synthetic.invalid/mix",
+            "source_sha256": sha256(canonical(source)),
+            "fetched_at": "2026-10-17T00:00:00Z",
+        },
+        MASTER,
+    )
+    report = analysis_report(snapshot, Scope())
+    priority = next(
+        item for item in report["recommendations"] if item["kind"] == "line_repair_cost"
+    )
+    assert priority["metrics"]["production_line"] == "Line-1"
+    assert math.isclose(priority["metrics"]["known_cost_event_share_pct"], 100 / 3)
+    assert math.isclose(priority["metrics"]["known_cost_share_pct"], 100 / 102 * 100)
+    assert report["kpis"]["event_count"] == 5
+    text = render_brief({"context": {"context_id": "c" * 64}, "analysis": report}, language)
+    if language == "en":
+        assert "100.00 per logged event with known cost" in text
+        assert "98.04% of linked known cost from 33.33% of linked events with known cost" in text
+        assert "33.33% of events" not in text
+    else:
+        assert "100,00 mỗi sự kiện ghi nhận có chi phí hợp lệ" in text
+        assert (
+            "98,04% chi phí đã biết của các sự kiện đã liên kết đến từ "
+            "33,33% số sự kiện đã liên kết có chi phí hợp lệ" in text
+        )
+        assert "33,33% số sự kiện;" not in text
+
+
 def test_brief_endpoint_serves_the_context_in_both_languages(tmp_path, data):
     subject = AnalysisService(ROOT, tmp_path / "state", snapshot_loader=lambda: data)
     app = FastAPI()

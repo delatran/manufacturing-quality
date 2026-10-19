@@ -79,10 +79,10 @@ CONTEXT_ID = re.compile(r"[a-f0-9]{64}\Z")
 CASE_ID = re.compile(r"[a-f0-9]{32}\Z")
 IDEMPOTENCY_KEY = re.compile(r"[A-Za-z0-9_.:-]{8,128}\Z")
 COMPARISON_LIMITATIONS = [
-    "This source contains the January to June 2024 historical case. A successful source check does not establish current plant conditions.",
-    "Differences describe recorded events and known costs, not a causal effect of a corrective action or a verified defect rate.",
-    "Actual produced and inspected units, operating days and reporting completeness have not been supplied. Missing records do not prove that production stopped or reporting failed.",
-    "Ownership and outcomes are local user records. No assignment, message or acknowledgement is delivered to another person.",
+    "Source contains the January to June 2024 historical dataset. A source check does not establish current plant conditions.",
+    "Differences reflect recorded events and known costs, not verified defect rates or causal corrective action effects.",
+    "Actual produced and inspected units, operating days, and reporting completeness are unsupplied. Missing records do not establish production downtime or reporting failure.",
+    "Ownership and outcomes represent local user records. No external assignment, message, or acknowledgement is dispatched.",
 ]
 
 
@@ -476,7 +476,7 @@ class OperationsService:
             return {
                 "kind": kind,
                 "key": None,
-                "summary": "User-created investigation linked to the selected historical context.",
+                "summary": "User investigation linked to historical context.",
                 "receipt_path": None,
             }
         if not isinstance(key, str):
@@ -921,9 +921,9 @@ class OperationsService:
             "status": "changed" if changed else "unchanged",
             "source_changed": left["source_sha256"] != right["source_sha256"],
             "scope_unchanged": True,
-            "summary": "The historical source or reference data changed; review the recorded differences."
+            "summary": "Historical source or reference data changed; review recorded differences."
             if changed
-            else "The saved historical source and reference data are unchanged; this check provides no new evidence of an action's effectiveness.",
+            else "Saved historical source and reference data are unchanged; this check provides no new evidence.",
             "metrics": metrics,
             "data_changes": {
                 "added_events": len(new.keys() - old.keys()),
@@ -1004,7 +1004,7 @@ class OperationsService:
                 "status": "unavailable",
                 "source_changed": None,
                 "scope_unchanged": True,
-                "summary": "The source could not be checked. The saved baseline remains available.",
+                "summary": "Source check unavailable. Baseline remains active.",
                 "metrics": [],
                 "data_changes": {
                     "added_events": None,

@@ -1,48 +1,28 @@
-import type { FlowPart } from './agent-flow';
+import { splitSummaryPart, type FlowPart } from './agent-flow';
 import type { Locale } from './i18n';
 
-function narrative(value: string): string {
-  return value
-    .replace(/`[^`]*(?:`|$)/g, '')
-    .replace(/["“][^"”]*(?:["”]|$)/g, '')
-    .trim();
-}
-
-// These are conservative display checks, not a translation or a language claim
-// about the provider. Quoted labels cannot establish the narrative's language.
-const vietnameseProse =
-  /(?:^|[^\p{L}])(?:đang|đã|cần|sẽ|được|chưa|không|tôi|mình|dữ liệu|phạm vi|kết quả|yêu cầu|bằng chứng|đối chiếu|kiểm tra|phân tích|so sánh|báo cáo)(?=$|[^\p{L}])/iu;
-const englishProse =
-  /(?:^|[.!?\n]\s*)(?:(?:i|we|the|this|that|it|there|our|need|must|should|will|let|review|check|compare|prepare|analyze|analyse|assess|evaluate|inspect|ensure|consider|determine|use|plan|next|no)\b|[a-z]+ing\b)|\b(?:need to|have to|will be|should be|must be|the user|the data|in the|of the|for the|to the|with the)\b/i;
-
-/** Project a part for the flow without changing its retained provider payload. */
+/** Show public provider text immediately, including partial stream and replay.
+ * A translation requires explicit server metadata. Language heuristics cannot
+ * establish that a generic status or paraphrase is the model's summary.
+ */
 export function flowSummaryDisplay(part: FlowPart, language: Locale): FlowPart {
-  if ((!part.title && !part.body) || part.displaySource === 'task_status') return part;
-  const body = narrative(part.body || part.title);
-  const provenSnapshot =
-    part.done && part.displaySource === 'provider_summary' && typeof part.displayText === 'string';
-  const matchesLanguage =
-    language === 'vi'
-      ? vietnameseProse.test(body) && !englishProse.test(body)
-      : !vietnameseProse.test(body);
-  if (provenSnapshot && matchesLanguage) {
-    const title = narrative(part.title);
-    const matchesTitle =
-      !title ||
-      (language === 'vi'
-        ? vietnameseProse.test(title) && !englishProse.test(title)
-        : !vietnameseProse.test(title));
-    return matchesTitle ? part : { ...part, title: '' };
+  const translated =
+    part.displaySource === 'translated_provider_summary' &&
+    part.displayLocalized === true &&
+    part.displayLanguage === language &&
+    !!part.displayText?.trim();
+  if (translated) return { ...part, ...splitSummaryPart(part.displayText!) };
+  const original = part.raw || (part.displaySource === 'provider_summary' ? part.displayText : '');
+  if (original) {
+    return {
+      ...part,
+      ...splitSummaryPart(original),
+      displaySource: 'provider_summary',
+      displayLocalized: false,
+    };
   }
-  const status =
-    language === 'vi'
-      ? 'Đang xem xét yêu cầu và bằng chứng để chuẩn bị câu trả lời.'
-      : 'Reviewing the request and evidence to prepare the answer.';
-  return {
-    ...part,
-    title: '',
-    body: status,
-    displayText: status,
-    displaySource: 'task_status',
-  };
+  // A recorded task status remains explicitly labeled when no public summary
+  // exists. Never manufacture a status to replace available provider text.
+  if (part.displaySource === 'task_status') return part;
+  return { ...part, title: '', body: '' };
 }

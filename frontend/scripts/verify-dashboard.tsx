@@ -4,7 +4,12 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import App from '../src/App';
 import Dashboard from '../src/Dashboard';
-import { AnomalyChart, PeriodHalvesSummary, TrendDrivers } from '../src/DashboardCharts';
+import {
+  AnomalyChart,
+  CategoryLineMatrix,
+  PeriodHalvesSummary,
+  TrendDrivers,
+} from '../src/DashboardCharts';
 import { useDashboardLanguage } from '../src/dashboard-language';
 import { I18nProvider } from '../src/i18n';
 import type { Locale } from '../src/i18n';
@@ -491,6 +496,70 @@ assert.equal(
   beforeRanking,
   'Rendering must not modify or reorder backend metrics',
 );
+
+// Reference intensity and missing master products must retain their meaning in both locales.
+const referenceScope = structuredClone(empty);
+const referenceMetrics = {
+  ...emptyMetrics,
+  event_count: 4,
+  cohort_product_count: 1,
+  reference_intensity_per_1000: 4,
+};
+referenceScope.options.production_lines = ['Line-1', 'Line-2'];
+referenceScope.analysis.lines = referenceScope.options.production_lines.map((production_line) => ({
+  ...referenceMetrics,
+  production_line,
+  product_count: 1,
+}));
+referenceScope.analysis.category_summary = ['Category 1', 'Category 2'].map((category) => ({
+  ...referenceMetrics,
+  category,
+  product_count: 1,
+  production_lines: ['Line-2'],
+  eligible_events_per_cohort_product: 4,
+}));
+referenceScope.analysis.line_category = [
+  { ...referenceMetrics, category: 'Category 1', production_line: 'Line-1' },
+  { ...referenceMetrics, category: 'Category 1', production_line: 'Line-2' },
+  { ...referenceMetrics, category: 'Category 2', production_line: 'Line-2' },
+];
+referenceScope.analysis.shared_category_controls = [
+  {
+    category: 'Category 1',
+    line_count: 2,
+    lines_compared: 1,
+    lines_above_rest_of_line: 1,
+    min_intensity_ratio_to_rest_of_line: 2,
+    max_intensity_ratio_to_rest_of_line: 2,
+    lines: [],
+  },
+];
+const beforeReference = JSON.stringify(referenceScope);
+for (const locale of ['en', 'vi'] as const) {
+  const matrix = renderToStaticMarkup(
+    <I18nProvider initialLocale={locale} persist={false}>
+      <CategoryLineMatrix data={referenceScope} />
+    </I18nProvider>,
+  );
+  assert.match(
+    matrix,
+    locale === 'en' ? /higher reference intensity/ : /cường độ lỗi tham chiếu cao hơn/,
+  );
+  assert.match(
+    matrix,
+    locale === 'en'
+      ? /aria-label="No product listed for this category on this line"/
+      : /aria-label="Danh mục không có sản phẩm thuộc nhóm này trên chuyền này"/,
+  );
+  assert.doesNotMatch(matrix, /Not produced on this line|Không sản xuất trên chuyền này/);
+  assert.match(
+    render(referenceScope, locale),
+    locale === 'en'
+      ? /highest reference intensity: 4\.00 events per 1,000 reference units/
+      : /cường độ lỗi tham chiếu cao nhất: 4,00 sự kiện \/ 1\.000 đơn vị tham chiếu/,
+  );
+}
+assert.equal(JSON.stringify(referenceScope), beforeReference);
 
 // Section titles, KPI deltas and priority cards are display templates over backend values.
 const signalled = structuredClone(empty);

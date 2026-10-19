@@ -65,13 +65,21 @@ const yyyyMmPattern = /^\d{4}-\d{2}$/;
 const yyyyMmDdPattern = /^\d{4}-\d{2}-\d{2}$/;
 
 const failurePatterns: [RegExp, string][] = [
-  [/^Request failed \((\d+)\)\.$/, 'Yêu cầu thất bại (mã $1).'],
-  [/^HTTP source request failed: (.+)$/, 'Không tải được nguồn HTTP: $1'],
-  [/^HTTP source returned status (\d+)$/, 'Nguồn HTTP trả về mã $1'],
+  [/^Request failed \((\d+)\)\.$/, 'Yêu cầu không thành công (mã $1).'],
+  [/^HTTP source request failed: (.+)$/, 'Không thể kết nối nguồn dữ liệu HTTP: $1'],
+  [/^HTTP source returned status (\d+)$/, 'Nguồn dữ liệu HTTP phản hồi mã trạng thái $1'],
   [
     /^The HTTP source is unavailable and no complete snapshot is loaded: (.+)$/,
-    'Nguồn HTTP không khả dụng và chưa tải được bản dữ liệu đầy đủ: $1',
+    'Nguồn dữ liệu HTTP không khả dụng và chưa có bản chụp dữ liệu hoàn chỉnh: $1',
   ],
+  [/^HTTP source could not be fetched$/, 'Không thể tải nguồn dữ liệu HTTP'],
+  [/^HTTP source is not valid JSON$/, 'Nguồn dữ liệu HTTP không đúng định dạng JSON'],
+  [
+    /^HTTP source must be a nonempty JSON array$/,
+    'Nguồn dữ liệu HTTP phải là mảng JSON có dữ liệu',
+  ],
+  [/^Failed to fetch$/, 'Không thể tải dữ liệu từ máy chủ'],
+  [/^Network request failed$/, 'Kết nối mạng không thành công'],
 ];
 
 export function createI18n(locale: Locale, setLocale: (value: Locale) => void = () => {}) {

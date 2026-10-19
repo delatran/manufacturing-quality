@@ -80,11 +80,6 @@ except Exception as error:
 
 export class UpgradeDeferred extends Error {}
 
-export function upgradeReadAllowed(request) {
-  return ["GET", "HEAD"].includes(request.method) ||
-    (request.method === "POST" && /^\/api\/sessions\/[^/]+\/cancel$/.test(new URL(request.url).pathname));
-}
-
 export async function containsHandoffMarker(bytes, marker) {
   const reader = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip")).getReader();
   const decoder = new TextDecoder();

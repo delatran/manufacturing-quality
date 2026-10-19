@@ -18,7 +18,7 @@ const keySchema = {
   type: 'string',
   format: 'uuid',
   description:
-    'Caller-created lowercase UUID. Reuse it for this exact request and for receipt readback. Never replace a key after uncertain delivery.',
+    'Client-generated lowercase UUID for idempotent request dispatch and receipt lookup.',
 };
 const textSchema = { type: 'string', minLength: 1 };
 const replySchema = {
@@ -73,7 +73,7 @@ export function buildAgentActionTools(adapter: AgentActionAdapter): WebMcpTool[]
       name: 'read_agent_status',
       title: 'Read current Agent status',
       description:
-        'Read the mounted visitor Agent session, current draft, immutable run context, pending request key and cancellation state. No analysis is started. A pending send or cancellation request is not completion.',
+        'Read the active Agent session state, composer draft, analysis context, pending request key, and cancellation status.',
       inputSchema: schema({}),
       annotations: annotations(true),
       execute(input, { signal } = {}) {
@@ -86,7 +86,7 @@ export function buildAgentActionTools(adapter: AgentActionAdapter): WebMcpTool[]
       name: 'stage_agent_prompt',
       title: 'Stage an Agent question',
       description:
-        'Replace the visible Agent composer draft using its known current context. While a run is active, this stages an instruction for that immutable run. Does not submit, spend or start analysis. Read status and explicitly submit or steer after reviewing the staged text.',
+        'Stage an instruction or question in the Agent composer with the specified dashboard context for review before submission.',
       inputSchema: schema({ text: textSchema, analysis_context_id: contextSchema }),
       annotations: annotations(false),
       execute(input, { signal } = {}) {
@@ -107,7 +107,7 @@ export function buildAgentActionTools(adapter: AgentActionAdapter): WebMcpTool[]
       name: 'stage_agent_answer_followup',
       title: 'Stage a follow-up on a verified answer',
       description:
-        "Stage text in the visible composer tied to a verified answer in the mounted visitor session. Keeps that answer's original context and language. Does not submit. A later submission starts or queues a separate analysis. Rejected if the answer is no longer eligible.",
+        'Stage a follow-up prompt linked to a verified answer in the current session, preserving its original context and language.',
       inputSchema: schema({
         run_id: runSchema,
         message_id: { type: 'integer', minimum: 1 },
@@ -132,7 +132,7 @@ export function buildAgentActionTools(adapter: AgentActionAdapter): WebMcpTool[]
       name: 'submit_agent_prompt',
       title: 'Submit the staged Agent question',
       description:
-        'Submit the exact visible staged text/context/language to paid Agent analysis. Requires a caller-provided stable UUID. Include reply_to exactly when the staged draft references an answer. Returns admission or awaiting_acknowledgement, never model completion. Repeated identical keys resolve the original receipt before current admission guards; conflicting reuse fails. If uncertain, read the same key, do not create a replacement or automatically retry. Aborting this invocation after dispatch does not cancel the provider.',
+        'Submit the staged prompt and context for analysis using a stable client request UUID.',
       inputSchema: schema(
         {
           client_request_id: keySchema,
@@ -167,7 +167,7 @@ export function buildAgentActionTools(adapter: AgentActionAdapter): WebMcpTool[]
       name: 'steer_agent_run',
       title: 'Submit a staged instruction for the active run',
       description:
-        'Submit the exact staged instruction to the named current active run using its recorded context, language and action intent. Requires a caller-provided stable UUID and may spend. Server admission can queue a separate run for an explicit language change. Returns the actual receipt or awaiting_acknowledgement, not analysis completion. Repeated keys resolve the original receipt; never retry uncertainty under a new key. Invocation cancellation after dispatch does not prove provider cancellation.',
+        'Send a staged steering instruction to the active analysis run with its associated context, language, and action intent.',
       inputSchema: schema({
         client_request_id: keySchema,
         text: textSchema,
@@ -209,7 +209,7 @@ export function buildAgentActionTools(adapter: AgentActionAdapter): WebMcpTool[]
       name: 'read_agent_prompt_receipt',
       title: 'Read an Agent submission receipt',
       description:
-        'Read the durable receipt for a caller UUID within the mounted visitor session and reconcile its visible pending-send state. Does not submit or replay. Accepted means application admission only; reserved, uncertain or missing receipts never authorize a replacement key or prove provider cancellation.',
+        'Read the durable execution receipt for a client request UUID to verify admission status and run details.',
       inputSchema: schema({ client_request_id: keySchema }),
       annotations: annotations(false),
       execute(input, { signal } = {}) {
@@ -222,7 +222,7 @@ export function buildAgentActionTools(adapter: AgentActionAdapter): WebMcpTool[]
       name: 'request_agent_cancellation',
       title: 'Request cancellation of the active analysis',
       description:
-        'Request cancellation of the named currently active run and update visible stopping state. A successful HTTP response only confirms a cancellation request. Read Agent status until a terminal run state is observed. Invocation abortion or request failure does not prove the provider stopped.',
+        'Request cancellation of the currently active analysis run and update stopping state.',
       inputSchema: schema({ run_id: runSchema }),
       annotations: annotations(false, true),
       execute(input, { signal } = {}) {

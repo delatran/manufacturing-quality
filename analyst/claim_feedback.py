@@ -340,9 +340,9 @@ def calendar_text_checker(
                     {
                         "kind": "unsupported_calendar_label",
                         "label": match[0],
-                        "reason": "A calendar range labels a period, not a measured count or cost."
+                        "reason": "Calendar range labels a period, not a measured count or cost."
                         if wrong_quantity
-                        else "The whole range must match an explicit frozen source period.",
+                        else "Range must match an explicit frozen source period.",
                         "available_periods": [list(value) for value in sorted(periods)],
                     }
                 )
@@ -378,7 +378,7 @@ def calendar_text_checker(
                     {
                         "kind": "unsupported_calendar_label",
                         "label": match[0],
-                        "reason": "A yearless month range must identify one explicit frozen source period.",
+                        "reason": "Yearless month range must identify an explicit frozen source period.",
                         "available_periods": [list(value) for value in sorted(periods)],
                     }
                 )
@@ -773,7 +773,17 @@ def field_feedback(
         ],
         "referenced_evidence": referenced[:4],
         "candidate_evidence": candidates[:4],
-        "repair": "Prefer the exact [value:ID] marker in place of a literal measurement. Copy the exact returned scenario identifier; an invented numeric alias is not a source label. A scenario threshold needs the typed policy-parameter marker in an explicit criterion phrase. Calendar ranges must match an offered frozen period. Signed changes already include their sign: use neutral change/thay đổi/chênh lệch wording instead of decrease/giảm before a negative marker. Each repeated measurement needs evidence on its own line. Candidates must match the intended metric, row and period; equal numeric values alone do not establish meaning. If none matches, retrieve the needed section or omit the unsupported claim.",
+        "repair": (
+            "Use exact [value:ID] markers instead of literal measurements. "
+            "Use exact returned scenario identifiers; invented numeric aliases are invalid. "
+            "Scenario thresholds require typed policy-parameter markers in explicit criterion phrases. "
+            "Calendar ranges must match an explicit frozen period. "
+            "Signed changes already include their sign: use neutral wording (change/thay đổi/chênh lệch) "
+            "instead of directional words (decrease/giảm) before negative markers. "
+            "Each repeated measurement requires evidence on its own line. "
+            "Candidate evidence must match metric, row, and period; matching numeric values alone do not establish evidence. "
+            "Retrieve the required section or omit unsupported claims."
+        ),
         "scenario_identifiers": sorted(
             {
                 source["scenario"]

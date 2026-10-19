@@ -32,8 +32,8 @@ const TraceAuditRows = memo(function TraceAuditRows({
           </td>
           <td>
             <strong>{String(entry.code || '')}</strong>
-            <small>{String(entry.detail || '')}</small>
-            <small>{String(entry.policy_version || '')}</small>
+            {entry.detail ? <small>{String(entry.detail)}</small> : null}
+            {entry.policy_version ? <small>{String(entry.policy_version)}</small> : null}
           </td>
         </tr>
       ))}
@@ -172,7 +172,7 @@ export default memo(function RecordTrace({
               </table>
             </div>
           ) : (
-            <p>{t('ui.no_field_changes')}</p>
+            <p className="empty-chart">{t('ui.no_field_changes')}</p>
           )}
           {trace.truncated && <p role="status">{t('ui.trace_truncated')}</p>}
         </>

@@ -186,6 +186,38 @@ def test_generated_section_preserves_owner_prose_and_rejects_duplicate_markers()
         submission.replace_generated(owner + submission.START_MARKER, generated)
 
 
+@pytest.mark.parametrize("name", ["README.md", "README.vi.md"])
+@pytest.mark.parametrize(
+    "fault,message",
+    [
+        ("reversed", "ordered canonical-analysis marker pair"),
+        ("missing", "exactly one canonical-analysis marker pair"),
+        ("empty", "README analysis differs"),
+    ],
+)
+def test_submission_verification_rejects_missing_canonical_region(
+    delivered_copy, name, fault, message
+):
+    path = delivered_copy / name
+    original = path.read_text(encoding="utf-8")
+    if fault == "reversed":
+        changed = (
+            original.replace(submission.START_MARKER, "<!-- temporary start marker -->")
+            .replace(submission.END_MARKER, submission.START_MARKER)
+            .replace("<!-- temporary start marker -->", submission.END_MARKER)
+        )
+    elif fault == "missing":
+        changed = original.replace(submission.START_MARKER, "").replace(submission.END_MARKER, "")
+    else:
+        changed = submission.replace_generated(
+            original, f"{submission.START_MARKER}\n{submission.END_MARKER}"
+        )
+    path.write_text(changed, encoding="utf-8")
+    update_manifest_hash(delivered_copy, name)
+    with pytest.raises(ValueError, match=message):
+        submission.verify(delivered_copy)
+
+
 @pytest.mark.parametrize(
     "value,decimals,en,vi",
     [(1090, 0, "1,090", "1.090"), (1234.5, 2, "1,234.50", "1.234,50"), (None, 0, "N/A", "N/A")],

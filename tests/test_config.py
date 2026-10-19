@@ -301,6 +301,8 @@ def test_runtime_policy_ignores_legacy_environment_variables(tmp_path, monkeypat
     assert settings == Settings(root=tmp_path.resolve())
     assert settings.max_output_tokens == 12000
     assert settings.reasoning_effort == "max"
+    assert normalize_model_request(settings)["reasoning"]["summary"] == "auto"
+    assert normalize_model_request(settings)["text"]["verbosity"] == "high"
     assert settings.run_timeout_seconds == 450
     assert (settings.max_cost_usd_per_run, settings.dev_api_budget_usd) == (5, 10)
     assert settings.agent_mode == "unavailable"

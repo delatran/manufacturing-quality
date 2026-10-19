@@ -23,12 +23,11 @@ export function useDashboardLanguage() {
       ],
       [
         /^Validate the burden on (.+)$/,
-        (line) => `Xác minh áp lực phát sinh lỗi tại ${i18n.label(line)}`,
+        (line) => `Đánh giá mức độ phát sinh lỗi tại ${i18n.label(line)}`,
       ],
       [
         /^Investigate high-intensity (.+) products$/,
-        (category) =>
-          `Điều tra chuyên sâu nhóm sản phẩm ${i18n.label(category)} có cường độ lỗi cao`,
+        (category) => `Điều tra chuyên sâu nhóm sản phẩm ${i18n.label(category)} có tỷ lệ lỗi cao`,
       ],
       [
         /^Investigate repair cost per event on (.+)$/,
@@ -42,7 +41,7 @@ export function useDashboardLanguage() {
       [
         /^(.+) averages ([\d,.]+) known repair cost per event vs ([\d,.]+) on other lines \(([\d.]+)x\); ([\d.]+)% of linked known cost from ([\d.]+)% of linked known-cost events\.$/,
         (line, average, others, factor, costShare, eventShare) =>
-          `${i18n.label(line)} có chi phí sửa chữa ghi nhận trung bình ${sourceNumber(average, 2)}/sự cố, so với ${sourceNumber(others, 2)} ở các chuyền khác (gấp ${sourceNumber(factor, 2)} lần); chiếm ${sourceNumber(costShare, 1)}% tổng chi phí sửa chữa ghi nhận của các lỗi khớp danh mục sản phẩm, trong khi chỉ chiếm ${sourceNumber(eventShare, 1)}% số sự cố có chi phí trong cùng nhóm liên kết sản phẩm.`,
+          `${i18n.label(line)} có chi phí sửa chữa ghi nhận trung bình ${sourceNumber(average, 2)}/sự cố, so với ${sourceNumber(others, 2)} ở các chuyền khác (gấp ${sourceNumber(factor, 2)} lần); chiếm ${sourceNumber(costShare, 1)}% tổng chi phí sửa chữa ghi nhận nhưng chỉ từ ${sourceNumber(eventShare, 1)}% số sự cố có chi phí trong nhóm sản phẩm.`,
       ],
       [
         /^(.+) Team Leader with Maintenance and Finance$/,

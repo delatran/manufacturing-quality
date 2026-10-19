@@ -13,6 +13,7 @@ from pathlib import Path
 from zipfile import ZipFile
 
 import pytest
+from analyst.analysis_sql import query_snapshot
 from analyst.case_study.analytics import Scope, analysis_report
 from analyst.case_study.ingestion import SourceError
 from analyst.case_study.preparation import build_snapshot
@@ -244,6 +245,89 @@ async def test_agent_inputs_and_exports_use_same_scope_and_reference_cohort(tmp_
 
 
 @pytest.mark.asyncio
+async def test_computational_inputs_preserve_labels_types_and_safe_exports(tmp_path):
+    labels = ["NA", "=ABC", "'=ABC", "001"]
+    master = (
+        b"product_id,product_name,category,production_line,monthly_output\n"
+        b"1,NA,Category 1,Line-1,100\n"
+        b"2,=ABC,Category 1,Line-1,\n"
+        b"3,'=ABC,Category 1,Line-1,200\n"
+        b"4,001,Category 1,Line-1,50\n"
+    )
+    source_rows = [
+        event(index, product_id=index, repair_cost=cost)
+        for index, cost in enumerate([10, None, 0, 20], start=1)
+    ]
+    snapshot = build_snapshot(
+        source_rows,
+        {
+            "source_url": "https://synthetic.invalid/events",
+            "source_sha256": sha256(canonical(source_rows)),
+            "fetched_at": "2026-01-01T00:00:00+00:00",
+        },
+        master,
+    )
+    subject = service(tmp_path, Loader(snapshot))
+    payload = await subject.get_context()
+    context_id = payload["context"]["context_id"]
+    paths = await subject.input_paths_for_context(context_id)
+    hashes = payload["evidence"]["input_sha256"]
+    assert all(path.parent.name == "inputs" for path in paths)
+    assert [row["product_name"] for row in rows_csv(paths[0].read_bytes())] == labels
+    actual = query_snapshot(
+        "SELECT e.product_name, p.product_name AS master_name, e.repair_cost, "
+        "p.monthly_output, e.matched_product FROM events e "
+        "JOIN products p USING (product_id) ORDER BY e.defect_id",
+        paths,
+        hashes,
+    )["rows"]
+    assert [row["product_name"] for row in actual] == labels
+    assert [row["master_name"] for row in actual] == labels
+    assert [row["repair_cost"] for row in actual] == [10, None, 0, 20]
+    assert [row["monthly_output"] for row in actual] == [100, None, 200, 50]
+    assert all(row["matched_product"] is True for row in actual)
+    assert query_snapshot(
+        "SELECT count(*) AS n FROM events WHERE product_name IN ('NA', '=ABC', '001')",
+        paths,
+        hashes,
+    )["rows"] == [{"n": 3}]
+    assert query_snapshot(
+        "SELECT sum(repair_cost) AS cost, count(*) FILTER (WHERE repair_cost IS NULL) AS unknown "
+        "FROM events",
+        paths,
+        hashes,
+    )["rows"] == [{"cost": payload["analysis"]["kpis"]["known_repair_cost"], "unknown": 1}]
+    for locale in (None, "en", "vi"):
+        exported = rows_csv(await subject.export_csv(context_id, locale))
+        assert [row["product_name"] for row in exported] == ["NA", "'=ABC", "'=ABC", "001"]
+        with ZipFile(io.BytesIO(await subject.export_zip(context_id, locale))) as archive:
+            assert not any(name.startswith("inputs/") for name in archive.namelist())
+            assert rows_csv(archive.read("cleaned_records.csv")) == rows_csv(
+                await subject.export_csv(context_id)
+            )
+            retained = json.loads(archive.read("canonical_inputs.json"))
+            assert retained["input_sha256"] == hashes
+            assert retained["tables"]["events"]["rows"] == [
+                event.as_record() for event in snapshot.events
+            ]
+            for name, table_name in (
+                ("cleaned_records.csv", "events"),
+                ("reference_products.csv", "products"),
+            ):
+                table = retained["tables"][table_name]
+                stream = io.StringIO(newline="")
+                writer = csv.DictWriter(stream, fieldnames=table["columns"], lineterminator="\n")
+                writer.writeheader()
+                writer.writerows(table["rows"])
+                assert sha256(stream.getvalue().encode("utf-8-sig")) == hashes[name]
+                assert sha256(archive.read(name)) != hashes[name]
+            manifest = json.loads(archive.read("bundle_manifest.json"))
+            assert all(
+                sha256(archive.read(name)) == digest for name, digest in manifest["files"].items()
+            )
+
+
+@pytest.mark.asyncio
 async def test_empty_and_unknown_cost_contexts_preserve_semantics(tmp_path):
     subject = service(tmp_path)
     empty = await subject.get_context({"production_line": "Line-2"})
@@ -257,6 +341,12 @@ async def test_empty_and_unknown_cost_contexts_preserve_semantics(tmp_path):
     assert empty_product["reference_intensity_per_1000"] == 0
     assert empty_product["intensity_available"] is True
     assert rows_csv(await subject.export_csv(empty["context"]["context_id"])) == []
+    empty_paths = await subject.input_paths_for_context(empty["context"]["context_id"])
+    assert query_snapshot(
+        "SELECT count(*) AS n, sum(repair_cost) AS cost FROM events",
+        empty_paths,
+        empty["evidence"]["input_sha256"],
+    )["rows"] == [{"n": 0, "cost": None}]
     unknown = await subject.get_context({"product_id": "99"})
     assert unknown["analysis"]["kpis"]["event_count"] == 1
     assert unknown["analysis"]["kpis"]["cost_status"] == "unavailable"
@@ -408,6 +498,9 @@ async def test_missing_context_and_snapshot_have_distinct_errors(tmp_path):
         "artifacts/evidence.json",
         "artifacts/cleaned_records.csv",
         "artifacts/reference_products.csv",
+        "artifacts/inputs/cleaned_records.csv",
+        "artifacts/inputs/reference_products.csv",
+        "artifacts/canonical_inputs.json",
         "artifacts/evidence.zip",
     ],
 )

@@ -90,7 +90,7 @@ class Settings:
     reasoning_effort: str = "max"
     reasoning_summary: str = "auto"
     reasoning_mode: str = "standard"
-    verbosity: str = "medium"
+    verbosity: str = "high"
     service_tier: str = "default"
     speed: str = "standard"
     temperature: float | None = None

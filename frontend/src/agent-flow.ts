@@ -12,7 +12,10 @@ export type FlowPart = {
   body: string;
   done: boolean;
   displayText?: string;
-  displaySource?: 'task_status' | 'provider_summary';
+  displaySource?: 'task_status' | 'provider_summary' | 'translated_provider_summary';
+  displayLanguage?: Locale;
+  displayLocalized?: boolean;
+  translationState?: 'pending' | 'translated' | 'failed' | 'skipped' | 'cancelled';
 };
 
 export type FlowThinking = {
@@ -184,16 +187,48 @@ function note(id: string, label: string, detail: string, tone: 'info' | 'warn' =
   return { kind: 'note', id, tone, label, detail };
 }
 
-function updateSummaryDisplay(part: FlowPart, data: Record<string, unknown>) {
+function updateSummaryDisplay(
+  part: FlowPart,
+  data: Record<string, unknown>,
+  previousRaw = part.raw,
+) {
   // The server may supply a full public display snapshot while preserving the
   // provider's original delta in `raw`. Never append a fallback task status to
   // provider text, or reconstruct a translation from arbitrary partial strings.
+  const retainedTranslation =
+    part.displaySource === 'translated_provider_summary' && part.displayLocalized === true;
+  if (retainedTranslation && data.display_source !== 'translated_provider_summary') {
+    // A replay of the same source cannot downgrade a completed translation to
+    // its earlier pending/original snapshot. Changed public text needs a new one.
+    if (previousRaw.trim() === part.raw.trim()) return;
+    part.displayText = undefined;
+    part.displaySource = undefined;
+    part.displayLanguage = undefined;
+    part.displayLocalized = undefined;
+    part.translationState = undefined;
+  }
   if (data.display_mode === 'snapshot' && typeof data.display_text === 'string') {
     part.displayText = data.display_text;
     part.displaySource =
-      data.display_source === 'task_status' || data.display_source === 'provider_summary'
+      data.display_source === 'task_status' ||
+      data.display_source === 'provider_summary' ||
+      data.display_source === 'translated_provider_summary'
         ? data.display_source
         : undefined;
+    part.displayLanguage =
+      data.display_language === 'en' || data.display_language === 'vi'
+        ? data.display_language
+        : undefined;
+    part.displayLocalized = data.display_localized === true;
+  }
+  if (
+    data.translation_state === 'pending' ||
+    data.translation_state === 'translated' ||
+    data.translation_state === 'failed' ||
+    data.translation_state === 'skipped' ||
+    data.translation_state === 'cancelled'
+  ) {
+    part.translationState = data.translation_state;
   }
   Object.assign(part, splitSummaryPart(part.displayText ?? part.raw));
 }
@@ -370,7 +405,7 @@ function syncToolArguments(
 export function projectAgentFlow(events: WorkspaceEvent[]): Map<string, FlowRun> {
   const runs = new Map<string, Builder>();
   const eventIds = new Set<string>();
-  const reasoningAliases = new Map<string, string>();
+  const reasoningAliases = new Map<string, { itemId: string; indices?: number[] }>();
   for (const event of events) {
     const d = event.data;
     if (
@@ -384,10 +419,17 @@ export function projectAgentFlow(events: WorkspaceEvent[]): Map<string, FlowRun>
       text(d.item_id) &&
       text(d.canonical_item_id)
     ) {
-      reasoningAliases.set(
-        JSON.stringify([event.run_id, d.session_id, d.turn_id, d.item_id]),
-        [d.session_id, d.turn_id, d.canonical_item_id].join(':'),
-      );
+      const indices = d.canonical_summary_indices;
+      if (
+        indices !== undefined &&
+        (!Array.isArray(indices) ||
+          !indices.every((index) => Number.isSafeInteger(index) && index >= 0))
+      )
+        continue;
+      reasoningAliases.set(JSON.stringify([event.run_id, d.session_id, d.turn_id, d.item_id]), {
+        itemId: [d.session_id, d.turn_id, d.canonical_item_id].join(':'),
+        indices,
+      });
     }
   }
   let pendingPrompt = '';
@@ -422,10 +464,20 @@ export function projectAgentFlow(events: WorkspaceEvent[]): Map<string, FlowRun>
     const providerTurnId =
       text(d.provider_turn_id) || (d.provider_api === 'agents' ? text(d.turn_id) : '');
     const providerEventId = text(d.event_id);
-    const scopedItemId = (itemId: string) =>
+    const aliasFor = (itemId: string) =>
       reasoningAliases.get(
         JSON.stringify([event.run_id, providerSessionId, providerTurnId, itemId]),
-      ) || (providerSessionId ? [providerSessionId, providerTurnId, itemId].join(':') : itemId);
+      );
+    const originalItemId = (itemId: string) =>
+      providerSessionId ? [providerSessionId, providerTurnId, itemId].join(':') : itemId;
+    const scopedItemId = (itemId: string) => aliasFor(itemId)?.itemId || originalItemId(itemId);
+    const summaryIdentity = (itemId: string, index: number) => {
+      const alias = aliasFor(itemId);
+      if (alias?.indices && alias.indices[index] === undefined) {
+        return { itemId: originalItemId(itemId), index };
+      }
+      return { itemId: scopedItemId(itemId), index: alias?.indices?.[index] ?? index };
+    };
     if (providerEventId) {
       const key = [providerSessionId, providerTurnId, event.type, providerEventId].join(':');
       if (run.providerEvents.has(key)) continue;
@@ -448,7 +500,10 @@ export function projectAgentFlow(events: WorkspaceEvent[]): Map<string, FlowRun>
       case 'reasoning_summary':
       case 'reasoning': {
         // One block per provider reasoning item; one part per summary/content index.
-        const itemId = scopedItemId(text(d.item_id) || text(d.response_id) || 'stream');
+        const { itemId, index } = summaryIdentity(
+          text(d.item_id) || text(d.response_id) || 'stream',
+          count(d.summary_index ?? d.content_index),
+        );
         const block = ensureThinkingBlock(run, itemId, d.simulation === true, event.time);
         if (event.time && !run.thinkingStarts.has(itemId)) {
           const t = new Date(event.time).getTime();
@@ -456,7 +511,6 @@ export function projectAgentFlow(events: WorkspaceEvent[]): Map<string, FlowRun>
         }
         if (count(d.duration_ms) > 0) block.durationMs = count(d.duration_ms);
         else if (count(d.elapsed_ms) > 0) block.durationMs = count(d.elapsed_ms);
-        const index = count(d.summary_index ?? d.content_index);
         let part = block.parts.find((item) => item.index === index);
         if (!part) {
           part = { index, raw: '', title: '', body: '', done: false };
@@ -467,8 +521,11 @@ export function projectAgentFlow(events: WorkspaceEvent[]): Map<string, FlowRun>
         // A done event carries the full part; deltas accumulate in order.
         const final = d.final === true || d.done === true;
         if ((part.done || block.done) && !final) break;
-        part.raw = final ? raw : part.raw + raw;
-        updateSummaryDisplay(part, d);
+        const previousRaw = part.raw;
+        if (!final || typeof d.text === 'string' || typeof d.delta === 'string') {
+          part.raw = final ? raw : part.raw + raw;
+        }
+        updateSummaryDisplay(part, d, previousRaw);
         if (final) {
           part.done = true;
           if (event.time && run.thinkingStarts.has(itemId) && !block.durationMs) {
@@ -480,9 +537,11 @@ export function projectAgentFlow(events: WorkspaceEvent[]): Map<string, FlowRun>
         break;
       }
       case 'reasoning_part': {
-        const itemId = scopedItemId(text(d.item_id) || 'stream');
+        const { itemId, index } = summaryIdentity(
+          text(d.item_id) || 'stream',
+          count(d.summary_index),
+        );
         const block = ensureThinkingBlock(run, itemId, d.simulation === true, event.time);
-        const index = count(d.summary_index);
         let part = block.parts.find((item) => item.index === index);
         if (d.phase === 'added' && (block.done || part?.done)) break;
         if (!part) {
@@ -499,14 +558,18 @@ export function projectAgentFlow(events: WorkspaceEvent[]): Map<string, FlowRun>
           part.body = '';
           part.displayText = undefined;
           part.displaySource = undefined;
+          part.displayLanguage = undefined;
+          part.displayLocalized = undefined;
+          part.translationState = undefined;
         }
+        const previousRaw = part.raw;
         if (part && d.phase === 'done') {
           if (typeof d.text === 'string') {
             part.raw = d.text;
           }
           part.done = true;
         }
-        updateSummaryDisplay(part, d);
+        updateSummaryDisplay(part, d, previousRaw);
         break;
       }
       case 'output_item': {
@@ -573,6 +636,15 @@ export function projectAgentFlow(events: WorkspaceEvent[]): Map<string, FlowRun>
             const itemId = scopedItemId(text(d.item_id));
             const block = ensureThinkingBlock(run, itemId, d.simulation === true, event.time);
             if (d.phase === 'done') {
+              const alias = aliasFor(text(d.item_id));
+              if (alias?.indices) {
+                // A transient item can cover only some parts of one durable
+                // item. Its completion cannot close later sibling parts.
+                for (const part of block.parts) {
+                  if (alias.indices.includes(part.index)) part.done = true;
+                }
+                break;
+              }
               block.done = true;
               for (const part of block.parts) part.done = true;
               if (event.time && run.thinkingStarts.has(itemId) && !block.durationMs) {

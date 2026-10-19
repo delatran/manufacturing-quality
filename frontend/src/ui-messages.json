@@ -42,15 +42,15 @@
     },
     "ui.agent_flow_phase_idle": {
       "en": "idle",
-      "vi": "Đang chờ"
+      "vi": "đang chờ"
     },
     "ui.agent_flow_phase_completed": {
       "en": "completed",
-      "vi": "Đã hoàn tất"
+      "vi": "đã hoàn tất"
     },
     "ui.agent_flow_phase_failed": {
       "en": "encountered an issue",
-      "vi": "Gặp sự cố"
+      "vi": "gặp sự cố"
     },
     "ui.agent_flow_phase_cancelled": {
       "en": "turn cancelled",
@@ -77,12 +77,12 @@
       "vi": "Gọi công cụ"
     },
     "ui.agent_flow_receipt": {
-      "en": "Execution proof",
-      "vi": "Chứng thực tính toán"
+      "en": "Execution receipt",
+      "vi": "Biên nhận thực thi"
     },
     "ui.agent_flow_pending": {
       "en": "preparing",
-      "vi": "đang soạn"
+      "vi": "đang chuẩn bị"
     },
     "ui.agent_flow_running": {
       "en": "running",
@@ -90,7 +90,7 @@
     },
     "ui.agent_flow_completed": {
       "en": "done",
-      "vi": "xong"
+      "vi": "hoàn tất"
     },
     "ui.agent_flow_failed": {
       "en": "failed",
@@ -178,7 +178,7 @@
     },
     "ui.agent_scope_retry_note": {
       "en": "The saved selection could not be loaded. Your question is kept. Retry this selection, or open Dashboard to review the data selection.",
-      "vi": "Chưa tải được phạm vi đã lưu. Câu hỏi vẫn được giữ lại. Thử tải lại phạm vi này, hoặc mở Tổng quan để kiểm tra lựa chọn dữ liệu."
+      "vi": "Không thể tải phạm vi dữ liệu đã lưu. Câu hỏi vẫn được bảo lưu nguyên vẹn. Thử tải lại phạm vi này, hoặc mở Tổng quan để kiểm tra lựa chọn dữ liệu."
     },
     "ui.agent_scope_retry": {
       "en": "Retry saved selection",
@@ -361,28 +361,28 @@
       "vi": "Trả lời câu hỏi"
     },
     "ui.for_this_request_the_analyst_may_save_an_action_draft_in_follow_u": {
-      "en": "For this request, the analyst may save an action draft in Follow-up work. You review it before assigning work or changing its status.",
-      "vi": "Với yêu cầu này, trợ lý có thể lưu bản nháp vào Công việc theo dõi. Bạn xem lại trước khi giao việc hoặc thay đổi trạng thái."
+      "en": "The analyst can prepare an action draft in Follow-up work for your review.",
+      "vi": "Trợ lý có thể chuẩn bị bản nháp trong mục Việc theo dõi để bạn duyệt."
     },
     "ui.name_the_draft_and_the_changes_you_want_in_your_question_the_anal": {
-      "en": "Name the draft and the changes you want in your question. The analyst may revise that draft; assigning work and changing status still need your review.",
-      "vi": "Nêu tên bản nháp và nội dung cần sửa trong câu hỏi. Trợ lý có thể chỉnh bản nháp đó; việc giao người phụ trách và đổi trạng thái vẫn cần bạn xem lại."
+      "en": "Specify the draft and requested changes. You can review updates before assigning work or changing status.",
+      "vi": "Nêu rõ tên bản nháp và nội dung cần sửa. Bạn có thể xem lại trước khi giao việc hoặc đổi trạng thái."
     },
     "ui.select_dashboard_data_to_prepare_or_revise_action_drafts": {
-      "en": "Select Dashboard data to prepare or revise action drafts.",
-      "vi": "Chọn dữ liệu Tổng quan để chuẩn bị hoặc sửa bản nháp công việc."
+      "en": "Select dashboard data to draft or revise action items.",
+      "vi": "Chọn dữ liệu trên bảng điều khiển để lập hoặc sửa bản nháp công việc."
     },
     "ui.choose_a_draft_task_when_you_want_the_analyst_to_save_an_action_f": {
-      "en": "Choose a draft task when you want the analyst to save an action for review. Answering a question does not authorize changes to your work list.",
-      "vi": "Chọn tác vụ bản nháp khi bạn muốn trợ lý lưu công việc để xem xét. Chế độ trả lời câu hỏi không cho phép thay đổi danh sách công việc."
+      "en": "Select a draft task to create an action for review. Standard questions do not modify your work list.",
+      "vi": "Chọn tác vụ bản nháp để tạo công việc cần duyệt. Câu hỏi thông thường không làm thay đổi danh sách việc."
     },
     "ui.ai_is_unavailable_in_this_environment": {
       "en": "AI is unavailable in this environment",
       "vi": "AI chưa khả dụng trong môi trường này"
     },
     "ui.the_analyst_cannot_run_model_requests_you_can_still_use_the_dashb": {
-      "en": "The analyst is unavailable. You can still review the Dashboard, inspect evidence and export data.",
-      "vi": "Trợ lý chưa khả dụng. Bạn vẫn có thể xem Tổng quan, kiểm tra bằng chứng và xuất dữ liệu."
+      "en": "The analyst service is currently unavailable. You may continue to explore the Dashboard, review audit evidence, and export datasets.",
+      "vi": "Trợ lý phân tích hiện chưa khả dụng. Quý vị vẫn có thể tra cứu Tổng quan, rà soát bằng chứng và xuất dữ liệu."
     },
     "ui.the_analyst_opened_the_requested_view_the_scope_is_shown_on_the_d": {
       "en": "View opened. Check the selected scope on the Dashboard.",
@@ -450,7 +450,7 @@
     },
     "ui.this_analysis_saved_changes_to_follow_up_work_review_the_item_in_": {
       "en": "Changes saved to Follow-up work. Open the item to review its current details and status.",
-      "vi": "Đã lưu thay đổi vào Việc cần theo dõi. Mở công việc để xem nội dung và trạng thái hiện tại."
+      "vi": "Đã lưu thay đổi vào mục Việc cần theo dõi. Mở hạng mục tương ứng để xem nội dung và trạng thái hiện tại."
     },
     "ui.explore_a_detail_or_prepare_an_action_for_review": {
       "en": "Explore a detail or prepare an action for review.",
@@ -493,8 +493,8 @@
       "vi": "Đóng thông báo"
     },
     "ui.delivery_has_not_been_confirmed_check_the_conversation_before_sen": {
-      "en": "Message status unconfirmed. Please check the conversation before resending to avoid duplicate analysis.",
-      "vi": "Chưa nhận được xác nhận từ hệ thống. Vui lòng kiểm tra lại khung hội thoại trước khi gửi lại để tránh bị phân tích trùng."
+      "en": "Delivery unconfirmed. Please verify the conversation history before resending to avoid duplicate analysis.",
+      "vi": "Chưa thể xác nhận việc gửi yêu cầu. Vui lòng kiểm tra lại lịch sử hội thoại trước khi gửi lại để tránh phân tích trùng lặp."
     },
     "ui.restore_the_question_for_review": {
       "en": "Restore the question for review",
@@ -569,8 +569,8 @@
       "vi": "Shift + Enter để xuống dòng"
     },
     "ui.this_request_can_save_a_new_action_draft": {
-      "en": "This request can save a new action draft.",
-      "vi": "Yêu cầu này có thể lưu bản nháp công việc mới."
+      "en": "This request prepares a new action draft for review.",
+      "vi": "Yêu cầu này sẽ chuẩn bị một bản nháp công việc để bạn duyệt."
     },
     "ui.this_request_can_revise_an_existing_draft": {
       "en": "This request can revise an existing draft.",
@@ -678,7 +678,7 @@
     },
     "ui.choose_your_view": {
       "en": "Choose your view",
-      "vi": "Chọn phạm vi muốn xem"
+      "vi": "Tùy chọn phạm vi phân tích"
     },
     "ui.unapplied_changes": {
       "en": "Unapplied changes",
@@ -693,8 +693,8 @@
       "vi": "Tháng bắt đầu phải trước hoặc trùng tháng kết thúc."
     },
     "ui.changes_take_effect_when_you_apply_the_view_uses_complete_months": {
-      "en": "Click Apply filters to update the charts. Periods use full calendar months.",
-      "vi": "Nhấn Áp dụng bộ lọc để cập nhật biểu đồ. Dữ liệu tính theo từng tháng trọn vẹn."
+      "en": "Analysis reflects full calendar months upon applying.",
+      "vi": "Phạm vi phân tích áp dụng theo các tháng lịch trọn vẹn."
     },
     "ui.reset_filters": {
       "en": "Reset filters",
@@ -725,8 +725,8 @@
       "vi": "Thử lại"
     },
     "ui.source_check_failed_saved_data_is_still_available": {
-      "en": "Source check failed. Saved data is still available.",
-      "vi": "Chưa kiểm tra được nguồn. Dữ liệu đã lưu vẫn dùng được."
+      "en": "Source verification unsuccessful. Preserved data remains accessible.",
+      "vi": "Không thể kết nối kiểm tra dữ liệu nguồn. Bản dữ liệu đã lưu trữ vẫn sẵn sàng sử dụng."
     },
     "ui.last_attempt": {
       "en": "Last attempt:",
@@ -957,8 +957,8 @@
       "vi": "Thăm dò"
     },
     "ui.candidate_dates_are_prompts_to_investigate_not_confirmed_process_": {
-      "en": "Candidate dates are prompts to investigate, not confirmed process alarms.",
-      "vi": "Các ngày gợi ý để điều tra, chưa phải cảnh báo quy trình đã xác nhận."
+      "en": "Candidate dates are exploratory prompts for investigation, not confirmed process alarms.",
+      "vi": "Các mốc ngày được gợi ý để điều tra chuyên sâu, chưa phải cảnh báo bất thường quy trình chính thức."
     },
     "ui.january_daily_mean": {
       "en": "January daily mean",
@@ -985,8 +985,8 @@
       "vi": "Không có ngày nào vượt ngưỡng tham chiếu trong góc nhìn này."
     },
     "ui.how_to_read_this_signal": {
-      "en": "How the warning threshold is calculated and data notes",
-      "vi": "Cách tính ngưỡng cảnh báo và lưu ý dữ liệu"
+      "en": "Threshold methodology and data limitations",
+      "vi": "Phương pháp xác định ngưỡng và hạn chế dữ liệu"
     },
     "ui.january_stays_fixed_when_selected_months_change": {
       "en": ". The January baseline stays fixed when you change the month filter.",
@@ -1154,7 +1154,7 @@
     },
     "ui.no_location_records_in_this_view": {
       "en": "No location records in this view.",
-      "vi": "Không có bản ghi vị trí trong góc nhìn này."
+      "vi": "Không có bản ghi vị trí trong phạm vi này."
     },
     "ui.counts_relationship": {
       "en": "Location × Severity breakdown & statistical test (Chi-square)",
@@ -1446,7 +1446,7 @@
     },
     "ui.analysis_interrupted": {
       "en": "Analysis interrupted",
-      "vi": "Phân tích bị gián đoạn"
+      "vi": "Phiên phân tích bị gián đoạn"
     },
     "ui.analysis_cancelled": {
       "en": "Analysis cancelled",
@@ -1466,7 +1466,7 @@
     },
     "ui.your_request_is_queued": {
       "en": "Your request is queued",
-      "vi": "Yêu cầu đang chờ xử lý"
+      "vi": "Yêu cầu đã được đưa vào hàng đợi xử lý"
     },
     "ui.checking_the_results": {
       "en": "Checking the results",
@@ -1494,15 +1494,15 @@
     },
     "ui.connection_interrupted_we_are_reconnecting_your_draft_is_kept_her": {
       "en": "Connection interrupted. Reconnecting automatically—your draft has been preserved.",
-      "vi": "Kết nối bị gián đoạn. Đang tự động kết nối lại; nội dung bạn đang nhập vẫn được giữ nguyên vẹn."
+      "vi": "Kết nối mạng bị gián đoạn. Đang tự động kết nối lại; nội dung bản thảo đã được bảo lưu an toàn."
     },
     "ui.result_could_not_be_verified": {
-      "en": "The result could not be verified. Your question and any saved results are kept here. Review them before trying again.",
-      "vi": "Kết quả chưa được xác minh. Câu hỏi và kết quả đã lưu vẫn ở đây. Hãy xem lại trước khi thử lại."
+      "en": "The result could not be verified. Your request and any saved results are kept here. Review them before trying again.",
+      "vi": "Kết quả chưa được xác minh. Yêu cầu và các kết quả đã lưu vẫn được bảo lưu an toàn. Vui lòng rà soát lại trước khi thử lại."
     },
     "ui.the_analysis_could_not_finish_your_request_and_any_saved_results_": {
-      "en": "The analysis could not finish. Your request and any saved results are kept here. Review them before trying again.",
-      "vi": "Phân tích chưa hoàn tất. Yêu cầu và kết quả đã lưu vẫn ở đây. Hãy xem lại trước khi thử lại."
+      "en": "The analysis could not be completed. Your request and preserved outputs are retained safely. Please review them before retrying.",
+      "vi": "Phiên phân tích chưa thể hoàn tất. Yêu cầu và các kết quả đã lưu vẫn được bảo lưu an toàn. Vui lòng rà soát lại trước khi gửi lại yêu cầu."
     },
     "ui.activity": {
       "en": "Activity",
@@ -1510,7 +1510,7 @@
     },
     "ui.done": {
       "en": "Done",
-      "vi": "Đã xong"
+      "vi": "Hoàn tất"
     },
     "ui.could_not_finish": {
       "en": "Could not finish",
@@ -1598,7 +1598,7 @@
     },
     "ui.open_receipt_json": {
       "en": "View audit receipt (JSON)",
-      "vi": "Xem dữ liệu chứng thực tính toán (JSON)"
+      "vi": "Xem biên nhận kiểm toán (JSON)"
     },
     "ui.snapshot_and_verification_references": {
       "en": "Snapshot and verification references",
@@ -1618,7 +1618,7 @@
     },
     "ui.execution_receipt": {
       "en": "Computation execution receipt",
-      "vi": "Chứng thực thực thi tính toán"
+      "vi": "Biên nhận thực thi tính toán"
     },
     "ui.source_sha_256": {
       "en": "Source SHA-256",
@@ -1745,8 +1745,8 @@
       "vi": "Biên bản bàn giao và tệp bằng chứng lưu trữ"
     },
     "ui.no_registered_brief_yet_ask_the_analyst_to_prepare_a_handoff_brie": {
-      "en": "No handoff brief generated yet. Request the analyst to compile an official handoff brief from this record.",
-      "vi": "Chưa có biên bản bàn giao nào được lưu. Bạn có thể yêu cầu trợ lý tổng hợp biên bản bàn giao chính thức từ hồ sơ này."
+      "en": "No handoff brief generated yet.",
+      "vi": "Chưa có biên bản bàn giao nào được tạo."
     },
     "ui.loading_the_saved_investigation": {
       "en": "Loading the saved investigation…",
@@ -1777,48 +1777,48 @@
       "vi": "Trích đoạn báo cáo phân tích. Báo cáo đầy đủ vẫn được giữ trong Trợ lý."
     },
     "ui.this_work_changed_elsewhere_load_the_latest_version_before_saving": {
-      "en": "This work changed elsewhere. Load the latest version before saving again.",
-      "vi": "Việc này đã được thay đổi ở nơi khác. Tải bản mới nhất trước khi lưu lại."
+      "en": "This item was modified elsewhere. Load the latest version before saving.",
+      "vi": "Mục này đã thay đổi ở nơi khác. Hãy tải bản mới nhất trước khi lưu."
     },
     "ui.this_work_or_its_saved_data_view_is_unavailable_reload_the_list_a": {
-      "en": "This work or its saved data view is unavailable. Reload the list and try again.",
-      "vi": "Không tìm thấy việc này hoặc phạm vi dữ liệu đã lưu. Tải lại danh sách rồi thử lại."
+      "en": "This item or its saved view is unavailable. Reload the list and try again.",
+      "vi": "Mục này hoặc phạm vi dữ liệu đã lưu không khả dụng. Hãy tải lại danh sách."
     },
     "ui.some_details_could_not_be_accepted_check_the_title_date_and_requi": {
-      "en": "Some details could not be accepted. Check the title, date and required update fields.",
-      "vi": "Một số thông tin chưa hợp lệ. Kiểm tra tên việc, ngày và các mục bắt buộc khi cập nhật."
+      "en": "Some details are invalid. Please check the title, date, and required fields.",
+      "vi": "Một số thông tin chưa hợp lệ. Vui lòng kiểm tra tiêu đề, ngày và các trường bắt buộc."
     },
     "ui.could_not_save_the_change_your_entries_are_still_here_try_again": {
-      "en": "Could not save the change. Your entries are still here; try again.",
-      "vi": "Chưa lưu được thay đổi. Nội dung đã nhập vẫn còn; hãy thử lại."
+      "en": "Could not save changes. Your entries are preserved; please try again.",
+      "vi": "Không thể lưu thay đổi. Dữ liệu đã nhập được giữ nguyên; vui lòng thử lại."
     },
     "ui.this_report_has_no_saved_dashboard_scope_use_add_work_to_start_a_": {
-      "en": "This report has no saved dashboard scope. Use Add work to start a separate follow-up in a chosen view.",
-      "vi": "Báo cáo này không có phạm vi tổng quan đã lưu. Dùng Thêm việc để tạo việc riêng trong phạm vi bạn chọn."
+      "en": "This report has no saved dashboard scope. Use Add work to start a follow-up in your current view.",
+      "vi": "Báo cáo này không có phạm vi đã lưu. Dùng Thêm việc để tạo theo dõi trong phạm vi hiện tại."
     },
     "ui.this_report_s_saved_data_view_is_no_longer_available_for_a_new_fo": {
-      "en": "This report’s saved data view is no longer available for a new follow-up. Run a new analysis from the Dashboard, or use Add work to choose a separate current view.",
-      "vi": "Phạm vi dữ liệu đã lưu của báo cáo không còn dùng được để tạo việc mới. Chạy phân tích mới từ Tổng quan hoặc dùng Thêm việc để chọn một phạm vi hiện có riêng."
+      "en": "The saved data view for this report is no longer available. Use Add work to choose a current view.",
+      "vi": "Phạm vi dữ liệu đã lưu của báo cáo không còn khả dụng. Dùng Thêm việc để chọn phạm vi hiện tại."
     },
     "ui.the_report_s_saved_scope_could_not_be_loaded_return_to_the_report": {
-      "en": "The report’s saved scope could not be loaded. Return to the report and try again.",
-      "vi": "Chưa tải được phạm vi đã lưu của báo cáo. Quay lại báo cáo rồi thử lại."
+      "en": "Could not load the report’s saved scope. Please return to the report and try again.",
+      "vi": "Không thể tải phạm vi đã lưu của báo cáo. Vui lòng quay lại báo cáo và thử lại."
     },
     "ui.this_report_does_not_identify_the_saved_work_and_its_original_vie": {
-      "en": "This report does not identify the saved work and its original view. Return to the report to check the saved-work reference.",
-      "vi": "Báo cáo này chưa xác định được việc đã lưu và phạm vi gốc. Quay lại báo cáo để kiểm tra thông tin việc đã lưu."
+      "en": "This report does not reference a valid saved work item. Return to the report to verify the reference.",
+      "vi": "Báo cáo không chứa thông tin việc đã lưu hợp lệ. Hãy kiểm tra lại liên kết trong báo cáo."
     },
     "ui.the_saved_work_does_not_match_this_report_s_original_view_check_t": {
-      "en": "The saved work does not match this report’s original view. Check the original report or open the work from the follow-up list.",
-      "vi": "Việc đã lưu không khớp phạm vi gốc của báo cáo này. Kiểm tra báo cáo gốc hoặc mở việc từ danh sách theo dõi."
+      "en": "The saved work scope differs from this report. Open the item directly from the follow-up list.",
+      "vi": "Phạm vi việc đã lưu khác với báo cáo này. Hãy mở trực tiếp từ danh sách theo dõi."
     },
     "ui.the_saved_work_could_not_be_found_return_to_the_report_to_check_w": {
-      "en": "The saved work could not be found. Return to the report to check which work was saved.",
-      "vi": "Không tìm thấy việc đã lưu. Quay lại báo cáo để kiểm tra việc đã được lưu trong lượt đó."
+      "en": "The saved work item could not be found. Please verify the report reference.",
+      "vi": "Không tìm thấy việc đã lưu. Vui lòng kiểm tra lại liên kết trong báo cáo."
     },
     "ui.could_not_open_the_saved_work_return_to_the_report_and_choose_rev": {
-      "en": "Could not open the saved work. Return to the report and choose Review saved work to try again.",
-      "vi": "Chưa mở được việc đã lưu. Quay lại báo cáo và chọn Xem việc đã lưu để thử lại."
+      "en": "Could not open the saved work item. Please return to the report and try again.",
+      "vi": "Không thể mở việc đã lưu. Vui lòng quay lại báo cáo và thử lại."
     },
     "ui.review_logged_defects_on_value": {
       "en": "Review logged defects on {value0}",
@@ -1901,8 +1901,8 @@
       "vi": "Việc đã đóng hoặc tạm ngừng"
     },
     "ui.value_is_saved_in_follow_up_work": {
-      "en": "“{value0}” is saved in follow-up work. No one has been notified.",
-      "vi": "“{value0}” đã được lưu vào công việc theo dõi. Chưa gửi thông báo cho ai."
+      "en": "“{value0}” saved to follow-up work.",
+      "vi": "Đã lưu “{value0}” vào việc theo dõi."
     },
     "ui.saved_value": {
       "en": "Saved “{value0}”.",
@@ -1921,8 +1921,8 @@
       "vi": "Nhập tên việc cần theo dõi."
     },
     "ui.describe_the_planned_action_first": {
-      "en": "Describe the planned action first.",
-      "vi": "Mô tả hành động dự kiến trước khi đổi trạng thái."
+      "en": "Describe the planned action before updating status.",
+      "vi": "Mô tả hành động dự kiến trước khi chuyển trạng thái."
     },
     "ui.describe_the_observed_outcome_before_closing": {
       "en": "Describe the observed outcome before closing.",
@@ -1933,12 +1933,12 @@
       "vi": "Ghi rõ lý do thay đổi này."
     },
     "ui.this_investigation_is_already_being_followed_your_entries_are_sti": {
-      "en": "This investigation is already being followed. Your entries are still shown; review the saved status, then save an update if needed.",
-      "vi": "Hướng điều tra này đã có trong danh sách theo dõi. Nội dung bạn nhập vẫn còn; xem trạng thái đã lưu rồi lưu cập nhật nếu cần."
+      "en": "This investigation is already tracked. Review the existing record and update as needed.",
+      "vi": "Hướng điều tra này đã được theo dõi. Xem lại bản ghi hiện có và cập nhật nếu cần."
     },
     "ui.this_request_may_already_be_saved_review_the_work_list_before_try": {
-      "en": "This request may already be saved. Review the work list before trying to add it again.",
-      "vi": "Yêu cầu này có thể đã được lưu. Xem lại danh sách trước khi thử thêm lần nữa."
+      "en": "This item may already exist. Check the work list before submitting again.",
+      "vi": "Mục này có thể đã tồn tại. Hãy kiểm tra danh sách trước khi thêm lại."
     },
     "ui.historical_review": {
       "en": "Historical review",
@@ -2097,8 +2097,8 @@
       "vi": "Tải bản mới nhất sẽ thay nội dung chưa lưu ở trên."
     },
     "ui.returning_to_the_list_closes_this_draft_and_discards_its_unsaved_": {
-      "en": "Returning to the list closes this draft and discards its unsaved entries.",
-      "vi": "Quay lại danh sách sẽ đóng bản nháp này và bỏ các nội dung chưa lưu."
+      "en": "Returning to the list closes this draft and discards unsaved modifications.",
+      "vi": "Quay lại danh sách sẽ đóng bản nháp này và hủy bỏ các nội dung chưa được lưu."
     },
     "ui.load_latest_version": {
       "en": "Load latest version",
@@ -2165,8 +2165,8 @@
       "vi": "Đã kiểm tra"
     },
     "ui.source_check_finished_review_the_comparison_before_saving_it_to_t": {
-      "en": "Source check finished. Review the comparison before saving it to this work.",
-      "vi": "Đã kiểm tra nguồn. Xem lại phần so sánh trước khi lưu vào việc này."
+      "en": "Source check complete. Review the comparison before saving.",
+      "vi": "Đã kiểm tra nguồn. Xem kết quả đối chiếu trước khi lưu."
     },
     "ui.could_not_check_the_source_try_again_when_the_connection_is_avail": {
       "en": "Could not check the source. Try again when the connection is available.",
@@ -2174,7 +2174,7 @@
     },
     "ui.comparison_saved_to_this_work": {
       "en": "Comparison saved to this work.",
-      "vi": "Đã lưu phần so sánh vào việc này."
+      "vi": "Đã lưu kết quả đối chiếu vào việc này."
     },
     "ui.the_checked_view_cannot_be_compared_with_this_work_the_saved_filt": {
       "en": "The checked view cannot be compared with this work. The saved filters and measure definitions must match.",
@@ -2185,8 +2185,8 @@
       "vi": "Rà soát bằng dữ liệu mới hơn"
     },
     "ui.check_the_source_using_this_work_s_saved_month_and_line_filters": {
-      "en": "Check the source using this work’s saved month and line filters.",
-      "vi": "Kiểm tra nguồn với cùng phạm vi tháng và chuyền của việc đã lưu."
+      "en": "Check the source using the saved scope filters.",
+      "vi": "Kiểm tra nguồn với các bộ lọc phạm vi đã lưu."
     },
     "ui.checking_source": {
       "en": "Checking source…",
@@ -2194,15 +2194,15 @@
     },
     "ui.check_source_now": {
       "en": "Check source now",
-      "vi": "Kiểm tra nguồn lúc này"
+      "vi": "Kiểm tra nguồn ngay"
     },
     "ui.saving_comparison": {
       "en": "Saving comparison…",
-      "vi": "Đang lưu so sánh…"
+      "vi": "Đang lưu đối chiếu…"
     },
     "ui.save_comparison_to_this_work": {
       "en": "Save comparison to this work",
-      "vi": "Lưu so sánh vào việc này"
+      "vi": "Lưu kết quả đối chiếu vào việc này"
     },
     "ui.defect_events": {
       "en": "Defect events",
@@ -2221,24 +2221,24 @@
       "vi": "Thứ tự ưu tiên hành động có bị thay đổi?"
     },
     "ui.a_scenario_recalculates_this_scope_beside_the_canonical_policy_th": {
-      "en": "Recalculates metrics under alternative data rules to test decision robustness against the canonical baseline, without altering raw records.",
-      "vi": "Tính toán lại các chỉ số theo quy ước dữ liệu khác để kiểm tra độ bền của quyết định so với quy tắc chuẩn; không làm thay đổi bản ghi gốc."
+      "en": "Recalculates metrics under alternative data rules to test decision robustness against the canonical baseline.",
+      "vi": "Tính toán lại các chỉ số theo quy ước dữ liệu khác để kiểm tra độ vững chắc của quyết định so với quy tắc chuẩn."
     },
     "ui.scenario": {
       "en": "Scenario",
       "vi": "Kịch bản giả định"
     },
     "ui.this_changes_financial_availability_only_events_with_observed_cos": {
-      "en": "Affects financial metrics only: repair costs equal to 10 are withheld as unknown placeholders. Defect event counts remain unchanged. Lower cost reflects withheld data, not actual savings.",
-      "vi": "Chỉ ảnh hưởng đến chỉ số tài chính: các chi phí bằng 10 bị tạm giữ vì nghi là giá trị mặc định. Số lượng lỗi không đổi. Tổng chi phí giảm là do loại trừ dữ liệu, không phải tiết kiệm chi phí."
+      "en": "Affects financial metrics only: repair costs equal to 10 are treated as unknown placeholders. Event counts remain unchanged.",
+      "vi": "Chỉ ảnh hưởng đến chỉ số tài chính: chi phí bằng 10 được coi là giá trị mặc định chưa rõ. Số lượng lỗi không thay đổi."
     },
     "ui.ambiguous_dates_use_day_month_some_events_may_move_outside_januar": {
-      "en": "Ambiguous slash dates (both numbers ≤ 12) are parsed as Day/Month. Some events shift into H2 2024, falling outside the study window (Jan–Jun). This count reduction is a filtering artifact, not manufacturing improvement or a confidence interval.",
-      "vi": "Ngày dạng gạch chéo (cả hai số ≤ 12) được đọc theo Ngày/Tháng. Một số sự kiện bị đẩy sang nửa cuối năm, rơi ra ngoài khung quan sát (T1–T6/2024). Số lỗi giảm là do hiệu ứng lọc thời gian, không phản ánh chất lượng cải thiện hay khoảng tin cậy."
+      "en": "Ambiguous slash dates (both numbers ≤ 12) are parsed as Day/Month; events shifting into H2 2024 fall outside the Jan–Jun window.",
+      "vi": "Ngày phân cách bằng dấu gạch chéo (cả hai số ≤ 12) được phân tích theo Ngày/Tháng; các sự kiện chuyển sang nửa cuối năm sẽ nằm ngoài phạm vi T1–T6/2024."
     },
     "ui.this_assumes_the_source_year_2026_should_be_2024_it_is_a_sensitiv": {
-      "en": "Assumes dates logged as 2026 were clerical typos for 2024 and brings them into scope. This tests whether priorities change, without permanently altering source data.",
-      "vi": "Giả định các bản ghi năm 2026 là lỗi gõ nhầm của năm 2024 và đưa vào phạm vi phân tích. Phép thử này nhằm rà soát xem ưu tiên có bị xáo trộn không, không sửa đổi dữ liệu nguồn gốc."
+      "en": "Includes records logged with year 2026 under the assumption of clerical date entry errors for 2024.",
+      "vi": "Bao gồm các bản ghi năm 2026 theo giả định lỗi nhập liệu cho năm 2024."
     },
     "ui.reset_to_canonical": {
       "en": "Reset to canonical baseline",
@@ -2261,12 +2261,12 @@
       "vi": "điểm phần trăm"
     },
     "ui.the_priority_order_changes_under_this_assumption_review_the_compa": {
-      "en": "Action priorities change under this scenario. Carefully review ranking shifts and evidence before finalizing operational follow-up.",
-      "vi": "Thứ tự ưu tiên hành động bị thay đổi dưới kịch bản này. Cần đối chiếu kỹ biến động thứ hạng và bằng chứng trước khi quyết định biện pháp vận hành."
+      "en": "Action priorities change under this scenario. Review ranking shifts below.",
+      "vi": "Thứ tự ưu tiên thay đổi theo kịch bản này. Xem các thay đổi xếp hạng bên dưới."
     },
     "ui.the_priority_order_is_unchanged_under_this_assumption_data_limits": {
-      "en": "Action priorities remain robust and unchanged under this scenario. However, underlying data limitations (unverified output and reporting completeness) still apply.",
-      "vi": "Thứ tự ưu tiên hành động vẫn vững chắc và không đổi dưới kịch bản này. Dù vậy, các giới hạn dữ liệu nguồn (chưa có sản lượng thực tế và mức độ đầy đủ của ghi nhận) vẫn cần lưu ý."
+      "en": "Action priorities remain unchanged under this scenario.",
+      "vi": "Thứ tự ưu tiên hành động không thay đổi theo kịch bản này."
     },
     "ui.ranking_changes_and_comparison_evidence": {
       "en": "Ranking changes and comparison evidence",
@@ -2314,27 +2314,27 @@
     },
     "ui.scenario_ambiguous_dm": {
       "en": "Interpret ambiguous slash dates as Day/Month (DD/MM)",
-      "vi": "Diễn giải ngày dạng gạch chéo phân vân theo Ngày/Tháng (DD/MM)"
+      "vi": "Diễn giải các ngày định dạng gạch chéo chưa rõ theo Ngày/Tháng (DD/MM)"
     },
     "ui.scenario_year_2024": {
       "en": "Assume year 2026 dates were typos for 2024",
-      "vi": "Giả định các ngày ghi năm 2026 là lỗi gõ nhầm của năm 2024"
+      "vi": "Giả định các ngày ghi năm 2026 là lỗi nhập liệu cho năm 2024"
     },
     "ui.analysis_refused": {
       "en": "Unable to process the request as phrased. Please see the guidance below to refine your inquiry.",
-      "vi": "Chưa thể xử lý câu hỏi theo cách diễn đạt này. Vui lòng xem gợi ý bên dưới để tinh chỉnh lại câu hỏi."
+      "vi": "Chưa thể xử lý yêu cầu theo cách diễn đạt hiện tại. Vui lòng xem hướng dẫn bên dưới để chuẩn hóa câu hỏi."
     },
     "ui.analysis_incomplete": {
-      "en": "Response ended early. Any verified figures are saved; try narrowing your question.",
-      "vi": "Phản hồi bị ngắt giữa chừng. Các số liệu đã kiểm chứng vẫn được lưu; hãy thử thu hẹp câu hỏi."
+      "en": "Response ended early. Any verified figures are saved; consider narrowing your inquiry.",
+      "vi": "Phản hồi kết thúc sớm hơn dự kiến. Các số liệu đã đối chiếu được bảo lưu; quý vị có thể thu hẹp phạm vi câu hỏi."
     },
     "ui.analysis_timeout": {
       "en": "Analysis timed out. You can review partial findings above or narrow the data scope for a faster response.",
       "vi": "Phân tích quá thời gian chờ do khối lượng dữ liệu lớn. Bạn có thể xem kết quả sơ bộ ở trên hoặc thu hẹp phạm vi để có phản hồi nhanh hơn."
     },
     "ui.analysis_unavailable": {
-      "en": "AI is unavailable. The Dashboard, evidence and exports remain available.",
-      "vi": "AI chưa khả dụng. Bạn vẫn dùng được Tổng quan, bằng chứng và tệp xuất."
+      "en": "AI analysis is currently unavailable. The Dashboard, audit evidence, and data exports remain operational.",
+      "vi": "Tính năng phân tích AI hiện chưa khả dụng. Trang Tổng quan, hệ thống bằng chứng và chức năng xuất dữ liệu vẫn hoạt động bình thường."
     },
     "ui.trace_record": {
       "en": "Trace",
@@ -2397,8 +2397,8 @@
       "vi": "Bản ghi này nguyên vẹn, không cần áp dụng quy tắc chỉnh sửa nào."
     },
     "ui.trace_truncated": {
-      "en": "The trace reached its result limit. The displayed rows are a partial set.",
-      "vi": "Đã đạt giới hạn bản ghi truy vết. Danh sách chỉ hiển thị một phần kết quả."
+      "en": "The trace reached its record limit. The displayed rows are a partial result set.",
+      "vi": "Đã đạt giới hạn bản ghi truy vết tối đa. Danh sách hiện chỉ hiển thị một phần kết quả."
     },
     "ui.check_category_mix": {
       "en": "Check the category mix before comparing lines",
@@ -2429,20 +2429,20 @@
       "vi": "Tất cả nhóm sản phẩm"
     },
     "ui.investigation_draft_notice": {
-      "en": "This investigation is a draft. Its wording has not passed report review; inspect the evidence before using its conclusions.",
-      "vi": "Hồ sơ điều tra này là bản nháp. Nội dung chưa qua bước rà soát báo cáo; kiểm tra bằng chứng trước khi dùng kết luận."
+      "en": "This investigation record is a preliminary draft. Conclusions have not completed formal report review; inspect supporting evidence before acting on findings.",
+      "vi": "Hồ sơ điều tra này là bản nháp sơ bộ. Nội dung chưa qua phê duyệt báo cáo chính thức; vui lòng kiểm tra bằng chứng trước khi sử dụng kết luận."
     },
     "ui.no_events_for_share": {
-      "en": "No events available for a severity share",
-      "vi": "Không có sự kiện để tính tỷ trọng mức độ"
+      "en": "No events in scope to calculate share",
+      "vi": "Không có sự kiện để tính tỷ trọng"
     },
     "ui.no_eligible_output": {
-      "en": "No eligible product output denominator in this scope",
-      "vi": "Không có mẫu số sản lượng sản phẩm phù hợp trong phạm vi này"
+      "en": "No eligible reference output in this scope",
+      "vi": "Không có sản lượng tham chiếu phù hợp trong phạm vi này"
     },
     "ui.incomplete_output": {
-      "en": "The output denominator is incomplete for this cohort",
-      "vi": "Mẫu số sản lượng chưa đầy đủ cho nhóm sản phẩm này"
+      "en": "Reference output is incomplete for this cohort",
+      "vi": "Sản lượng tham chiếu chưa đầy đủ cho nhóm sản phẩm này"
     },
     "ui.no_events_for_cost_coverage": {
       "en": "No events available for cost coverage",
@@ -2557,8 +2557,8 @@
       "vi": "Lưu nội dung đã sửa để xuất hồ sơ điều tra mới."
     },
     "ui.artifact_versions_notice": {
-      "en": "These files keep the scope and content captured when they were created. Later investigation edits are in the saved-version export above.",
-      "vi": "Các tệp này giữ phạm vi và nội dung tại lúc tạo. Nội dung hồ sơ chỉnh sửa sau đó nằm trong bản xuất theo phiên bản ở trên."
+      "en": "These artifacts preserve the data scope and contents captured at creation time. Subsequent revisions are maintained in the versioned export above.",
+      "vi": "Các tệp này lưu giữ nguyên trạng phạm vi dữ liệu và nội dung tại thời điểm tạo. Mọi chỉnh sửa tiếp theo được lưu trong bản xuất theo phiên bản phía trên."
     },
     "ui.half_period_comparison": {
       "en": "Half-period trend comparison",
@@ -2570,7 +2570,7 @@
     },
     "ui.half_period_changes_without_cost": {
       "en": "Defects {value0} · Critical {value1}",
-      "vi": "Lỗi {value0} · Nghiêm trọng {value1}"
+      "vi": "Số lỗi {value0} · Nghiêm trọng {value1}"
     },
     "ui.mix_check": {
       "en": "CATEGORY × LINE MATRIX",
@@ -2585,8 +2585,8 @@
       "vi": "Mỗi ô hiển thị số lỗi trên 1.000 đơn vị định mức, tổng số lỗi và chi phí sửa trung bình. Đối chiếu cùng một nhóm sản phẩm giữa các chuyền để tách biệt ảnh hưởng của cơ cấu sản phẩm với vấn đề riêng của từng chuyền."
     },
     "ui.category_versus_rest_of_line": {
-      "en": "{value0} has a higher defect rate than other categories on {value1} of {value2} lines ({value3}–{value4}×).",
-      "vi": "{value0} có tỷ lệ lỗi cao hơn các nhóm khác trên {value1}/{value2} chuyền (gấp {value3}–{value4} lần)."
+      "en": "{value0} has higher reference intensity than the other categories on {value1} of {value2} compared lines ({value3}–{value4}×).",
+      "vi": "{value0} có cường độ lỗi tham chiếu cao hơn các nhóm còn lại trên {value1}/{value2} chuyền được so sánh (gấp {value3}–{value4} lần)."
     },
     "ui.line_cost_versus_other_lines": {
       "en": "{value0} averages {value1} per repair against {value2} on other lines ({value3}×).",
@@ -2602,7 +2602,7 @@
     },
     "ui.cost_per_known_cost_event": {
       "en": "Average cost per repair",
-      "vi": "Chi phí TB / sự kiện lỗi có chi phí"
+      "vi": "Chi phí sửa TB / lỗi"
     },
     "ui.ratio_to_other_lines": {
       "en": "{value0}× other lines",
@@ -2613,8 +2613,8 @@
       "vi": "Tất cả chuyền"
     },
     "ui.not_carried_on_line": {
-      "en": "Not produced on this line",
-      "vi": "Không sản xuất trên chuyền này"
+      "en": "No product listed for this category on this line",
+      "vi": "Danh mục không có sản phẩm thuộc nhóm này trên chuyền này"
     },
     "ui.category_line_matrix_footnote": {
       "en": "Darker orange indicates more events per 1,000 reference units. A dash means the master data has no product in that category on that line.",
@@ -2697,16 +2697,16 @@
       "vi": "Toàn cảnh {value0} – {value1}"
     },
     "ui.dashboard_overview_caption": {
-      "en": "Key metrics for the current filters. Trend badges compare the second half of the period against the first.",
-      "vi": "Các chỉ số chính theo bộ lọc đang chọn. Nhãn xu hướng so sánh nửa cuối kỳ với nửa đầu kỳ."
+      "en": "Core metrics for the selected scope. Comparative deltas evaluate the second half of the period against the first.",
+      "vi": "Các chỉ số chất lượng trọng yếu trong phạm vi chọn. Chỉ số biến động so sánh nửa sau với nửa đầu kỳ."
     },
     "ui.dashboard_kpi_defects": {
       "en": "Recorded defect events",
       "vi": "Số sự kiện lỗi ghi nhận"
     },
     "ui.dashboard_kpi_defects_detail": {
-      "en": "cleaned defect events (one unit can have multiple events)",
-      "vi": "sự kiện lỗi sau làm sạch (một sản phẩm có thể có nhiều lỗi)"
+      "en": "Deduplicated events · multiple defects per unit possible",
+      "vi": "Sự kiện lỗi sau làm sạch · một sản phẩm có thể có nhiều lỗi"
     },
     "ui.dashboard_kpi_critical": {
       "en": "Critical events",
@@ -2766,15 +2766,15 @@
     },
     "ui.dashboard_priorities_kicker": {
       "en": "RECOMMENDED PRIORITIES",
-      "vi": "KHUYẾN NGHỊ · 3 ƯU TIÊN HÀNG ĐẦU"
+      "vi": "KHUYẾN NGHỊ VẬN HÀNH"
     },
     "ui.dashboard_priorities_title": {
       "en": "Top 3 operational priorities for Production",
-      "vi": "3 ưu tiên vận hành trọng tâm xưởng cần xử lý ngay"
+      "vi": "3 ưu tiên vận hành trọng tâm cho sản xuất"
     },
     "ui.dashboard_priorities_caption": {
-      "en": "Ranked by Critical defect share, defect rate per 1,000 reference units, and average repair cost per defect. Updates automatically with your filters.",
-      "vi": "Xếp hạng dựa trên tỷ lệ lỗi Nghiêm trọng, tỷ lệ lỗi / 1.000 đơn vị tham chiếu và chi phí sửa trung bình mỗi lỗi. Tự động cập nhật theo bộ lọc."
+      "en": "Ranked by Critical defect share, defect rate per 1,000 reference units, and average repair cost per defect.",
+      "vi": "Xếp hạng theo tỷ trọng lỗi nghiêm trọng, tỷ lệ lỗi / 1.000 đơn vị tham chiếu và chi phí sửa chữa trung bình."
     },
     "ui.dashboard_tag_severity": {
       "en": "Severity",
@@ -2882,11 +2882,11 @@
     },
     "ui.dashboard_trend_caption": {
       "en": "Each bar shows total monthly defects; the red segment at the bottom shows Critical defects.",
-      "vi": "Mỗi cột thể hiện tổng số lỗi trong tháng; phần màu đỏ bên dưới là số lỗi ở mức Nghiêm trọng (Critical)."
+      "vi": "Mỗi cột thể hiện tổng số lỗi trong tháng; phần màu đỏ thể hiện số lỗi Nghiêm trọng."
     },
     "ui.dashboard_location_kicker": {
       "en": "WHERE DEFECTS OCCUR",
-      "vi": "LỖI XẢY RA Ở ĐÂU"
+      "vi": "VỊ TRÍ PHÁT SINH LỖI"
     },
     "ui.dashboard_location_title": {
       "en": "{value0} has the highest Critical share: {value1}",
@@ -2897,8 +2897,8 @@
       "vi": "Lỗi theo vị trí và mức độ"
     },
     "ui.dashboard_location_caption": {
-      "en": "Each bar splits one location's defects into Minor, Moderate and Critical severity.",
-      "vi": "Mỗi thanh chia tổng số lỗi tại vị trí đó theo 3 mức độ: Nhẹ, Trung bình và Nghiêm trọng."
+      "en": "Defect severity breakdown across production locations.",
+      "vi": "Phân bố mức độ nghiêm trọng của lỗi theo từng vị trí."
     },
     "ui.dashboard_hotspots_kicker": {
       "en": "COMPARE LINES AND PRODUCTS",
@@ -2906,7 +2906,7 @@
     },
     "ui.dashboard_hotspots_every": {
       "en": "{value0} has a higher defect rate than other categories on every line",
-      "vi": "{value0} có tỷ lệ lỗi (/1.000 SP) cao hơn các nhóm khác trên mọi chuyền"
+      "vi": "{value0} có tỷ lệ lỗi cao hơn các nhóm khác trên mọi chuyền"
     },
     "ui.dashboard_hotspots_some": {
       "en": "{value0} exceeds the rest of the line on {value1} of {value2} lines",
@@ -2914,7 +2914,7 @@
     },
     "ui.dashboard_hotspots_leader": {
       "en": "{value0} has the highest reference intensity: {value1} events per 1,000 reference units",
-      "vi": "{value0} có tỷ lệ lỗi cao nhất: {value1} lỗi / 1.000 sản phẩm"
+      "vi": "{value0} có cường độ lỗi tham chiếu cao nhất: {value1} sự kiện / 1.000 đơn vị tham chiếu"
     },
     "ui.dashboard_hotspots_flat": {
       "en": "Defect rate by line and product",
@@ -2938,7 +2938,7 @@
     },
     "ui.dashboard_cost_kicker": {
       "en": "HOW REPAIR COSTS ARE DISTRIBUTED",
-      "vi": "CHI PHÍ SỬA CHỮA PHÂN BỐ THẾ NÀO"
+      "vi": "PHÂN BỐ CHI PHÍ SỬA CHỮA"
     },
     "ui.dashboard_cost_line_title": {
       "en": "{value0} has {value1}× the average recorded cost per event of other lines",
@@ -2966,7 +2966,7 @@
     },
     "ui.dashboard_cost_share_line": {
       "en": "{value0} of repair cost",
-      "vi": "Chiếm {value0} tổng chi phí sửa"
+      "vi": "chiếm {value0} tổng chi phí sửa"
     },
     "ui.dashboard_cost_by_type": {
       "en": "Repair cost by defect type",
@@ -2982,7 +2982,7 @@
     },
     "ui.dashboard_warning_kicker": {
       "en": "EARLY ANOMALY DETECTION",
-      "vi": "PHÁT HIỆN SỚM NGÀY CÓ LỖI ĐỘT BIẾN"
+      "vi": "PHÁT HIỆN BẤT THƯỜNG SỚM"
     },
     "ui.dashboard_warning_some": {
       "en": "{value0} days exceeded the January-based limit, first on {value1}",
@@ -2997,8 +2997,8 @@
       "vi": "Cần có dữ liệu tháng 1 trong phạm vi lọc để tính ngưỡng cảnh báo ngày"
     },
     "ui.dashboard_warning_caption": {
-      "en": "Each day is compared with January's average of {value0} defects a day. Days above {value1} are flagged in red for early review instead of waiting for weekly reports.",
-      "vi": "So sánh số lỗi mỗi ngày với mức trung bình tháng 1 ({value0} lỗi/ngày). Những ngày vượt ngưỡng cảnh báo {value1} lỗi/ngày được đánh dấu đỏ để kiểm tra sớm thay vì chờ báo cáo tuần."
+      "en": "Each day is benchmarked against the January baseline of {value0} defects/day. Days exceeding {value1} are flagged for immediate review.",
+      "vi": "So sánh số lỗi mỗi ngày với mức cơ sở tháng 1 ({value0} lỗi/ngày). Các ngày vượt ngưỡng {value1} được đánh dấu để điều tra kịp thời."
     },
     "ui.dashboard_days_to_review": {
       "en": "Days exceeding the alert threshold",
@@ -3201,8 +3201,8 @@
       "vi": "Về tổng quan"
     },
     "ui.agent_draft_unavailable": {
-      "en": "You can prepare a question here. Sending is unavailable in this environment.",
-      "vi": "Bạn có thể soạn câu hỏi tại đây. Môi trường này chưa hỗ trợ gửi câu hỏi."
+      "en": "You can compose a question here. Sending is unavailable in this environment.",
+      "vi": "Quý vị có thể soạn câu hỏi tại đây. Tính năng gửi câu hỏi hiện chưa được hỗ trợ trong môi trường này."
     },
     "ui.agent_suggestions": {
       "en": "Recommended Quality Inquiries",
@@ -3213,8 +3213,8 @@
       "vi": "Áp dụng giả định"
     },
     "ui.scenario_not_applied": {
-      "en": "Selection not applied. The charts still use the current assumption.",
-      "vi": "Lựa chọn chưa áp dụng. Biểu đồ vẫn dùng giả định hiện tại."
+      "en": "Unapplied selection",
+      "vi": "Chưa áp dụng lựa chọn"
     },
     "ui.records_exact_date": {
       "en": "Record date",
@@ -3229,8 +3229,8 @@
       "vi": "Ngày này chỉ giới hạn danh sách bản ghi đang xem. Tệp CSV vẫn chứa toàn bộ phạm vi đã áp dụng."
     },
     "ui.records_in_inspected_date": {
-      "en": "recorded events on this date within the applied scope",
-      "vi": "sự kiện lỗi ghi nhận trong ngày này thuộc phạm vi đã áp dụng"
+      "en": "defect records on this date within the applied scope",
+      "vi": "bản ghi lỗi trong ngày này thuộc phạm vi đang áp dụng"
     },
     "ui.trend_drivers_kicker": {
       "en": "KEY DRIVERS OF CHANGE",
@@ -3474,7 +3474,7 @@
     "Could not update this view.": "Chưa thể cập nhật góc nhìn này.",
     "The last successful view remains below.": "Bên dưới vẫn là kết quả cập nhật thành công gần nhất.",
     "Retry": "Thử lại",
-    "Source refresh failed. Showing the retained snapshot.": "Làm mới nguồn thất bại. Đang hiển thị bản dữ liệu đã lưu.",
+    "Source refresh failed. Showing the retained snapshot.": "Không thể làm mới dữ liệu nguồn. Hệ thống đang hiển thị bản chụp dữ liệu đã lưu.",
     "Last attempt:": "Lần thử gần nhất:",
     "Source checked successfully. This view uses the latest retained source snapshot.": "Đã kiểm tra nguồn thành công. Góc nhìn này dùng bản dữ liệu nguồn mới nhất được lưu.",
     "Updating the applied view…": "Đang cập nhật góc nhìn đã áp dụng…",
@@ -3548,7 +3548,7 @@
     "critical share pct": "Tỷ trọng lỗi nghiêm trọng",
     "anomalies": "Sàng lọc ngày cần xem xét",
     "Evidence & provenance": "Bằng chứng và nguồn gốc",
-    "Immutable calculation receipt for this applied view": "Bản chứng thực tính toán cố định cho phạm vi này",
+    "Immutable calculation receipt for this applied view": "Biên nhận tính toán bất biến cho phạm vi dữ liệu này",
     "Selected numeric path": "Đường dẫn số liệu đã chọn",
     "in the receipt result.": "trong kết quả của biên nhận.",
     "Context": "Ngữ cảnh",
@@ -3561,7 +3561,7 @@
     "Result SHA-256": "SHA-256 kết quả",
     "Execution receipt": "Biên nhận thực thi",
     "Open complete JSON receipt": "Mở biên nhận JSON đầy đủ",
-    "The receipt includes executed code, numeric paths, source hashes and the result. KPI cards point to their recorded numeric path.": "Biên nhận chứa mã đã chạy, đường dẫn số liệu, mã băm nguồn và kết quả. Mỗi thẻ KPI liên kết tới đường dẫn số liệu được ghi trong biên nhận.",
+    "The receipt includes executed code, numeric paths, source hashes and the result. KPI cards point to their recorded numeric path.": "Biên nhận kiểm toán bao gồm mã đã thực thi, đường dẫn số liệu, mã băm nguồn và kết quả. Mỗi thẻ KPI liên kết trực tiếp tới đường dẫn số liệu được xác thực trong biên nhận.",
     "SOURCE SNAPSHOT": "BẢN DỮ LIỆU NGUỒN",
     "Snapshot fetched": "Lấy bản dữ liệu lúc",
     "Last source check": "Kiểm tra nguồn gần nhất",
@@ -3656,6 +3656,7 @@
     "Maintenance Lead, Quality Engineer and Finance": "Trưởng bộ phận bảo trì, kỹ sư chất lượng và tài chính",
     "Track known repair cost, cost per repaired event and cost coverage together; compare verified repair costs at comparable exposure before setting a savings target.": "Theo dõi đồng thời tổng chi phí sửa chữa ghi nhận được, chi phí bình quân mỗi sự kiện có chi phí và độ bao phủ chi phí; so sánh chi phí sửa chữa đã xác thực ở quy mô tương đương trước khi đặt mục tiêu tiết kiệm.",
     "Track known repair cost, mean observed cost per event with known cost, and cost coverage together; compare verified repair costs at comparable exposure before setting a savings target.": "Theo dõi đồng thời tổng chi phí sửa chữa ghi nhận được, chi phí bình quân mỗi sự kiện có chi phí và độ bao phủ chi phí; so sánh chi phí sửa chữa đã xác thực ở quy mô tương đương trước khi đặt mục tiêu tiết kiệm.",
+    "Major": "Nặng",
     "Minor": "Nhẹ",
     "Moderate": "Trung bình",
     "Cosmetic": "Ngoại quan",
@@ -3724,20 +3725,20 @@
     "Applying your updated instruction": "Đang áp dụng yêu cầu mới của bạn",
     "Analysis completed and evidence checked": "Đã hoàn tất phân tích và kiểm tra bằng chứng",
     "The app is stopping; saved evidence is retained": "Ứng dụng đang dừng; bằng chứng đã lưu được giữ lại",
-    "Run stopped. Correct the reported issue and send another prompt.": "Lượt phân tích đã dừng. Hãy xử lý lỗi được báo rồi gửi lại yêu cầu.",
+    "Run stopped. Correct the reported issue and send another prompt.": "Phiên phân tích đã dừng. Vui lòng khắc phục sự cố được thông báo và gửi lại yêu cầu.",
     "Some claims remain unverified; inspect the QA result": "Một số phát biểu chưa được xác minh; hãy xem kết quả QA",
-    "Run stopped at its configured cost limit; pending instructions are retained": "Lượt phân tích đã dừng ở giới hạn ngân sách; các chỉ dẫn đang chờ được bảo lưu",
-    "Your new dashboard scope is queued for a separate run after the current analysis.": "Phạm vi mới đã được xếp vào lượt riêng sau khi phân tích hiện tại kết thúc.",
-    "Your instruction is queued for the next safe agent boundary.": "Chỉ dẫn của bạn đã được xếp hàng và sẽ áp dụng tại bước an toàn tiếp theo của Agent.",
-    "Your new response language is queued for a separate run after the current analysis.": "Ngôn ngữ trả lời mới được xếp vào lượt riêng sau khi phân tích hiện tại kết thúc.",
+    "Run stopped at its configured cost limit; pending instructions are retained": "Phiên phân tích đã dừng tại ngưỡng ngân sách quy định; các chỉ dẫn đang chờ xử lý được bảo lưu",
+    "Your new dashboard scope is queued for a separate run after the current analysis.": "Phạm vi bộ lọc mới đã được đưa vào hàng đợi cho lượt phân tích riêng sau khi phiên hiện tại hoàn tất.",
+    "Your instruction is queued for the next safe agent boundary.": "Chỉ dẫn đã được đưa vào hàng đợi và sẽ áp dụng tại điểm kiểm soát an toàn tiếp theo của hệ thống.",
+    "Your new response language is queued for a separate run after the current analysis.": "Thiết lập ngôn ngữ mới đã được đưa vào hàng đợi cho lượt phân tích riêng sau khi phiên hiện tại hoàn tất.",
     "analysis_context": "Ngữ cảnh phân tích",
     "analysis context": "Ngữ cảnh phân tích",
     "run started": "Đã bắt đầu lượt phân tích",
     "memory updated": "Đã cập nhật ghi nhớ",
     "memory read": "Đã đọc ghi nhớ",
     "memory written": "Đã lưu ghi nhớ",
-    "Failed to fetch": "Không tải được dữ liệu",
-    "Network request failed": "Yêu cầu kết nối thất bại",
+    "Failed to fetch": "Không thể tải dữ liệu từ máy chủ",
+    "Network request failed": "Kết nối mạng không thành công",
     "open": "Đang mở",
     "rejected": "Đã bác bỏ",
     "supported": "Có bằng chứng hỗ trợ",

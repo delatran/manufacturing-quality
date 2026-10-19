@@ -754,12 +754,15 @@ def render_analysis(report: dict[str, Any], language: str) -> str:
 def replace_generated(text: str, generated: str) -> str:
     if text.count(START_MARKER) != 1 or text.count(END_MARKER) != 1:
         raise ValueError("README must contain exactly one canonical-analysis marker pair")
-    return re.sub(
+    replaced, count = re.subn(
         re.escape(START_MARKER) + r".*?" + re.escape(END_MARKER),
         lambda _: generated,
         text,
         flags=re.DOTALL,
     )
+    if count != 1:
+        raise ValueError("README must contain one ordered canonical-analysis marker pair")
+    return replaced
 
 
 def generate(output_dir: Path) -> dict[str, Any]:

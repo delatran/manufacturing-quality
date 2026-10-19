@@ -84,9 +84,11 @@ Reservations are committed before admission side effects. Fresh keyed runs get a
 
 ## Invocation and cancellation
 
-The UI generates one key per deliberate send and retains a pending key/payload for reload readback. WebMCP callers must supply their own stable key. Re-executing identical tool arguments does not silently generate a new key. A send can return `awaiting_acknowledgement` after the visible pending state commits; this only confirms dispatch was attempted.
+The UI generates one key per deliberate send and retains a pending key/payload for reload readback. Pending payloads have independent local-storage records keyed by session and request, while session storage retains this tab's session and pending request identity. Another tab's submission or acknowledgement cannot replace that recovery identity. The previous single pending record is migrated when read and retained until its matching receipt is confirmed. WebMCP callers must supply their own stable key. Re-executing identical tool arguments does not silently generate a new key. A send can return `awaiting_acknowledgement` after the visible pending state commits; this only confirms dispatch was attempted.
 
 After dispatch, aborting a WebMCP invocation, closing a tab or losing the WebSocket does not prove that paid provider work was cancelled. Read the same receipt. To stop an active run, use `request_agent_cancellation` with its current run ID and observe a terminal run state. Do not retry an uncertain request automatically.
+
+Dashboard source-refresh invocations forward cancellation to the HTTP request. Aborting clears the visible loading state while preserving the last committed Dashboard context; it does not undo source work that the server may already have performed.
 
 All paid work retains `gpt-6-luna`, the managed Agents API, immutable run contexts, existing QA and prewrite authority checks, provider-stop behavior, and the owner-authorized unbounded application profile. Absent application limits stay `null`. Tools do not expose arbitrary URLs, file paths, SQL, shell or Python execution and do not alter original input data.
 
@@ -95,6 +97,8 @@ All paid work retains `gpt-6-luna`, the managed Agents API, immutable run contex
 Backend admission checks are in `tests/test_webmcp_prompt_receipts.py`. They cover two-connection arbitration, canonical conflicts, HTTP/WebSocket receipts, completion and restart replay, late answer invalidation, queues, steering cancellation, unknown delivery, additive migration, SQLite backup readback, invalid input and Cloud checkpoint failure. They use synthetic runtimes and disposable state. Existing app, stream, context, follow-up, cloud persistence and authority checks remain relevant.
 
 Frontend verification lives with the shared registry and each tool family. Native browser execution and live provider behavior require separate integration evidence; a mocked registry or an HTTP fixture does not establish those outcomes.
+
+`verify-webmcp-workspace.tsx` mounts the real App and checks cancellation while a synthetic refresh response is blocked. `verify-agent-prompt-tabs.tsx` provides a mounted Agent controller for two separate same-origin browser tabs. Its session and pending-request storage are real browser storage; HTTP, sockets and tool registration are synthetic. Run the two-tab sequence with both tabs mounted before either send, then reload one tab before and after the other's acknowledgement, using both shared and distinct sessions. The deterministic storage cases also run in `verify-agent-actions-webmcp.ts`.
 
 Primary references checked on 2026-10-19:
 

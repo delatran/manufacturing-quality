@@ -389,7 +389,7 @@
   font-weight: 600;
 }
 
-.agent-workspace .flow-step.is-thinking.is-done:not(.is-open) .flow-thoughts,
+.agent-workspace .flow-thoughts[hidden],
 .agent-workspace .flow-thoughts.is-collapsed {
   display: none;
 }

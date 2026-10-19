@@ -66,7 +66,7 @@ type EditorState = {
 
 export function operationStatusLabel(status: OperationStatus, t: Language['t']) {
   const labels: Record<OperationStatus, [string, string]> = {
-    draft: ['Not started', 'Chưa bắt đầu'],
+    draft: ['Draft', 'Bản nháp'],
     acknowledged: ['Acknowledged', 'Đã ghi nhận'],
     investigating: ['Investigating', 'Đang rà soát'],
     action_planned: ['Action planned', 'Đã có kế hoạch'],
@@ -881,7 +881,6 @@ export function OperationEditor({
                   </optgroup>
                 )}
               </select>
-              <small>{t('ui.review_and_edit_the_draft_before_adding_it')}</small>
             </label>
           )}
           <label className="ops-field" htmlFor={`${prefix}-title`}>

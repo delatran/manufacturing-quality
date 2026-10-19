@@ -117,7 +117,7 @@ On macOS/Linux, run `sh scripts/check.sh`. This executes dependency lock checks,
 
 ## Case study analysis: Part 3
 
-Scope: January–June 2024 under canonical policy `canonical-v2`, dataset `dataset-4586b9cf07494f8c8481a2f8f8a578359fbab7c4c7435b06ccb7defef31fa515` and report snapshot `5fb4c047808c71233216b53a`. The defect source was fetched over HTTP at `2026-10-18T21:11:49.395606+00:00`. Amounts are in **local currency (unspecified)**. Unrounded values, definitions and source receipts are in the [canonical snapshot](reports/canonical_snapshot.json); the dashboard shows the same numbers.
+Scope: January–June 2024 under canonical policy `canonical-v2`, dataset `dataset-4586b9cf07494f8c8481a2f8f8a578359fbab7c4c7435b06ccb7defef31fa515` and report snapshot `2aad0c28d1757a95e5a58a45`. The defect source was fetched over HTTP at `2026-10-19T03:28:18.346528+00:00`. Amounts are in **local currency (unspecified)**. Unrounded values, definitions and source receipts are in the [canonical snapshot](reports/canonical_snapshot.json); the dashboard shows the same numbers.
 
 ### Key findings
 
@@ -216,7 +216,7 @@ These are the same priorities the dashboard shows under “Top priorities for th
 
 #### Priority 3: Investigate repair cost per event on Line-3
 
-- **Evidence:** 685.69 per known-cost repair against 413.35 on the other lines (1.66×); 37.43% of known cost from 26.51% of events; the gap persists within Category 4 (701.74 vs 445.58).
+- **Evidence:** 685.69 per logged event with known cost against 413.35 on the other lines (1.66×); 37.43% of linked known cost from 26.51% of linked events with known cost; the gap persists within Category 4 (701.74 vs 445.58).
 - **Action:** Break Line-3 repair cost into labour, parts, rework and external service with Maintenance; compare repair routes for comparable products in the same category on other lines and check remaining product-mix differences; confirm with Finance that every line records cost the same way.
 - **Owner:** Line-3 Team Leader (lead) with the Maintenance Lead and Finance.
 - **Success measure:** Line-3 average known repair cost per event against other lines, with cost coverage. Provisional target: close half of the 272.33-per-event gap within one quarter.

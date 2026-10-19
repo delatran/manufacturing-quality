@@ -13,6 +13,7 @@ import inspect
 import json
 import math
 import time
+from collections.abc import Awaitable, Callable
 from contextlib import suppress
 from typing import Any
 from uuid import uuid4
@@ -29,7 +30,12 @@ from openai.types.responses import (
     ResponseOutputText,
 )
 
-from .config import estimate_token_cost, normalize_model_request, require_application_model
+from .config import (
+    estimate_token_cost,
+    model_capabilities,
+    normalize_model_request,
+    require_application_model,
+)
 from .model import (
     AgentModel,
     BudgetExceeded,
@@ -141,6 +147,7 @@ class ManagedAgentsModel(AgentModel):
 
     def __init__(self, *args: Any, session_budget_usd: float | None = None, **kwargs: Any) -> None:
         self.role = kwargs.pop("role", "analyst")
+        self.response_boundary: Callable[[], Awaitable[None]] | None = None
         supplied_client = kwargs.get("client")
         super().__init__(*args, **kwargs)
         if supplied_client is None:
@@ -170,6 +177,7 @@ class ManagedAgentsModel(AgentModel):
         self._accounted_cap = False
         self._configuration: str | None = None
         self._estimated_session_cost_usd = 0.0
+        self._accounted_tokens = {"input_tokens": 0, "output_tokens": 0}
         self._caller_history: list[dict] = []
         self._current_caller_input: list[dict] = []
         self._steering_lock = asyncio.Lock()
@@ -182,6 +190,14 @@ class ManagedAgentsModel(AgentModel):
         self._recovery_deadline: float | None = None
         self.budget.setdefault("accounted_session_ids", [])
         self.budget.setdefault("managed_reserved_cost_usd", 0.0)
+
+    async def get_response(self, *args: Any, **kwargs: Any) -> ModelResponse:
+        response = await super().get_response(*args, **kwargs)
+        # The shared accounting lock belongs to AgentModel.get_response. Run
+        # auxiliary work only after that response and lock have settled.
+        if self.response_boundary is not None:
+            await self.response_boundary()
+        return response
 
     @property
     def unbounded(self) -> bool:
@@ -465,8 +481,14 @@ class ManagedAgentsModel(AgentModel):
         return events
 
     @staticmethod
-    def _completed_reasoning_summary(item: dict[str, Any]) -> tuple[str, ...] | None:
-        if item.get("type") != "reasoning" or item.get("status") != "completed":
+    def _durable_reasoning_summary(item: dict[str, Any]) -> tuple[str, ...] | None:
+        # Persisted public summaries can be complete while their opaque
+        # reasoning item is incomplete. This helper only reconciles identities;
+        # it never upgrades provider completion or accounting state.
+        if item.get("type") != "reasoning" or item.get("status") not in {
+            "completed",
+            "incomplete",
+        }:
             return None
         parts = item.get("summary")
         if not isinstance(parts, list) or not parts:
@@ -482,11 +504,11 @@ class ManagedAgentsModel(AgentModel):
         return summary if any(summary) else None
 
     def _remember_reasoning_items(self, records: list[dict]) -> None:
-        """Retain only public, completed reasoning identities from durable items."""
+        """Retain persisted public summary identities without changing completion."""
         if not self.session_id:
             return
         for item in records:
-            summary = self._completed_reasoning_summary(item)
+            summary = self._durable_reasoning_summary(item)
             identity, turn = item.get("id"), item.get("turn_id")
             if summary is not None and isinstance(identity, str) and isinstance(turn, str):
                 self._reasoning_items.setdefault((self.session_id, turn), {})[identity] = summary
@@ -538,12 +560,18 @@ class ManagedAgentsModel(AgentModel):
             ):
                 continue
             summary = tuple(parts[index] for index in range(len(parts)))
+            # A live stream can split one durable reasoning item into several
+            # transient items, each beginning at summary index zero. Match an
+            # exact contiguous sequence within persisted items of this turn;
+            # repeated text with more than one possible position is ambiguous.
             matches = [
-                key
+                (key, offset, len(value))
                 for key, value in self._reasoning_items.get((session, turn), {}).items()
-                if value == summary
+                for offset in range(len(value) - len(summary) + 1)
+                if value[offset : offset + len(summary)] == summary
             ]
             if len(matches) == 1:
+                canonical_item, offset, canonical_length = matches[0]
                 await self.emit(
                     "reasoning_alias",
                     {
@@ -553,7 +581,16 @@ class ManagedAgentsModel(AgentModel):
                         "session_id": session,
                         "turn_id": turn,
                         "item_id": item_id,
-                        "canonical_item_id": matches[0],
+                        "canonical_item_id": canonical_item,
+                        **(
+                            {
+                                "canonical_summary_indices": list(
+                                    range(offset, offset + len(summary))
+                                )
+                            }
+                            if offset or len(summary) != canonical_length
+                            else {}
+                        ),
                     },
                 )
                 self._reasoning_aliases.add(identity)
@@ -875,25 +912,35 @@ class ManagedAgentsModel(AgentModel):
 
     async def _account_boundary(self, session: Any, boundary_id: str, started: float) -> Usage:
         usage = dump(getattr(session, "usage", None)) or {}
-        prior = self.usage[-1] if self.usage else {}
         input_tokens = usage.get("input_tokens")
         output_tokens = usage.get("output_tokens")
         cached_tokens = (usage.get("input_tokens_details") or {}).get("cached_tokens")
         cumulative_estimate = None
         estimate_delta = None
+        estimate_unavailable_reason: str | None = "missing_or_invalid_token_usage"
         if (
-            isinstance(input_tokens, int)
+            type(input_tokens) is int
             and input_tokens >= 0
-            and isinstance(output_tokens, int)
+            and type(output_tokens) is int
             and output_tokens >= 0
         ):
-            cumulative_estimate = estimate_token_cost(
-                self.settings.model,
-                input_tokens,
-                output_tokens,
-                cached_tokens if isinstance(cached_tokens, int) else 0,
-                service_tier=getattr(session.agent, "service_tier", "default"),
-            )
+            threshold = model_capabilities(self.settings.model)["long_context_threshold"]
+            if threshold and input_tokens > threshold:
+                # Session/turn totals may combine several model generations.
+                # They cannot establish which requests incurred long-context prices.
+                estimate_unavailable_reason = "insufficient_generation_granularity"
+            elif cached_tokens is None or (
+                type(cached_tokens) is int and 0 <= cached_tokens <= input_tokens
+            ):
+                cumulative_estimate = estimate_token_cost(
+                    self.settings.model,
+                    input_tokens,
+                    output_tokens,
+                    cached_tokens or 0,
+                    service_tier=getattr(session.agent, "service_tier", "default"),
+                )
+                estimate_unavailable_reason = None
+        if cumulative_estimate is not None:
             estimate_delta = max(0.0, cumulative_estimate - self._estimated_session_cost_usd)
             # Late cache details can reduce a best-effort cumulative estimate.
             # Keep the accounted high-water mark so its later recovery is not counted twice.
@@ -924,6 +971,7 @@ class ManagedAgentsModel(AgentModel):
             "cost_usd": cost,
             "estimated_token_cost_usd": estimate_delta,
             "estimated_session_token_cost_usd": cumulative_estimate,
+            "estimated_cost_unavailable_reason": estimate_unavailable_reason,
             "reservation_usd": reservation,
             "cost_is_reservation": not self.unbounded,
             "actual_cost_usd": None,
@@ -949,17 +997,15 @@ class ManagedAgentsModel(AgentModel):
         self._accounted_cap = True
         self.budget["unresolved_generation_requests"] -= 1
         # SDK requires integer token counts; unknown public observations stay null.
-        # Delta counts prevent repeated cumulative snapshots counting twice.
-        input_delta = (
-            max(0, input_tokens - (prior.get("input_tokens") or 0))
-            if input_tokens is not None
-            else 0
-        )
-        output_delta = (
-            max(0, output_tokens - (prior.get("output_tokens") or 0))
-            if output_tokens is not None
-            else 0
-        )
+        # Retain each high-water mark across downward best-effort revisions so
+        # a later recovery cannot count already observed tokens a second time.
+        token_deltas = {}
+        for field, observed in (("input_tokens", input_tokens), ("output_tokens", output_tokens)):
+            prior = self._accounted_tokens[field]
+            cumulative = max(prior, observed) if type(observed) is int and observed >= 0 else prior
+            token_deltas[field] = cumulative - prior
+            self._accounted_tokens[field] = cumulative
+        input_delta, output_delta = token_deltas["input_tokens"], token_deltas["output_tokens"]
         return Usage(
             requests=1,
             input_tokens=input_delta,

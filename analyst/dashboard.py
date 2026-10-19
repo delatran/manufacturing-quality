@@ -1,7 +1,7 @@
 """Shared, immutable case-study contexts for the Dashboard and Agent.
 
 The existing HTTP preparation and analytical functions own all business rules.
-Only cleaned scoped CSVs, aggregate reports and their evidence are persisted.
+Only cleaned scoped inputs, aggregate reports and their evidence are persisted.
 """
 
 from __future__ import annotations
@@ -111,7 +111,9 @@ def _scope(values: dict[str, Any] | None) -> Scope:
     return selected
 
 
-def _csv_bytes(rows: list[dict[str, Any]], names: tuple[str, ...]) -> bytes:
+def _csv_bytes(
+    rows: list[dict[str, Any]], names: tuple[str, ...], *, spreadsheet_safe: bool = True
+) -> bytes:
     stream = io.StringIO(newline="")
     writer = csv.DictWriter(stream, fieldnames=names, lineterminator="\n", extrasaction="raise")
     writer.writeheader()
@@ -119,7 +121,9 @@ def _csv_bytes(rows: list[dict[str, Any]], names: tuple[str, ...]) -> bytes:
         {
             key: (
                 "'" + value
-                if isinstance(value, str) and value.lstrip().startswith(("=", "+", "-", "@"))
+                if spreadsheet_safe
+                and isinstance(value, str)
+                and value.lstrip().startswith(("=", "+", "-", "@"))
                 else value
             )
             for key, value in row.items()
@@ -146,7 +150,7 @@ def _export_metadata(locale: str, context: dict[str, Any]) -> dict[str, Any]:
         "currency_unit": "local currency",
         "number_convention": "Decimal point without thousands separators; missing numeric values are blank in CSV and null in JSON.",
         "date_convention": "ISO 8601",
-        "data_labels": "Original source labels and canonical backend field names are preserved for traceability.",
+        "data_labels": "Canonical backend field names are preserved. Download CSVs prefix formula-like text with an apostrophe for spreadsheet safety; canonical_inputs.json preserves exact cleaned values and types for computation.",
         "context_id": context["context_id"],
         "dataset_version": context["dataset_version"],
         "policy_version": context["policy_version"],
@@ -554,11 +558,15 @@ class AnalysisService:
             snapshot, scope, permitted_missing_event_filters=scope_validation
         )
         record_rows = [event.as_record() for event in analytics.filter_events(snapshot, scope)]
+        product_rows = [asdict(product) for product in analytics.filter_products(snapshot, scope)]
         records = _csv_bytes(record_rows, RECORD_FIELDS)
-        products = _csv_bytes(
-            [asdict(product) for product in analytics.filter_products(snapshot, scope)],
-            PRODUCT_FIELDS,
-        )
+        products = _csv_bytes(product_rows, PRODUCT_FIELDS)
+        inputs = {
+            "cleaned_records.csv": _csv_bytes(record_rows, RECORD_FIELDS, spreadsheet_safe=False),
+            "reference_products.csv": _csv_bytes(
+                product_rows, PRODUCT_FIELDS, spreadsheet_safe=False
+            ),
+        }
         self.contexts_dir.mkdir(parents=True, exist_ok=True)
         staging = self.contexts_dir / (".pending-" + uuid.uuid4().hex)
         staging.mkdir()
@@ -566,10 +574,7 @@ class AnalysisService:
             artifacts = staging / "artifacts"
             artifacts.mkdir()
             ledger = EvidenceLedger(staging)
-            input_hashes = {
-                "cleaned_records.csv": sha256(records),
-                "reference_products.csv": sha256(products),
-            }
+            input_hashes = {name: sha256(content) for name, content in inputs.items()}
             sources = [
                 {
                     "kind": "http",
@@ -582,7 +587,11 @@ class AnalysisService:
                     "sha256": context["master_sha256"],
                 },
                 *[
-                    {"kind": "cleaned_context", "path": "artifacts/" + name, "sha256": digest}
+                    {
+                        "kind": "cleaned_context",
+                        "path": "artifacts/inputs/" + name,
+                        "sha256": digest,
+                    }
                     for name, digest in input_hashes.items()
                 ],
             ]
@@ -624,6 +633,16 @@ class AnalysisService:
                 "ledger.jsonl": ledger.path.read_bytes(),
                 "cleaned_records.csv": records,
                 "reference_products.csv": products,
+                "canonical_inputs.json": canonical(
+                    {
+                        "schema": 1,
+                        "input_sha256": input_hashes,
+                        "tables": {
+                            "events": {"columns": RECORD_FIELDS, "rows": record_rows},
+                            "products": {"columns": PRODUCT_FIELDS, "rows": product_rows},
+                        },
+                    }
+                ).encode("utf-8"),
                 "definitions.json": canonical(
                     {
                         "kpi_version": self.kpi_version,
@@ -639,6 +658,7 @@ class AnalysisService:
                     b"# Frozen dashboard analysis\n\n"
                     b"context.json identifies the exact snapshot and full-month filters. analysis.json is the unchanged result of the successful receipt in evidence.json and ledger.jsonl. Numeric paths begin at $.kpis, $.monthly and the other analysis fields.\n\n"
                     b"cleaned_records.csv contains only retained events matching this context. reference_products.csv contains the eligible master cohort, including products with zero events; event-attribute filters do not shrink this denominator. Unknown costs remain blank. Raw defect JSON is neither stored nor included.\n\n"
+                    b"Download CSVs prefix formula-like text with an apostrophe for spreadsheet safety. They may differ from the computational CSVs bound by evidence.json input_sha256. canonical_inputs.json preserves the exact cleaned values and types, ordered columns, and computational input hashes. To reproduce those CSV bytes, write each table with csv.DictWriter in the listed column order, the default CSV dialect, LF line endings and UTF-8 with BOM; write null numeric values as blank without formula escaping.\n\n"
                     b"Quality covers the complete canonical source snapshot and does not follow dashboard filters or scenarios. Reference output is static, the currency unit is local currency, and this historical case does not establish current production quality. See definitions.json and kpi_registry.yaml.\n\n"
                     b"export_metadata.json records the requested language, machine number/date convention, currency unit, complete scope and versions. Download CSV variants include that metadata in columns. Source labels remain traceable.\n\n"
                     b"bundle_manifest.json lists SHA-256 hashes of the included files. The execution receipt binds the analysis, code, source hashes and both cleaned input hashes.\n"
@@ -695,6 +715,18 @@ class AnalysisService:
             }
             files["bundle_manifest.json"] = canonical(bundle_manifest).encode("utf-8")
             manifest_items: list[dict] = []
+            (artifacts / "inputs").mkdir()
+            for name, content in inputs.items():
+                path = artifacts / "inputs" / name
+                path.write_bytes(content)
+                ledger.register_artifact(
+                    path,
+                    kind="dashboard_computational_input",
+                    content_sha256=input_hashes[name],
+                    size_bytes=len(content),
+                    manifest=manifest_items,
+                    write_manifest=False,
+                )
             for name, content in files.items():
                 path = artifacts / name
                 path.write_bytes(content)
@@ -734,7 +766,7 @@ class AnalysisService:
                     localized["README.md"] = (
                         "# Bằng chứng phân tích đã đóng băng\n\n"
                         "context.json xác định dataset, policy, scenario và toàn bộ bộ lọc. analysis.json khớp với kết quả đã xác minh trong evidence.json và ledger.jsonl.\n\n"
-                        "cleaned_records.csv và reference_products.csv là đầu vào máy tính đã được receipt xác nhận. records.vi.csv bổ sung ngôn ngữ xuất, đơn vị local currency và version. Số dùng dấu chấm thập phân, không phân nhóm hàng nghìn; ngày theo ISO; chi phí chưa biết để trống.\n\n"
+                        "cleaned_records.csv và reference_products.csv là bản xuất an toàn cho bảng tính: nhãn giống công thức có dấu nháy đơn ở đầu. canonical_inputs.json giữ nguyên giá trị và kiểu dữ liệu đã làm sạch, thứ tự cột và hash đầu vào tính toán trong receipt. Để tái tạo byte CSV đầu vào, dùng csv.DictWriter theo thứ tự cột đã ghi, dialect mặc định, kết thúc dòng LF, UTF-8 có BOM, số null để trống và không thêm dấu nháy chống công thức. records.vi.csv bổ sung ngôn ngữ xuất, đơn vị local currency và version. Số dùng dấu chấm thập phân, không phân nhóm hàng nghìn; ngày theo ISO; chi phí chưa biết để trống.\n\n"
                         "normalization_audit.csv ghi dấu vết xử lý trường trên toàn nguồn canonical, gồm giá trị gốc và giá trị sau xử lý. Raw JSON chỉ giữ trong bộ nhớ của lần fetch HTTP thành công và không nằm trong gói.\n\n"
                         "Chất lượng dữ liệu và workbook giữ phạm vi canonical toàn nguồn. Tỷ lệ dùng sản lượng tham chiếu tĩnh, gồm product không có sự kiện. Kết quả lịch sử và scenario không chứng minh điều kiện sản xuất hiện tại hay khoản tiết kiệm đã thực hiện.\n\n"
                         "export_metadata.json ghi scope, ngôn ngữ, quy ước số và đơn vị. bundle_manifest.json liệt kê SHA-256 của từng file; không sửa file trong gói nếu cần đối soát.\n"
@@ -922,7 +954,7 @@ class AnalysisService:
     def _input_paths(self, saved: _ContextReceipt, input_hashes: dict[str, str]) -> list[Path]:
         ledger = EvidenceLedger(saved.directory)
         paths = [
-            ledger.resolve_artifact("artifacts/" + name)
+            ledger.resolve_artifact("artifacts/inputs/" + name)
             for name in ("cleaned_records.csv", "reference_products.csv")
         ]
         for path in paths:

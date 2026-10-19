@@ -543,10 +543,13 @@ class Workspace:
                             "session_id",
                             "turn_id",
                             "event_id",
+                            "source_provider_event_id",
                             "display_text",
                             "display_mode",
                             "display_localized",
                             "display_source",
+                            "display_language",
+                            "translation_state",
                         )
                         if data.get(key) is not None
                     },
@@ -1034,19 +1037,15 @@ class Workspace:
                             "state": "queued",
                             "language": language,
                             "label": (
-                                (
-                                    "Yêu cầu hỏi tiếp về câu trả lời được xếp cho phân tích riêng sau lượt hiện tại."
-                                    if language == "vi"
-                                    else "Your answer follow-up is queued for a separate analysis after the current run."
-                                )
+                                "Follow-up queued for next analysis."
                                 if reply_to is not None
-                                else "Your new dashboard scope is queued for a separate run after the current analysis."
+                                else "New dashboard scope queued for next run."
                                 if changed_scope
-                                else "Your new response language is queued for a separate run after the current analysis."
+                                else "Response language update queued for next run."
                                 if changed_language
-                                else "Your work-item request is queued for a separate run after the current analysis."
+                                else "Work-item request queued for next run."
                                 if changed_action
-                                else "Your instruction is queued for the next safe agent boundary."
+                                else "Instruction queued for next agent step."
                             ),
                         },
                     )
@@ -1840,7 +1839,11 @@ class Workspace:
             message = str(error)
             if self.settings.api_key:
                 message = message.replace(self.settings.api_key, "[redacted]")
-            await emit("error", {"message": f"{type(error).__name__}: {message}"})
+            error_name = type(error).__name__
+            formatted_message = (
+                message if message.startswith(f"{error_name}:") else f"{error_name}: {message}"
+            )
+            await emit("error", {"message": formatted_message})
             await emit(
                 "status",
                 {

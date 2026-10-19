@@ -6,6 +6,7 @@ import { initialFilters } from '../src/dashboard-types';
 import type { DashboardData, Filters, Metrics } from '../src/dashboard-types';
 import type { WebMcpContext, WebMcpTool } from '../src/webmcp';
 import type { workspaceState } from '../src/workspace-webmcp';
+import { isolateAgentStorage } from './agent-storage-fixture';
 const emptyMetrics: Metrics = {
   eligible_event_count: 0,
   reference_intensity_status: 'no_eligible_products',
@@ -162,16 +163,7 @@ export async function runWebMcpWorkspaceVerification() {
   const originalFetch = window.fetch;
   const originalSocket = window.WebSocket;
   const contextDescriptor = Object.getOwnPropertyDescriptor(document, 'modelContext');
-  const storage = new Map<string, string | null>();
-  const keys = [
-    'analyst.workspace.session.v1',
-    'analyst.workspace.draft.v2',
-    'analyst.workspace.pending-prompt.v1',
-  ];
-  keys.forEach((key) => {
-    storage.set(key, localStorage.getItem(key));
-    localStorage.removeItem(key);
-  });
+  const storage = isolateAgentStorage();
   const tools = new Map<string, WebMcpTool>();
   const registrations = new Map<string, number>();
   const context: WebMcpContext = {
@@ -212,6 +204,7 @@ export async function runWebMcpWorkspaceVerification() {
   let holdNext = false;
   let release: (() => void) | undefined;
   let held = false;
+  let heldRequestAborted = false;
   empty.options = {
     months: ['2024-01', '2024-02', '2024-03', '2024-04', '2024-05', '2024-06'],
     severities: ['Critical'],
@@ -234,10 +227,23 @@ export async function runWebMcpWorkspaceVerification() {
       if (holdNext) {
         holdNext = false;
         held = true;
-        await new Promise<void>((resolve) => {
-          release = resolve;
-        });
-        held = false;
+        heldRequestAborted = false;
+        try {
+          await new Promise<void>((resolve, reject) => {
+            const abort = () => {
+              heldRequestAborted = true;
+              reject(new DOMException('The request was aborted.', 'AbortError'));
+            };
+            release = () => {
+              init?.signal?.removeEventListener('abort', abort);
+              resolve();
+            };
+            if (init?.signal?.aborted) abort();
+            else init?.signal?.addEventListener('abort', abort, { once: true });
+          });
+        } finally {
+          held = false;
+        }
       }
       if (failNext) {
         failNext = false;
@@ -354,6 +360,39 @@ export async function runWebMcpWorkspaceVerification() {
       current.dashboard.source_status?.stale && !current.dashboard.source_checked,
       'Stale retained refresh is not marked fresh',
     );
+    const beforeAbortedRefresh = current.dashboard.context?.context_id;
+    const refreshAbort = new AbortController();
+    holdNext = true;
+    let abortedRefreshSettled = false;
+    const abortedRefresh = call(
+      'refresh_dashboard_source',
+      { context_id: beforeAbortedRefresh },
+      refreshAbort.signal,
+    ).then(
+      () => {
+        abortedRefreshSettled = true;
+        return 'resolved';
+      },
+      (failure: unknown) => {
+        abortedRefreshSettled = true;
+        return failure instanceof Error ? failure.name : String(failure);
+      },
+    );
+    await waitFor(() => held, 'A source refresh is waiting on HTTP');
+    refreshAbort.abort();
+    await waitFor(
+      () => abortedRefreshSettled,
+      'Aborting source refresh settles without releasing the blocked HTTP response',
+    );
+    check(heldRequestAborted, 'Source refresh forwards its invocation abort to fetch');
+    check((await abortedRefresh) === 'AbortError', 'Aborted refresh rejects as AbortError');
+    current = await state();
+    check(
+      !current.dashboard.loading &&
+        !current.dashboard.refreshing &&
+        current.dashboard.context?.context_id === beforeAbortedRefresh,
+      'Aborted refresh clears loading and preserves the committed context',
+    );
     holdNext = true;
     const delayed = call('apply_dashboard_scope', {
       context_id: current.dashboard.context?.context_id,
@@ -419,6 +458,7 @@ export async function runWebMcpWorkspaceVerification() {
         'stale context rejection',
         'failure retains context',
         'retained stale refresh',
+        'refresh abort cancels HTTP and clears loading',
         'late navigation supersedes visible completion',
         'staging waits for real composer',
         'zero prompt sends',
@@ -435,9 +475,6 @@ export async function runWebMcpWorkspaceVerification() {
     window.WebSocket = originalSocket;
     if (contextDescriptor) Object.defineProperty(document, 'modelContext', contextDescriptor);
     else Reflect.deleteProperty(document, 'modelContext');
-    storage.forEach((value, key) => {
-      if (value === null) localStorage.removeItem(key);
-      else localStorage.setItem(key, value);
-    });
+    storage.restore();
   }
 }

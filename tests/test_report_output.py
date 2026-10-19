@@ -8,11 +8,12 @@ from html.parser import HTMLParser
 from types import SimpleNamespace
 
 import pytest
-from analyst.case_study.analytics import DEFINITIONS, METRIC_METADATA
+from analyst.case_study.analytics import DEFINITIONS, METRIC_METADATA, Scope, analysis_report
+from analyst.case_study.preparation import build_snapshot
 from analyst.config import Settings
 from analyst.evidence import EvidenceLedger, canonical, sha256
 from analyst.product_tools import INSTRUCTIONS_VERSION, SECTIONS, TOOLS_VERSION
-from analyst.report_output import evidence_manifest, metric_unit, with_unit_note
+from analyst.report_output import display_errors, evidence_manifest, metric_unit, with_unit_note
 from analyst.runtime import (
     AnalystReport,
     AnalystRuntime,
@@ -25,6 +26,7 @@ from analyst.runtime import (
 )
 from test_claim_feedback import evidence_subject as evidence_subject
 from test_claim_feedback import filters
+from test_dashboard import event
 
 
 def context(identity, start="2024-01", end="2024-06", **filters):
@@ -352,6 +354,66 @@ def test_declared_reference_intensity_and_cleaning_grains_remain_distinct(subjec
         ]
         == "cost_diagnostic"
     )
+
+
+@pytest.mark.parametrize("wrapped", [False, True])
+def test_canonical_cost_comparison_ratio_cannot_be_displayed_as_currency(subject, wrapped):
+    ledger, base, _, _ = subject
+    rows = [event(1, repair_cost=3), event(2, product_id=2, repair_cost=2)]
+    snapshot = build_snapshot(
+        rows,
+        {
+            "source_url": "https://synthetic.invalid/events",
+            "source_sha256": sha256(canonical(rows)),
+            "fetched_at": "2026-01-01T00:00:00+00:00",
+        },
+        b"product_id,product_name,category,production_line,monthly_output\n"
+        b"1,Widget A,Category 1,Line-A,100\n"
+        b"2,Widget B,Category 1,Line-B,100\n",
+    )
+    analysis = analysis_report(snapshot, Scope())
+    path = "$.shared_category_controls[0].lines[0].cost_ratio_to_same_category_other_lines"
+    entry = ledger.record(
+        "analysis_query" if wrapped else "dashboard_context",
+        "# canonical shared-category comparison",
+        {"ok": True, "context": base, "analysis": analysis} if wrapped else analysis,
+        execution_kind="bounded_analysis" if wrapped else "canonical_receipt_import",
+        analysis_context=base,
+    )
+    if wrapped:
+        path = "$.analysis" + path[1:]
+    value = next(item["value"] for item in entry["numeric_values"] if item["path"] == path)
+    assert value == 1.5
+    claim = NumericClaim(
+        id="ratio",
+        execution_id=entry["execution_id"],
+        path=path,
+        value=value,
+        code_sha256=entry["code_sha256"],
+    )
+    claims = [claim.model_dump()]
+    assert metric_unit(entry, path)["unit"] == "dimensionless ratio"
+    assert metric_unit({**entry, "tool": "analysis_sql"}, path) is None
+    entries = {entry["execution_id"]: entry}
+    for sentence in (
+        "Cost ratio is 1.5 times [claim:ratio].",
+        "Tỷ số chi phí là 1,5 lần [claim:ratio].",
+    ):
+        assert display_errors(sentence, claims, entries) == []
+    for sentence in (
+        "Cost ratio is 1.5 local currency [claim:ratio].",
+        "Cost ratio is USD 1.5 [claim:ratio].",
+        "Tỷ số chi phí là 1,5 nội tệ [claim:ratio].",
+    ):
+        assert any("monetary unit" in error for error in display_errors(sentence, claims, entries))
+    for suffix in ("%", " events", " percentage points"):
+        assert display_errors(f"Ratio 1.5{suffix} [claim:ratio].", claims, entries)
+    good = AnalystReport(report="Cost ratio is 1.5 times [claim:ratio].", claims=[claim])
+    assert audit_report(good, ledger)["verified"]
+    wrong = good.model_copy(update={"report": "Cost ratio is 1.5 local currency [claim:ratio]."})
+    assert not audit_report(wrong, ledger)["verified"]
+    assert "dimensionless" in with_unit_note(good.report, claims, ledger, "en")
+    assert "không có đơn vị" in with_unit_note(good.report, claims, ledger, "vi")
 
 
 @pytest.mark.parametrize(

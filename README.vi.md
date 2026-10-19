@@ -117,7 +117,7 @@ Trên macOS/Linux dùng `sh scripts/check.sh`. Lệnh này kiểm tra lockfile d
 
 ## Phân tích đề bài: Part 3
 
-Phạm vi: tháng 1–6/2024 theo canonical policy `canonical-v2`, dataset `dataset-4586b9cf07494f8c8481a2f8f8a578359fbab7c4c7435b06ccb7defef31fa515` và snapshot báo cáo `5fb4c047808c71233216b53a`. Dữ liệu lỗi được lấy qua HTTP lúc `2026-10-18T21:11:49.395606+00:00`. Tiền tệ là **local currency (chưa xác định loại tiền)**. Số chưa làm tròn, định nghĩa và bằng chứng nguồn nằm trong [snapshot chuẩn](reports/canonical_snapshot.json); dashboard hiển thị đúng các số này.
+Phạm vi: tháng 1–6/2024 theo canonical policy `canonical-v2`, dataset `dataset-4586b9cf07494f8c8481a2f8f8a578359fbab7c4c7435b06ccb7defef31fa515` và snapshot báo cáo `2aad0c28d1757a95e5a58a45`. Dữ liệu lỗi được lấy qua HTTP lúc `2026-10-19T03:28:18.346528+00:00`. Tiền tệ là **local currency (chưa xác định loại tiền)**. Số chưa làm tròn, định nghĩa và bằng chứng nguồn nằm trong [snapshot chuẩn](reports/canonical_snapshot.json); dashboard hiển thị đúng các số này.
 
 ### Phát hiện chính
 
@@ -216,7 +216,7 @@ Mọi chuyền đều tăng. Line-3 tăng nhanh nhất (31 → 74 sự kiện) v
 
 #### Ưu tiên 3: Điều tra chi phí sửa chữa mỗi sự kiện tại Line-3
 
-- **Bằng chứng:** 685,69 mỗi lần sửa có chi phí so với 413,35 ở các chuyền khác (gấp 1,66 lần); 37,43% chi phí đã biết đến từ 26,51% số sự kiện; chênh lệch vẫn còn trong Category 4 (701,74 so với 445,58).
+- **Bằng chứng:** 685,69 mỗi sự kiện ghi nhận có chi phí hợp lệ so với 413,35 ở các chuyền khác (gấp 1,66 lần); 37,43% chi phí đã biết của các sự kiện đã liên kết đến từ 26,51% số sự kiện đã liên kết có chi phí hợp lệ; chênh lệch vẫn còn trong Category 4 (701,74 so với 445,58).
 - **Hành động:** Cùng Bảo trì tách chi phí sửa của Line-3 theo nhân công, vật tư, làm lại và dịch vụ ngoài; so sánh cách sửa các sản phẩm tương đương trong cùng nhóm ở chuyền khác, kiểm tra chênh lệch cơ cấu sản phẩm còn lại; xác nhận với Tài chính rằng các chuyền ghi nhận chi phí theo cùng quy tắc.
 - **Phụ trách:** Trưởng nhóm Line-3 (chủ trì) cùng Trưởng bộ phận Bảo trì và Tài chính.
 - **Thước đo thành công:** Chi phí sửa trung bình mỗi sự kiện của Line-3 so với các chuyền khác, kèm độ phủ chi phí. Mục tiêu tạm thời: thu hẹp một nửa khoảng chênh 272,33 mỗi sự kiện trong một quý.

@@ -264,7 +264,11 @@ const injectedHtml = renderToStaticMarkup(
 );
 assert.doesNotMatch(injectedHtml, /<script>|<b>x<\/b>/, 'Trace content stays inert');
 assert.match(injectedHtml, /&lt;b&gt;x&lt;\/b&gt;/);
-assert.doesNotMatch(injectedHtml, /alert\(1\)/, 'Unclassified provider prose is not promoted');
+assert.match(
+  injectedHtml,
+  /&lt;script&gt;alert\(1\)&lt;\/script&gt;/,
+  'Public summaries remain escaped text',
+);
 
 for (const locale of ['en', 'vi'] as const) {
   const markup = renderToStaticMarkup(
@@ -284,10 +288,10 @@ for (const locale of ['en', 'vi'] as const) {
   assert.match(markup, /event_count=1284/);
   assert.match(markup, /exec exec-0123456/);
   assert.doesNotMatch(markup, /12\.5k|agent-flow-usage/);
-  assert.doesNotMatch(markup, /Reading the selected data/);
-  assert.match(
+  assert.match(markup, /Reading the selected data/);
+  assert.doesNotMatch(
     markup,
-    locale === 'vi' ? /Đang xem xét yêu cầu và bằng chứng/ : /Reviewing the request and evidence/,
+    /Reviewing the request and evidence|Đang xem xét yêu cầu và bằng chứng/,
   );
   assert.match(
     markup,
@@ -296,7 +300,7 @@ for (const locale of ['en', 'vi'] as const) {
   );
   assert.match(
     markup,
-    locale === 'en' ? />Thinking</ : />Suy luận</,
+    locale === 'en' ? />Reasoning summary</ : />Tóm tắt suy luận</,
     'The thinking label is localized',
   );
   assert.doesNotMatch(markup, /ui\.agent_flow/, 'Every flow message has a translation');
@@ -436,12 +440,12 @@ for (const locale of ['en', 'vi'] as const) {
     condensedMarkup,
     /flow-summary-absence|No public summary for|mục suy luận đã hoàn tất không có tóm tắt/,
   );
-  assert.doesNotMatch(condensedMarkup, /First public summary\.|Second public summary\./);
-  const summaryStatus =
-    locale === 'vi' ? 'Đang xem xét yêu cầu và bằng chứng' : 'Reviewing the request and evidence';
-  assert.ok(condensedMarkup.indexOf(summaryStatus) < condensedMarkup.indexOf('ordered_analysis'));
+  assert.match(condensedMarkup, /First public summary\.|Second public summary\./);
   assert.ok(
-    condensedMarkup.indexOf('ordered_analysis') < condensedMarkup.lastIndexOf(summaryStatus),
+    condensedMarkup.indexOf('First public summary.') < condensedMarkup.indexOf('ordered_analysis'),
+  );
+  assert.ok(
+    condensedMarkup.indexOf('ordered_analysis') < condensedMarkup.indexOf('Second public summary.'),
   );
   assert.match(condensedMarkup, /class="flow-thoughts"/);
   assert.doesNotMatch(condensedMarkup, /<details class="flow-body"/);
@@ -1042,6 +1046,221 @@ const unconfirmedAlias = projectAgentFlow([
 ]).get('run-1')!;
 assert.equal(unconfirmedAlias.steps.length, 2, 'Only durable alias confirmations merge items');
 
+// A native item can be split across transient live identities and reunited in
+// a durable item with different summary indices. Final source replay retains
+// already translated snapshots, including supplemental native event identity.
+const splitOriginals = [
+  '**Evaluating SQL Queries**\n\nReview the selected SQL aggregates.',
+  '**Analyzing repair costs**\n\nCheck missing versus zero repair costs.',
+];
+const splitTranslations = [
+  '**Đánh giá truy vấn SQL**\n\nRà soát các số liệu tổng hợp đã chọn.',
+  '**Phân tích chi phí sửa chữa**\n\nKiểm tra chi phí thiếu và chi phí bằng không.',
+];
+const splitNativeHistory: WorkspaceEvent[] = [event('run_started', { language: 'vi' })];
+for (let index = 0; index < 2; index += 1) {
+  const item_id = `native-transient-${index}`;
+  const source = native({ item_id, summary_index: 0, event_id: `native-source-${index}` });
+  splitNativeHistory.push(
+    event('output_item', native({ item_id, item_type: 'reasoning', phase: 'added' })),
+    event('reasoning', {
+      ...source,
+      text: splitOriginals[index],
+      final: true,
+      display_mode: 'snapshot',
+      display_text: splitOriginals[index],
+      display_source: 'provider_summary',
+      display_language: 'en',
+      display_localized: false,
+      translation_state: 'pending',
+    }),
+    event('output_item', native({ item_id, item_type: 'reasoning', phase: 'done' })),
+    // Synthetic translation uses source_provider_event_id rather than event_id,
+    // so deduplication of native provider packets cannot swallow the snapshot.
+    event('reasoning', {
+      ...native({ item_id, summary_index: 0 }),
+      text: splitOriginals[index],
+      final: true,
+      source_provider_event_id: `native-source-${index}`,
+      display_mode: 'snapshot',
+      display_text: splitTranslations[index],
+      display_source: 'translated_provider_summary',
+      display_language: 'vi',
+      display_localized: true,
+      translation_state: 'translated',
+    }),
+  );
+}
+for (let index = 0; index < 2; index += 1) {
+  splitNativeHistory.push(
+    event(
+      'reasoning',
+      native({
+        item_id: 'native-durable',
+        summary_index: index,
+        text: splitOriginals[index],
+        final: true,
+        display_mode: 'snapshot',
+        display_text: splitOriginals[index],
+        display_source: 'provider_summary',
+        display_language: 'en',
+        display_localized: false,
+        translation_state: 'pending',
+      }),
+    ),
+  );
+}
+splitNativeHistory.push(
+  event(
+    'output_item',
+    native({ item_id: 'native-durable', item_type: 'reasoning', phase: 'done' }),
+  ),
+);
+for (let index = 0; index < 2; index += 1) {
+  splitNativeHistory.push(
+    event(
+      'reasoning_alias',
+      native({
+        item_id: `native-transient-${index}`,
+        canonical_item_id: 'native-durable',
+        canonical_summary_indices: [index],
+        source: 'session_snapshot',
+        reconciled: true,
+      }),
+    ),
+  );
+}
+const splitHistoryCopy = structuredClone(splitNativeHistory);
+const splitRun = projectAgentFlow(splitNativeHistory).get('run-1')!;
+const splitBlocks = splitRun.steps.filter((step) => step.kind === 'thinking');
+assert.equal(splitBlocks.length, 1, 'Many transient items join one confirmed durable item');
+assert.equal(splitBlocks[0].done, true);
+assert.deepEqual(
+  splitBlocks[0].parts.map((part) => part.index),
+  [0, 1],
+);
+assert.deepEqual(
+  splitBlocks[0].parts.map((part) => part.raw),
+  splitOriginals,
+);
+assert.deepEqual(
+  splitBlocks[0].parts.map((part) => part.displayText),
+  splitTranslations,
+);
+assert.ok(splitBlocks[0].parts.every((part) => part.translationState === 'translated'));
+assert.deepEqual(splitNativeHistory, splitHistoryCopy);
+for (const locale of ['en', 'vi'] as const) {
+  const markup = renderToStaticMarkup(
+    <I18nProvider initialLocale={locale} persist={false}>
+      <AgentFlow run={splitRun} />
+    </I18nProvider>,
+  );
+  assert.equal((markup.match(/class="flow-thought"/g) || []).length, 2);
+  for (const translation of [
+    'Rà soát các số liệu tổng hợp đã chọn.',
+    'Kiểm tra chi phí thiếu và chi phí bằng không.',
+  ]) {
+    assert.ok(markup.includes(translation));
+  }
+  assert.doesNotMatch(markup, /Đang dịch tóm tắt/);
+}
+// Per-part completion must not stop streaming a later transient sibling.
+const splitStreaming = projectAgentFlow([
+  event(
+    'reasoning',
+    native({ item_id: 'split-a', summary_index: 0, text: 'First complete part.', final: true }),
+  ),
+  event('output_item', native({ item_id: 'split-a', item_type: 'reasoning', phase: 'done' })),
+  event('reasoning', native({ item_id: 'split-b', summary_index: 0, delta: 'Second ' })),
+  event('reasoning', native({ item_id: 'split-b', summary_index: 0, delta: 'streaming part.' })),
+  ...['split-a', 'split-b'].map((item_id, index) =>
+    event(
+      'reasoning_alias',
+      native({
+        item_id,
+        canonical_item_id: 'split-streaming-durable',
+        canonical_summary_indices: [index],
+        source: 'session_snapshot',
+        reconciled: true,
+      }),
+    ),
+  ),
+]).get('run-1')!;
+const splitStreamingBlock = splitStreaming.steps.find((step) => step.kind === 'thinking');
+assert.ok(splitStreamingBlock?.kind === 'thinking');
+assert.equal(splitStreamingBlock.done, false);
+assert.deepEqual(
+  splitStreamingBlock.parts.map((part) => part.raw),
+  ['First complete part.', 'Second streaming part.'],
+);
+assert.deepEqual(
+  splitStreamingBlock.parts.map((part) => part.done),
+  [true, false],
+);
+// Invalid or incomplete mappings cannot silently merge unrelated source parts.
+for (const mapping of [[-1], [0.5], ['0']]) {
+  const malformed = projectAgentFlow([
+    event('reasoning', native({ item_id: 'bad-alias-source', text: 'Source', final: true })),
+    event('reasoning', native({ item_id: 'bad-alias-durable', text: 'Durable', final: true })),
+    event(
+      'reasoning_alias',
+      native({
+        item_id: 'bad-alias-source',
+        canonical_item_id: 'bad-alias-durable',
+        canonical_summary_indices: mapping,
+        source: 'session_snapshot',
+        reconciled: true,
+      }),
+    ),
+  ]).get('run-1')!;
+  assert.equal(malformed.steps.filter((step) => step.kind === 'thinking').length, 2);
+}
+const unmapped = projectAgentFlow([
+  event(
+    'reasoning',
+    native({
+      item_id: 'unmapped-source',
+      summary_index: 1,
+      text: 'Unmapped source part.',
+      final: true,
+    }),
+  ),
+  event(
+    'reasoning',
+    native({ item_id: 'unmapped-durable', summary_index: 1, text: 'Durable part.', final: true }),
+  ),
+  event(
+    'reasoning_alias',
+    native({
+      item_id: 'unmapped-source',
+      canonical_item_id: 'unmapped-durable',
+      canonical_summary_indices: [0],
+      source: 'session_snapshot',
+      reconciled: true,
+    }),
+  ),
+]).get('run-1')!;
+assert.equal(unmapped.steps.filter((step) => step.kind === 'thinking').length, 2);
+const changedSource = projectAgentFlow([
+  ...splitNativeHistory,
+  event(
+    'reasoning',
+    native({
+      item_id: 'native-durable',
+      summary_index: 0,
+      text: 'Changed public source requires a new translation.',
+      final: true,
+    }),
+  ),
+]).get('run-1')!;
+const changedPart = changedSource.steps.find((step) => step.kind === 'thinking');
+assert.ok(changedPart?.kind === 'thinking');
+assert.equal(changedPart.parts[0].displayText, undefined);
+assert.equal(
+  flowSummaryDisplay(changedPart.parts[0], 'vi').body,
+  'Changed public source requires a new translation.',
+);
+
 // Hidden usage metadata stays in source history, without frontend accounting.
 for (const metadata of [
   { scope: 'run' },
@@ -1079,11 +1298,7 @@ for (const metadata of [
       </I18nProvider>,
     );
     assert.match(markup, /gpt-6-luna/);
-    assert.doesNotMatch(markup, /Checking the selected data/);
-    assert.match(
-      markup,
-      locale === 'vi' ? /Đang xem xét yêu cầu và bằng chứng/ : /Reviewing the request and evidence/,
-    );
+    assert.match(markup, /Checking the selected data/);
     assert.doesNotMatch(
       markup,
       /usage-only-session|agent-flow-usage|flow-provider-details|Token usage|best effort|Provider session|Chưa có số liệu token|hóa đơn chưa được chốt|\$500|ui\.agent_flow/,
@@ -1350,8 +1565,8 @@ for (const locale of ['en', 'vi'] as const) {
     </I18nProvider>,
   );
   assert.doesNotMatch(markup, /1\.2s|aspects|khía cạnh|Thought for|Đã suy nghĩ/);
-  assert.match(markup, locale === 'vi' ? /Trạng thái tác vụ/ : /Task status/);
-  assert.doesNotMatch(markup, /1 phần tóm tắt|1 summary section/);
+  assert.match(markup, /One public section\./);
+  assert.match(markup, locale === 'vi' ? /1 phần tóm tắt/ : /1 summary section/);
 }
 const timed = projectAgentFlow([event('reasoning', { item_id: 'timed', text: 'Checking.' })]).get(
   'run-1',
@@ -1455,8 +1670,8 @@ for (const locale of ['en', 'vi'] as const) {
   );
 }
 
-// Recorded work stays accessible without competing with the delivered report.
-// Native details starts compact, while a failure is visible outside disclosure.
+// Recorded summaries and tool work are expanded by default for live and stored runs.
+// Failures also remain visible outside disclosure.
 for (const locale of ['en', 'vi'] as const) {
   const renderFlow = (flow: typeof run) =>
     renderToStaticMarkup(
@@ -1467,7 +1682,11 @@ for (const locale of ['en', 'vi'] as const) {
   const completedMarkup = renderFlow(run);
   const completedDisclosure = completedMarkup.match(/<details class="agent-flow-timeline"([^>]*)>/);
   assert.ok(completedDisclosure, 'Recorded timeline remains available');
-  assert.doesNotMatch(completedDisclosure[1], /\bopen\b/, 'Delivered runs start compact');
+  assert.match(
+    completedDisclosure[1],
+    /\bopen\b/,
+    'Delivered runs retain visible public summaries',
+  );
   assert.doesNotMatch(
     completedMarkup,
     /agent-flow-current|role="alert"|class="[^"]*\bspin\b[^"]*"/,
@@ -1499,7 +1718,7 @@ for (const locale of ['en', 'vi'] as const) {
   const currentPanel = workingMarkup.match(
     /<div class="agent-flow-current">([\s\S]*?)<\/div>/,
   )?.[1];
-  assert.ok(currentPanel, 'Live work remains visible while the full timeline is collapsed');
+  assert.ok(currentPanel, 'Live work remains visible alongside the full timeline');
   assert.match(currentPanel, /Compare the selected months\./);
   assert.match(workingMarkup, /data-completed-calls="1" data-total-calls="2"/);
   assert.equal(
@@ -1509,10 +1728,10 @@ for (const locale of ['en', 'vi'] as const) {
   );
   assert.match(workingMarkup, locale === 'vi' ? /Đọc phạm vi Dashboard/ : /Read Dashboard scope/);
   assert.doesNotMatch(workingMarkup, /[\u{1F300}-\u{1FAFF}]|\b(?:25|50|75|100)%/u);
-  assert.doesNotMatch(
+  assert.match(
     workingMarkup.match(/<details class="agent-flow-timeline"([^>]*)>/)?.[1] || '',
     /\bopen\b/,
-    'Live runs reveal their latest recorded work without opening verbose history',
+    'Live public summaries are visible by default',
   );
 
   const summaryFlow = projectAgentFlow([
@@ -1532,16 +1751,16 @@ for (const locale of ['en', 'vi'] as const) {
     /Recommending checks for classification|I should recommend checks|I need to cite evidence|\[value:/,
     'Model-oriented public summaries never become the primary progress message',
   );
-  assert.match(summaryPrimary, locale === 'vi' ? /Suy luận/ : /Thinking/);
+  assert.match(summaryPrimary, locale === 'vi' ? /Tóm tắt suy luận/ : /Reasoning summary/);
   const summaryTimeline = summaryMarkup.match(/<ol[^>]*>([\s\S]*?)<\/ol>/)?.[1] || '';
-  assert.doesNotMatch(summaryTimeline, /Recommending checks for classification/);
-  assert.doesNotMatch(
+  assert.match(summaryTimeline, /Recommending checks for classification/);
+  assert.match(
     summaryTimeline,
     /I should recommend checks\. I need to cite evidence \[value:1071\]\./,
   );
-  assert.match(
+  assert.doesNotMatch(
     summaryTimeline,
-    locale === 'vi' ? /Đang xem xét yêu cầu và bằng chứng/ : /Reviewing the request and evidence/,
+    /Reviewing the request and evidence|Đang xem xét yêu cầu và bằng chứng/,
   );
   const retainedSummary = summaryFlow.steps.find((step) => step.kind === 'thinking');
   assert.ok(retainedSummary?.kind === 'thinking');
@@ -1619,7 +1838,7 @@ for (const locale of ['en', 'vi'] as const) {
 
   const recoveredMarkup = renderFlow({ ...failedFlow, state: 'completed' });
   assert.match(recoveredMarkup, /agent-flow-alert[\s\S]*Selected source could not be read\./);
-  assert.doesNotMatch(
+  assert.match(
     recoveredMarkup.match(/<details class="agent-flow-timeline"([^>]*)>/)?.[1] || '',
     /\bopen\b/,
   );
@@ -1767,18 +1986,18 @@ const displayMarkup = renderToStaticMarkup(
   </I18nProvider>,
 );
 assert.match(displayMarkup, /lang="vi"/);
-assert.match(displayMarkup, /Trạng thái tác vụ/);
-assert.doesNotMatch(displayMarkup, /Reading scope|I will inspect Line-3/);
+assert.match(displayMarkup, /Tóm tắt công khai gốc của mô hình/);
+assert.match(displayMarkup, /Reading scope[\s\S]*I will inspect Line-3/);
 const displayTimeline = displayMarkup.match(/<ol[^>]*>([\s\S]*?)<\/ol>/)?.[1] || '';
 assert.equal(
   displayTimeline.split(taskStatusText).length - 1,
-  1,
-  'Snapshots do not repeat fallback text',
+  0,
+  'An old task-status snapshot cannot replace available public summary text',
 );
-assert.match(
+assert.doesNotMatch(
   displayMarkup.match(/<div class="agent-flow-current">([\s\S]*?)<\/div>/)?.[1] || '',
   /Đang xem xét yêu cầu và bằng chứng/,
-  'The recorded task status provides a useful primary update',
+  'The latest update must not promote a stale generic task status',
 );
 
 const nativeDisplayRun = projectAgentFlow([
@@ -1852,8 +2071,8 @@ assert.doesNotMatch(
 );
 assert.match(unverifiedDraftMarkup, /An unverified conclusion/);
 
-// Partial language detection can temporarily accept an English sentence that
-// quotes a Vietnamese label. The view waits for a finalized, compatible snapshot.
+// Public partial summaries stay visible regardless of the page language or
+// mixed quoted labels. Only explicit translation metadata selects a translation.
 const uncertainSummaryText =
   '**Assessing the request**\n\nNeed to review "dữ liệu" before continuing.';
 const uncertainSummaryPart: FlowPart = {
@@ -1862,87 +2081,151 @@ const uncertainSummaryPart: FlowPart = {
   title: 'Assessing the request',
   body: 'Need to review "dữ liệu" before continuing.',
   done: false,
-  displayText: uncertainSummaryText,
-  displaySource: 'provider_summary',
+  displayText: taskStatusText,
+  displaySource: 'task_status',
 };
 const uncertainCopy = structuredClone(uncertainSummaryPart);
-for (const done of [false, true]) {
-  const projected = flowSummaryDisplay({ ...uncertainSummaryPart, done }, 'vi');
-  assert.equal(projected.displaySource, 'task_status');
-  assert.equal(projected.body, taskStatusText);
-  assert.equal(projected.title, '');
-  assert.equal(projected.raw, uncertainSummaryText);
+for (const locale of ['en', 'vi'] as const) {
+  for (const done of [false, true]) {
+    const displayed = flowSummaryDisplay({ ...uncertainSummaryPart, done }, locale);
+    assert.equal(displayed.displaySource, 'provider_summary');
+    assert.equal(displayed.title, 'Assessing the request');
+    assert.equal(displayed.body, uncertainSummaryPart.body);
+    assert.equal(displayed.raw, uncertainSummaryText);
+  }
 }
 assert.deepEqual(uncertainSummaryPart, uncertainCopy);
-const provenVietnamesePart: FlowPart = {
+const translatedText = '**Đánh giá yêu cầu**\n\nCần kiểm tra dữ liệu trước khi tiếp tục.';
+const translatedPart: FlowPart = {
   ...uncertainSummaryPart,
-  raw: '**Đọc phạm vi**\n\nĐối chiếu dữ liệu đã chọn.',
-  title: 'Đọc phạm vi',
-  body: 'Đối chiếu dữ liệu đã chọn.',
-  displayText: '**Đọc phạm vi**\n\nĐối chiếu dữ liệu đã chọn.',
-  done: true,
+  displayText: translatedText,
+  displaySource: 'translated_provider_summary',
+  displayLocalized: true,
+  displayLanguage: 'vi',
 };
-assert.equal(flowSummaryDisplay(provenVietnamesePart, 'vi'), provenVietnamesePart);
 assert.equal(
-  flowSummaryDisplay({ ...provenVietnamesePart, done: false }, 'vi').displaySource,
-  'task_status',
+  flowSummaryDisplay(translatedPart, 'vi').body,
+  'Cần kiểm tra dữ liệu trước khi tiếp tục.',
 );
-const uncertainTitle = flowSummaryDisplay(
-  { ...provenVietnamesePart, title: 'Checking results' },
-  'vi',
-);
-assert.equal(uncertainTitle.title, '');
-assert.equal(uncertainTitle.body, provenVietnamesePart.body);
-assert.equal(uncertainTitle.displaySource, 'provider_summary');
+assert.equal(flowSummaryDisplay(translatedPart, 'en').body, uncertainSummaryPart.body);
 assert.equal(
-  flowSummaryDisplay({ ...provenVietnamesePart, displaySource: undefined }, 'vi').displaySource,
-  'task_status',
+  flowSummaryDisplay({ ...translatedPart, displayLocalized: false }, 'vi').body,
+  uncertainSummaryPart.body,
 );
-const provenEnglishPart: FlowPart = {
-  ...provenVietnamesePart,
-  raw: '**Checking evidence**\n\nReview the recorded results.',
-  title: 'Checking evidence',
-  body: 'Review the recorded results.',
-  displayText: '**Checking evidence**\n\nReview the recorded results.',
-};
-assert.equal(flowSummaryDisplay(provenEnglishPart, 'en'), provenEnglishPart);
-assert.equal(flowSummaryDisplay(provenEnglishPart, 'vi').displaySource, 'task_status');
-assert.equal(flowSummaryDisplay(provenVietnamesePart, 'en').displaySource, 'task_status');
-const recordedTaskStatus = {
-  ...uncertainSummaryPart,
-  body: taskStatusText,
-  displaySource: 'task_status' as const,
-};
-assert.equal(flowSummaryDisplay(recordedTaskStatus, 'vi'), recordedTaskStatus);
-for (const final of [false, true]) {
-  const mixedHistory = [
+assert.equal(
+  flowSummaryDisplay({ ...translatedPart, displayLanguage: undefined }, 'vi').body,
+  uncertainSummaryPart.body,
+);
+for (const done of [false, true]) {
+  const translationEvents = [
     event('run_started', { language: 'vi' }),
+    event('reasoning', { item_id: 'translated-part', delta: uncertainSummaryText.slice(0, 24) }),
+    event('reasoning', { item_id: 'translated-part', delta: uncertainSummaryText.slice(24) }),
     event('reasoning', {
-      item_id: 'mixed-language-public-part',
+      item_id: 'translated-part',
       text: uncertainSummaryText,
-      display_text: uncertainSummaryText,
+      final: true,
+      display_text: translatedText,
       display_mode: 'snapshot',
-      display_source: 'provider_summary',
-      final,
+      display_source: 'translated_provider_summary',
+      display_localized: true,
+      display_language: 'vi',
     }),
+    ...(done
+      ? [
+          event('output_item', {
+            item_id: 'translated-part',
+            item_type: 'reasoning',
+            phase: 'done',
+          }),
+          event('status', { state: 'completed' }),
+        ]
+      : []),
   ];
-  const before = structuredClone(mixedHistory);
-  const mixedRun = projectAgentFlow(mixedHistory).get('run-1')!;
-  const markup = renderToStaticMarkup(
-    <I18nProvider initialLocale="en" persist={false}>
-      <AgentFlow run={mixedRun} />
-    </I18nProvider>,
+  const original = structuredClone(translationEvents);
+  const translationRun = projectAgentFlow(translationEvents).get('run-1')!;
+  const thought = translationRun.steps.find((step) => step.kind === 'thinking');
+  assert.ok(thought?.kind === 'thinking');
+  assert.equal(thought.parts.length, 1);
+  assert.equal(
+    thought.parts[0].raw,
+    uncertainSummaryText,
+    'Final snapshots replace accumulated deltas',
   );
-  const historyMarkup = markup.match(/<ol[^>]*>([\s\S]*?)<\/ol>/)?.[1] || '';
-  assert.match(markup, /lang="vi"/);
-  assert.match(historyMarkup, /Trạng thái tác vụ/);
-  assert.ok(historyMarkup.includes(taskStatusText));
-  assert.doesNotMatch(historyMarkup, /Assessing the request|Need to review/);
-  const retained = mixedRun.steps.find((step) => step.kind === 'thinking');
-  assert.ok(retained?.kind === 'thinking');
-  assert.equal(retained.parts[0].raw, uncertainSummaryText);
-  assert.deepEqual(mixedHistory, before);
+  assert.equal(thought.parts[0].displayLanguage, 'vi');
+  assert.equal(thought.parts[0].displayLocalized, true);
+  for (const pageLocale of ['en', 'vi'] as const) {
+    const markup = renderToStaticMarkup(
+      <I18nProvider initialLocale={pageLocale} persist={false}>
+        <AgentFlow run={translationRun} />
+      </I18nProvider>,
+    );
+    assert.match(markup, /lang="vi"/);
+    assert.match(markup, /<details class="agent-flow-timeline" open="">/);
+    assert.match(markup, /aria-expanded="true"/);
+    assert.doesNotMatch(markup, /class="flow-thoughts" hidden/);
+    assert.doesNotMatch(markup, /Bản dịch tóm tắt công khai của mô hình|Translation of the model/);
+    assert.match(markup, /Cần kiểm tra dữ liệu trước khi tiếp tục\./);
+    assert.doesNotMatch(markup, /flow-summary-original|Xem bản gốc|View original/);
+    assert.doesNotMatch(markup, /Need to review &quot;dữ liệu&quot; before continuing\./);
+    assert.equal((markup.match(/Cần kiểm tra dữ liệu trước khi tiếp tục\./g) || []).length, 1);
+  }
+  assert.deepEqual(translationEvents, original);
 }
+// Translation progress describes the recorded run target, including recovery
+// and unavailable states, while retaining the original public summary.
+const translationStatuses = {
+  pending: ['Translating the summary into English…', 'Đang dịch tóm tắt sang tiếng Việt…'],
+  failed: [
+    'Translation failed. Showing the original.',
+    'Chưa dịch thành công. Đang hiển thị bản gốc.',
+  ],
+  skipped: ['Translation skipped. Showing the original.', 'Chưa dịch. Đang hiển thị bản gốc.'],
+  cancelled: ['Translation stopped. Showing the original.', 'Đã dừng dịch. Đang hiển thị bản gốc.'],
+} as const;
+for (const locale of ['en', 'vi'] as const) {
+  for (const [state, labels] of Object.entries(translationStatuses)) {
+    const sourceEvents = [
+      event('run_started', { language: locale }),
+      event('reasoning', {
+        item_id: 'translation-status',
+        text: rawPublicSummary,
+        final: true,
+        display_text: rawPublicSummary,
+        display_source: 'provider_summary',
+        display_mode: 'snapshot',
+        translation_state: state,
+      }),
+      event('status', { state: 'completed' }),
+    ];
+    const stateRun = projectAgentFlow(sourceEvents).get('run-1')!;
+    const statePart = stateRun.steps.find((step) => step.kind === 'thinking');
+    assert.ok(statePart?.kind === 'thinking');
+    assert.equal(statePart.parts[0].translationState, state);
+    for (const pageLocale of ['en', 'vi'] as const) {
+      const markup = renderToStaticMarkup(
+        <I18nProvider initialLocale={pageLocale} persist={false}>
+          <AgentFlow run={stateRun} />
+        </I18nProvider>,
+      );
+      assert.ok(markup.includes(labels[locale === 'vi' ? 1 : 0]));
+      assert.match(markup, /I will inspect Line-3\./);
+      assert.doesNotMatch(markup, /Bản dịch tóm tắt công khai|Translation of the model/);
+    }
+  }
+}
+
+const metadataOnlyDone = projectAgentFlow([
+  event('reasoning', { item_id: 'metadata-done', delta: 'Public partial content.' }),
+  event('reasoning', { item_id: 'metadata-done', done: true }),
+]).get('run-1')!;
+const metadataOnlyPart = metadataOnlyDone.steps.find((step) => step.kind === 'thinking');
+assert.ok(metadataOnlyPart?.kind === 'thinking');
+assert.equal(
+  metadataOnlyPart.parts[0].raw,
+  'Public partial content.',
+  'A metadata-only completion cannot erase streamed public text',
+);
 
 console.log(
   'Verified provider-ordered agent flow: summary-part grouping, streamed call arguments joined to local receipts, run isolation, per-run EN/VI rendering, public display snapshots, metadata-only usage handling and inert trace content.',

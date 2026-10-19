@@ -46,9 +46,10 @@ export const getDashboard = (filters: Filters, signal?: AbortSignal) =>
   });
 export const getDashboardContext = (contextId: string, signal?: AbortSignal) =>
   request<DashboardData>(`/api/dashboard/contexts/${encodeURIComponent(contextId)}`, { signal });
-export const refreshDashboard = (filters: Filters) =>
+export const refreshDashboard = (filters: Filters, signal?: AbortSignal) =>
   request<DashboardData>('/api/dashboard/refresh', {
     method: 'POST',
+    signal,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ filters }),
   });

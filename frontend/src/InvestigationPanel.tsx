@@ -153,10 +153,7 @@ export default function InvestigationPanel({
         <BookOpen size={19} />
         <span>
           <strong id="investigation-heading">{t('ui.investigation_and_handoff_brief')}</strong>
-          <small>
-            {saved?.question ||
-              t('ui.keep_checked_findings_open_hypotheses_and_the_next_measurement_to')}
-          </small>
+          {saved?.question ? <small>{saved.question}</small> : null}
         </span>
         <span>{open ? t('ui.close') : t('ui.open')}</span>
       </button>
@@ -193,12 +190,12 @@ export default function InvestigationPanel({
                 {t('ui.saved_version')} {number(saved.version)}
               </span>
               <span>{saved.policy_version}</span>
+              {saved.content_status && (
+                <span className={`investigation-verification-badge status-${saved.content_status}`}>
+                  {label(saved.content_status)}
+                </span>
+              )}
             </div>
-            {saved.content_status === 'unverified' && (
-              <p className="investigation-stale" role="status">
-                {t('ui.investigation_draft_notice')}
-              </p>
-            )}
             <InvestigationUnitNotes notes={saved.unit_notes} />
             {dirty && saved.version !== draft.version && (
               <p role="status" className="investigation-stale">
@@ -228,9 +225,11 @@ export default function InvestigationPanel({
                   draft.findings.map((finding, index) => (
                     <label key={finding.id}>
                       <span>
-                        {label(finding.status)}{' '}
+                        <span className={`finding-status-badge status-${finding.status}`}>
+                          {label(finding.status)}
+                        </span>
                         {finding.evidence?.length
-                          ? `· ${number(finding.evidence.length)} ${t('ui.evidence_references')}`
+                          ? ` · ${number(finding.evidence.length)} ${t('ui.evidence_references')}`
                           : ''}
                       </span>
                       <textarea
@@ -349,9 +348,6 @@ export default function InvestigationPanel({
                 onChange={(event) => edit({ next_steps: event.target.value.split('\n') })}
               />
             </label>
-            <p className="panel-footnote">
-              {t('ui.edited_findings_are_marked_as_user_edited_editing_text_does_not_r')}
-            </p>
             <div className="evidence-actions">
               <button
                 type="submit"
@@ -372,7 +368,6 @@ export default function InvestigationPanel({
                   {t('ui.export_saved_investigation', { version: number(saved.version) })}
                 </a>
               )}
-              {dirty && <span className="panel-footnote">{t('ui.save_before_export')}</span>}
               {dirty && (
                 <button
                   type="button"
@@ -388,7 +383,6 @@ export default function InvestigationPanel({
             </div>
             <div className="investigation-artifacts" id="brief-artifacts">
               <h3>{t('ui.registered_briefs_and_artifacts')}</h3>
-              {saved.artifacts.length > 0 && <p>{t('ui.artifact_versions_notice')}</p>}
               {saved.artifacts.length ? (
                 saved.artifacts.map((artifact) => {
                   const url = artifactUrl(artifact.url);

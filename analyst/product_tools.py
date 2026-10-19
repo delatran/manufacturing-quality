@@ -20,7 +20,7 @@ from .tools import ToolEnvelope as ToolEnvelope
 from .tools import function_schema
 
 TOOLS_VERSION = "dashboard-analysis-v15"
-INSTRUCTIONS_VERSION = "investigation-v15"
+INSTRUCTIONS_VERSION = "investigation-v16"
 SCENARIOS = ["", "exclude_cost_10", "ambiguous_dm", "year_2024"]
 SECTIONS = [
     "overview",

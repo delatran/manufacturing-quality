@@ -260,7 +260,11 @@ def _selected_cohort_calendar_unit(entry: dict[str, Any], path: str) -> dict[str
 
 def metric_unit(entry: dict[str, Any], path: str) -> dict[str, str] | None:
     """Read unit semantics only for the central, declared analytical tools."""
-    if entry.get("tool") not in _DECLARED_TOOLS or entry.get("result", {}).get("ok") is False:
+    if (
+        entry.get("tool") not in _DECLARED_TOOLS
+        or entry.get("tool") == "analysis_sql"
+        or entry.get("result", {}).get("ok") is False
+    ):
         return None
     metric = path.rpartition(".")[2]
     if metric == "reference_output":
@@ -411,6 +415,16 @@ def metric_unit(entry: dict[str, Any], path: str) -> dict[str, str] | None:
             "metric": metric,
             "unit": "master products",
             "definition": "Eligible products in the selected master-data cohort, not logged events or distinct defective units.",
+        }
+    if re.search(
+        r"\.shared_category_controls\[\d+\]\.lines\[\d+\]\.cost_ratio_to_same_category_other_lines$",
+        path,
+    ):
+        return {
+            "kind": "ratio",
+            "metric": metric,
+            "unit": "dimensionless ratio",
+            "definition": "Average known repair cost for this category on one line divided by its average known repair cost on the other lines.",
         }
     delta = re.search(
         r"\.metric_deltas\.([A-Za-z_][A-Za-z_0-9]*)\.(canonical|selected|delta)$", path
@@ -628,6 +642,7 @@ def unit_note(claims: list[dict[str, Any]], ledger: EvidenceLedger | None, langu
             "percentage_point": "Differences between percentages use percentage points, not relative percent changes.",
             "cost": "Repair costs retain the source amounts; the source does not specify the currency. No currency conversion is applied.",
             "intensity": "Reference intensity uses logged events per thousand reference output units; static reference output is not verified actual production.",
+            "ratio": "Cost comparison ratios divide like monetary measures and are dimensionless multiples.",
         },
         "vi": {
             "count": "Số lượng phản ánh sự kiện lỗi đã ghi nhận, không phải số sản phẩm lỗi riêng biệt.",
@@ -635,11 +650,12 @@ def unit_note(claims: list[dict[str, Any]], ledger: EvidenceLedger | None, langu
             "percentage_point": "Chênh lệch giữa các tỷ lệ tính bằng điểm phần trăm, không phải mức thay đổi phần trăm tương đối.",
             "cost": "Chi phí sửa chữa giữ nguyên giá trị trong nguồn; nguồn không xác định loại tiền. Không quy đổi tiền tệ.",
             "intensity": "Cường độ tham chiếu tính theo số sự kiện trên mỗi nghìn đơn vị sản lượng tham chiếu; sản lượng tham chiếu cố định chưa được xác minh là sản lượng thực tế.",
+            "ratio": "Tỷ số so sánh chi phí là thương của hai đại lượng cùng đơn vị tiền tệ, biểu thị số lần và không có đơn vị.",
         },
     }
     notes = [
         labels[language][key]
-        for key in ("count", "percentage", "percentage_point", "cost", "intensity")
+        for key in ("count", "percentage", "percentage_point", "cost", "intensity", "ratio")
         if key in units
     ]
     if "policy_parameter" in units:
@@ -1027,6 +1043,7 @@ def display_errors(
             "calendar_month_count",
             "product_count",
             "reference_output",
+            "ratio",
         }:
             errors.append(
                 f"Claim {claim['id']} has unit {unit['unit']}; an event or row count unit is incompatible"
@@ -1046,6 +1063,7 @@ def display_errors(
                 "product_count",
                 "count",
                 "reference_output",
+                "ratio",
             }
             and monetary_units
         ):
@@ -1196,7 +1214,7 @@ def visible_scope_header(manifest: dict[str, Any]) -> dict[str, Any]:
         "baseline": "Kỳ gốc" if vi else "Baseline",
         "comparison": "Kỳ so sánh" if vi else "Comparison",
         "canonical": "Canonical",
-        "selected": "Scenario được chọn" if vi else "Selected scenario",
+        "selected": "Kịch bản chọn lọc" if vi else "Selected scenario",
     }
     contexts = manifest.get("contexts", [])
     rows = [
@@ -1214,7 +1232,7 @@ def visible_scope_header(manifest: dict[str, Any]) -> dict[str, Any]:
     }
     shared = next(iter(periods)) if len(periods) == 1 else None
     return {
-        "title": "Phạm vi, phiên bản và đơn vị" if vi else "Scope, versions and units",
+        "title": "Phạm vi & Ngữ cảnh phân tích" if vi else "Scope & Analysis Context",
         "contexts": rows,
         "shared_period": {"start_month": shared[0], "end_month": shared[1]}
         if shared and all(shared)
@@ -1239,10 +1257,10 @@ def metadata_html(manifest: dict[str, Any]) -> str:
             or ("Không có" if vi else "Unavailable"),
         ),
         (
-            "Phiên bản instructions" if vi else "Instructions version",
+            "Phiên bản chỉ dẫn" if vi else "Instructions version",
             manifest["instructions_version"],
         ),
-        ("Phiên bản tools" if vi else "Tools version", manifest["tools_version"]),
+        ("Phiên bản công cụ" if vi else "Tools version", manifest["tools_version"]),
     ]
     header = visible_scope_header(manifest)
     rows.extend((row["label"], row["text"]) for row in header["contexts"])
@@ -1306,7 +1324,7 @@ def references_html(manifest: dict[str, Any]) -> str:
             + escape(reference["code_sha256"])
             + "</li>"
         )
-    title = "Bằng chứng có thể đối chiếu" if manifest["language"] == "vi" else "Evidence references"
+    title = "Tham chiếu bằng chứng" if manifest["language"] == "vi" else "Evidence references"
     # JSON is escaped so source labels cannot terminate the inert data element.
     data = (
         canonical(manifest).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")

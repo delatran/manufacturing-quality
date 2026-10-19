@@ -145,9 +145,9 @@ def priority_block(
             else f"Investigate repair cost per event on {metric['production_line']}"
         )
         evidence = (
-            f"{n(metric['average_known_repair_cost'], 2)} mỗi lần sửa có chi phí so với {n(metric['other_lines_average_known_repair_cost'], 2)} ở các chuyền khác (gấp {n(metric['ratio_to_other_lines'], 2)} lần); {pct(metric['known_cost_share_pct'])} chi phí đã biết đến từ {pct(metric['known_cost_event_share_pct'])} số sự kiện{within}."
+            f"{n(metric['average_known_repair_cost'], 2)} mỗi sự kiện ghi nhận có chi phí hợp lệ so với {n(metric['other_lines_average_known_repair_cost'], 2)} ở các chuyền khác (gấp {n(metric['ratio_to_other_lines'], 2)} lần); {pct(metric['known_cost_share_pct'])} chi phí đã biết của các sự kiện đã liên kết đến từ {pct(metric['known_cost_event_share_pct'])} số sự kiện đã liên kết có chi phí hợp lệ{within}."
             if vi
-            else f"{n(metric['average_known_repair_cost'], 2)} per known-cost repair against {n(metric['other_lines_average_known_repair_cost'], 2)} on the other lines ({n(metric['ratio_to_other_lines'], 2)}×); {pct(metric['known_cost_share_pct'])} of known cost from {pct(metric['known_cost_event_share_pct'])} of events{within}."
+            else f"{n(metric['average_known_repair_cost'], 2)} per logged event with known cost against {n(metric['other_lines_average_known_repair_cost'], 2)} on the other lines ({n(metric['ratio_to_other_lines'], 2)}×); {pct(metric['known_cost_share_pct'])} of linked known cost from {pct(metric['known_cost_event_share_pct'])} of linked events with known cost{within}."
         )
         action = (
             f"Cùng Bảo trì tách chi phí sửa của {metric['production_line']} theo nhân công, vật tư, làm lại và dịch vụ ngoài; so sánh cách sửa các sản phẩm tương đương trong cùng nhóm ở chuyền khác, kiểm tra chênh lệch cơ cấu sản phẩm còn lại; xác nhận với Tài chính rằng các chuyền ghi nhận chi phí theo cùng quy tắc."

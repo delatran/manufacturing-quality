@@ -241,7 +241,7 @@ function ScopedRecords({
                 <td>{sourceLabel(row.inspection_method)}</td>
                 <td>
                   {row.repair_cost == null ? tr('ui.unknown') : number(row.repair_cost, 2)}
-                  <small>{sourceLabel(row.cost_status)}</small>
+                  {row.cost_status ? <small>{sourceLabel(row.cost_status)}</small> : null}
                 </td>
               </tr>
             ))}

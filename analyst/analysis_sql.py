@@ -9,12 +9,14 @@ import io
 import json
 import re
 import threading
+from dataclasses import fields
 from pathlib import Path
 from typing import Any, cast
 
 import duckdb
 import pandas as pd
 
+from .case_study.models import Event, Product
 from .evidence import sha256
 
 
@@ -96,8 +98,28 @@ def query_snapshot(
             content = path.read_bytes()
             if sha256(content) != expected_hashes.get(path.name):
                 raise ValueError("Snapshot SQL input does not match its canonical receipt")
-            frame = pd.read_csv(io.BytesIO(content))
             name = aliases[path.name]
+            dtypes = {
+                field.name: "string" for field in fields(Event if name == "events" else Product)
+            }
+            dtypes.update(
+                {"product_id": "Int64", "monthly_output": "Int64"}
+                if name == "products"
+                else {
+                    "defect_id": "Int64",
+                    "product_id": "Int64",
+                    "source_row": "Int64",
+                    "repair_cost": "Float64",
+                    "matched_product": "boolean",
+                }
+            )
+            nullable = "repair_cost" if name == "events" else "monthly_output"
+            frame = pd.read_csv(
+                io.BytesIO(content),
+                dtype=dtypes,
+                keep_default_na=False,
+                na_values={nullable: [""]},
+            )
             connection.register(name, frame)
             tables[name] = {
                 "columns": list(frame.columns),

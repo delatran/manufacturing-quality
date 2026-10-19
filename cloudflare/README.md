@@ -36,6 +36,11 @@ cookie creation, and visitor capacity controls remain separate from execution
 limits. Visitors see a retry message when the service is busy and do not need to
 pay or log in.
 
+Registered visitors can still read session state and request cancellation when
+their execution lease expires and capacity is full. New sessions, prompts and
+WebSocket connections continue to require capacity, because the WebSocket also
+carries new prompts. Identifier cleanup keeps its scheduled alarm during traffic.
+
 The Container selects `agent_backend="agents_api"` and `unbounded_runs=true`, using
 maximum reasoning effort. Application cost, output-token, turn, tool-call and run
 duration ceilings are absent. New managed sessions omit `spend_control`; public

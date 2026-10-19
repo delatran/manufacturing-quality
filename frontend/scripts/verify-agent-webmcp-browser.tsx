@@ -7,7 +7,13 @@ import { I18nScope } from '../src/i18n';
 import type { Locale } from '../src/i18n';
 import { initialFilters } from '../src/dashboard-types';
 import type { DashboardData } from '../src/dashboard-types';
-import { canonicalPromptRequest, pendingPromptStorageKey } from '../src/agent-prompt-requests';
+import {
+  canonicalPromptRequest,
+  clearPendingPromptRequest,
+  promptRequestStorage,
+  readPendingPromptRequest,
+} from '../src/agent-prompt-requests';
+import { isolateAgentStorage } from './agent-storage-fixture';
 import type { PromptReceipt, PromptRequest } from '../src/agent-prompt-requests';
 import type { Session, WorkspaceEvent } from '../src/types';
 import type { WebMcpTool } from '../src/webmcp';
@@ -52,17 +58,11 @@ export async function runAgentWebMcpVerification() {
   const savedFetch = window.fetch;
   const savedSocket = window.WebSocket;
   const descriptor = Object.getOwnPropertyDescriptor(document, 'modelContext');
-  const storageKeys = [
-    'analyst.workspace.session.v1',
-    'analyst.workspace.draft.v2',
-    pendingPromptStorageKey,
-  ];
-  const savedStorage = storageKeys.map((key) => [key, localStorage.getItem(key)] as const);
+  const storage = isolateAgentStorage();
   const environment = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean };
   const savedAct = environment.IS_REACT_ACT_ENVIRONMENT;
   environment.IS_REACT_ACT_ENVIRONMENT = true;
-  storageKeys.forEach((key) => localStorage.removeItem(key));
-  localStorage.setItem(storageKeys[0], sid);
+  localStorage.setItem('analyst.workspace.session.v1', sid);
   const registry = new Map<string, WebMcpTool>();
   Object.defineProperty(document, 'modelContext', {
     configurable: true,
@@ -278,7 +278,7 @@ export async function runAgentWebMcpVerification() {
     );
     check(host.querySelector('.pending-message'), 'The submitted question is visibly pending');
     check(
-      localStorage.getItem(pendingPromptStorageKey)?.includes(key(1)),
+      readPendingPromptRequest(promptRequestStorage(), sid)?.request.client_request_id === key(1),
       'Pending identity is retained before acknowledgement',
     );
     await execute('submit_agent_prompt', submission(1, 'Explain the source.'));
@@ -301,7 +301,8 @@ export async function runAgentWebMcpVerification() {
     );
     await acknowledge(sent[0], { run_id: receiptRun });
     check(
-      !host.querySelector('.pending-message') && !localStorage.getItem(pendingPromptStorageKey),
+      !host.querySelector('.pending-message') &&
+        !readPendingPromptRequest(promptRequestStorage(), sid),
       'Accepted receipt clears the pending state and key',
     );
     check(
@@ -309,8 +310,13 @@ export async function runAgentWebMcpVerification() {
       'Rejected Dashboard prefill does not apply late after admission',
     );
     check(
+      !host.querySelector('[data-agent-request-status="accepted"]'),
+      'An accepted active run does not display a redundant delivery notice',
+    );
+    await acknowledge(sent[0], { run_id: receiptRun, queued: true });
+    check(
       host.querySelector('[data-agent-request-status="accepted"]'),
-      'Admission remains visible before its own run reaches a terminal state',
+      'Queued admission remains visible before its own run reaches a terminal state',
     );
     await receive('status', { state: 'running', language: 'en' }, receiptRun);
     await receive(
@@ -327,7 +333,7 @@ export async function runAgentWebMcpVerification() {
     await receive('status', { state: 'completed', language: 'en' }, receiptRun);
     check(
       !host.querySelector('[data-agent-request-status="accepted"]'),
-      'A completed run no longer displays a notice promising future results',
+      'A completed run no longer displays a queued notice',
     );
     dashboardId = otherContextId;
     locale = 'vi';
@@ -521,8 +527,8 @@ export async function runAgentWebMcpVerification() {
 
     await act(async () => root.render(null));
     Object.defineProperty(document, 'modelContext', { configurable: true, value: undefined });
-    localStorage.removeItem(pendingPromptStorageKey);
-    localStorage.removeItem(storageKeys[1]);
+    clearPendingPromptRequest(promptRequestStorage(), sid, key(6));
+    localStorage.removeItem('analyst.workspace.draft.v2');
     mountKey = 'unsupported';
     await render();
     await waitFor(() => sockets.length === 3);
@@ -568,10 +574,7 @@ export async function runAgentWebMcpVerification() {
     window.WebSocket = savedSocket;
     if (descriptor) Object.defineProperty(document, 'modelContext', descriptor);
     else Reflect.deleteProperty(document, 'modelContext');
-    for (const [key, value] of savedStorage) {
-      if (value === null) localStorage.removeItem(key);
-      else localStorage.setItem(key, value);
-    }
+    storage.restore();
     environment.IS_REACT_ACT_ENVIRONMENT = savedAct;
   }
 }

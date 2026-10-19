@@ -490,8 +490,8 @@ def test_public_summary_display_uses_full_part_snapshots_and_preserves_raw_audit
             else "Đang kiểm tra dữ liệu và bằng chứng."
         )
         await runtime.emit("reasoning_part", {**identity, "phase": "added", "text": ""})
-        # A chunk may split in the middle of a word. Only accumulated prose can
-        # select the original public summary for the primary display.
+        # A chunk may split in the middle of a word. Keep the actual provider
+        # text visible while the full part supplies a language signal.
         await runtime.emit("reasoning_summary", {**identity, "delta": text[:2]})
         await runtime.emit(
             "reasoning_summary", {**identity, "output_index": 3, "delta": text[2:11]}
@@ -503,7 +503,9 @@ def test_public_summary_display_uses_full_part_snapshots_and_preserves_raw_audit
         assert all(data["language"] == language for _, data in events)
         assert all(data["display_mode"] == "snapshot" for _, data in events)
         assert all(data["item_id"] == identity["item_id"] for _, data in events)
-        assert events[1][1]["display_source"] == "task_status"
+        assert events[1][1]["display_source"] == "provider_summary"
+        assert events[1][1]["display_text"] == text[:2]
+        assert events[1][1]["display_localized"] is False
         for _, data in events[-3:]:
             assert data["display_text"] == text
             assert data["display_source"] == "provider_summary"
@@ -520,10 +522,11 @@ def test_public_summary_display_uses_full_part_snapshots_and_preserves_raw_audit
         )
         data = events[-1][1]
         assert data["text"] == other
-        assert data["display_text"] != other
-        assert text_language(data["display_text"]) == language
-        assert data["display_source"] == "task_status"
-        assert data["display_localized"] is True
+        assert data["display_text"] == other
+        assert data["display_language"] == ("vi" if language == "en" else "en")
+        assert data["display_source"] == "provider_summary"
+        assert data["display_localized"] is False
+        assert data["translation_state"] == "pending"
 
     asyncio.run(scenario())
 

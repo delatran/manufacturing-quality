@@ -172,12 +172,23 @@ export function savedWorkForReport(
 const description = (error: unknown) => (error instanceof Error ? error.message : String(error));
 const readSession = () => {
   try {
+    const tabSession = sessionStorage.getItem(storageKey);
+    if (tabSession) return tabSession;
+  } catch {
+    /* Fall back to the last shared session when tab storage is unavailable. */
+  }
+  try {
     return localStorage.getItem(storageKey);
   } catch {
     return null;
   }
 };
 const saveSession = (id: string) => {
+  try {
+    sessionStorage.setItem(storageKey, id);
+  } catch {
+    /* The mounted workspace retains its session when tab storage is unavailable. */
+  }
   try {
     localStorage.setItem(storageKey, id);
   } catch {
@@ -1670,29 +1681,28 @@ export default function AgentWorkspace({
               </details>
             </div>
           )}
-          {lastReceipt && !awaitingPrompt && !receiptRunFinished && (
-            <p
-              className="composer-delivery-note"
-              role="status"
-              data-agent-request-status={lastReceipt.status}
-            >
-              {lastReceipt.status === 'accepted'
-                ? lastReceipt.queued
+          {lastReceipt &&
+            !awaitingPrompt &&
+            !receiptRunFinished &&
+            (lastReceipt.status !== 'accepted' || lastReceipt.queued) && (
+              <p
+                className="composer-delivery-note"
+                role={lastReceipt.status === 'accepted' ? 'status' : 'alert'}
+                data-agent-request-status={lastReceipt.status}
+              >
+                {lastReceipt.status === 'accepted'
                   ? locale === 'vi'
                     ? 'Yêu cầu đã được xếp hàng cho một lượt phân tích riêng.'
                     : 'The question is queued for a separate analysis.'
-                  : locale === 'vi'
-                    ? 'Yêu cầu đã được nhận. Kết quả sẽ xuất hiện trong hội thoại.'
-                    : 'The request was accepted. Results will appear in the conversation.'
-                : lastReceipt.status === 'rejected'
-                  ? locale === 'vi'
-                    ? 'Yêu cầu chưa được nhận. Xem thông báo và kiểm tra lại câu hỏi.'
-                    : 'The request was rejected. Review the message and question.'
-                  : locale === 'vi'
-                    ? 'Chưa xác định được trạng thái nhận yêu cầu.'
-                    : 'Request admission has not been confirmed.'}
-            </p>
-          )}
+                  : lastReceipt.status === 'rejected'
+                    ? locale === 'vi'
+                      ? 'Yêu cầu chưa được nhận. Xem thông báo và kiểm tra lại câu hỏi.'
+                      : 'The request was rejected. Review the message and question.'
+                    : locale === 'vi'
+                      ? 'Chưa xác định được trạng thái nhận yêu cầu.'
+                      : 'Request admission has not been confirmed.'}
+              </p>
+            )}
           {cancellation?.status === 'uncertain' && (
             <p className="composer-delivery-note" role="alert">
               {locale === 'vi'

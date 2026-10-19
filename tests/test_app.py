@@ -240,11 +240,22 @@ def test_summary_display_metadata_survives_browser_event_projection(tmp_path):
             "display_mode": "snapshot",
             "display_source": "task_status",
             "display_localized": True,
+            "display_language": "vi",
+            "translation_state": "pending",
+            "source_provider_event_id": "provider-summary-done-1",
         }
         asyncio.run(workspace.emit(sid, rid, "reasoning_summary", data))
         saved = workspace.store.events(sid)[-1]
         assert saved["type"] == "reasoning"
         assert saved["data"]["text"] == data["delta"]
         assert saved["data"]["language"] == "vi"
-        for field in ("display_text", "display_mode", "display_source", "display_localized"):
+        for field in (
+            "display_text",
+            "display_mode",
+            "display_source",
+            "display_localized",
+            "display_language",
+            "translation_state",
+            "source_provider_event_id",
+        ):
             assert saved["data"][field] == data[field]

@@ -9,7 +9,7 @@ import httpx2
 import pytest
 from agents import Agent, ModelSettings, Runner, function_tool, set_tracing_disabled
 from agents.models.interface import ModelTracing
-from analyst.config import Settings
+from analyst.config import Settings, estimate_token_cost, model_capabilities
 from analyst.managed_agents import ManagedAgentsModel, managed_trace
 from analyst.model import BudgetExceeded, ResponseProtocolError
 from openai import BadRequestError
@@ -346,7 +346,7 @@ def test_continuation_reasoning_alias_keeps_unique_durable_ui_identity():
 
 
 @pytest.mark.parametrize(
-    "case", ["persisted_repeat", "new_text", "other_turn", "ambiguous", "partial_summary"]
+    "case", ["persisted_repeat", "new_text", "other_turn", "ambiguous", "missing_index"]
 )
 def test_reasoning_alias_does_not_merge_distinct_or_ambiguous_output(case):
     model, observed = model_for(Sessions([], [], []))
@@ -364,11 +364,12 @@ def test_reasoning_alias_does_not_merge_distinct_or_ambiguous_output(case):
         incoming.turn_id = "turn_other"
     elif case == "ambiguous":
         records.append(reasoning_item("rs_other_original").model_dump())
-    else:
-        incoming.summary.pop()
 
     async def run():
-        await model._observe(Stream(reasoning_events(incoming, case)))
+        events = reasoning_events(incoming, case)
+        if case == "missing_index":
+            events = [item for item in events if getattr(item, "summary_index", None) != 1]
+        await model._observe(Stream(events))
         await model._reconcile_reasoning_aliases(records)
 
     asyncio.run(run())
@@ -1104,6 +1105,113 @@ def test_late_cache_details_do_not_recharge_previously_accounted_session_cost():
     assert len([kind for kind, _ in events if kind == "usage"]) == len(observations)
     assert all(row["usage_is_best_effort"] and not row["billing_settled"] for row in model.usage)
     assert all(row["actual_cost_usd"] is None for row in model.usage)
+
+
+def test_cumulative_usage_above_request_pricing_threshold_keeps_cost_unknown():
+    model, _ = model_for(Sessions([], [], []))
+    model.settings = replace(model.settings, unbounded_runs=True)
+    model.session_id, model.turn_id = "sess_real", "turn_real"
+    threshold = model_capabilities(model.settings.model)["long_context_threshold"]
+    observations = [(160_000, 400, 0), (threshold, 800, 1_000), (320_000, 900, 2_000)]
+    sdk_usage = []
+
+    async def run():
+        for index, (input_tokens, output_tokens, cached_tokens) in enumerate(observations):
+            snapshot = session()
+            snapshot.usage = Node(
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                input_tokens_details=Node(cached_tokens=cached_tokens),
+            )
+            model.budget["unresolved_generation_requests"] += 1
+            sdk_usage.append(await model._account_boundary(snapshot, str(index), time.monotonic()))
+
+    asyncio.run(run())
+    for row, (input_tokens, output_tokens, cached_tokens) in zip(
+        model.usage[:2], observations[:2], strict=True
+    ):
+        assert row["estimated_session_token_cost_usd"] == pytest.approx(
+            estimate_token_cost(model.settings.model, input_tokens, output_tokens, cached_tokens)
+        )
+    ambiguous = model.usage[-1]
+    assert ambiguous["estimated_token_cost_usd"] is None
+    assert ambiguous["estimated_session_token_cost_usd"] is None
+    assert ambiguous["estimated_cost_unavailable_reason"] == "insufficient_generation_granularity"
+    assert ambiguous["cost_usd"] is None
+    assert ambiguous["input_tokens"] == 320_000
+    assert ambiguous["output_tokens"] == 900
+    assert ambiguous["cached_tokens"] == 2_000
+    assert all(row["estimated_cost_unavailable_reason"] is None for row in model.usage[:2])
+    assert model.budget["cost_usd"] == pytest.approx(
+        model.usage[-2]["estimated_session_token_cost_usd"]
+    )
+    assert model.budget["managed_cost_unknown"] is True
+    assert model.budget["unresolved_generation_requests"] == 0
+    assert sum(usage.input_tokens for usage in sdk_usage) == 320_000
+    assert sum(usage.output_tokens for usage in sdk_usage) == 900
+    assert all(not row["usage_complete"] and row["actual_cost_usd"] is None for row in model.usage)
+
+
+def test_revised_cumulative_usage_never_recounts_input_or_output_tokens():
+    model, _ = model_for(Sessions([], [], []))
+    model.settings = replace(model.settings, unbounded_runs=True)
+    model.session_id, model.turn_id = "sess_real", "turn_real"
+    observations = [(1000, 10, 0), (900, 8, 900), (1000, 10, 900), (1100, 12, 900)]
+    sdk_usage, costs = [], []
+
+    async def run():
+        for index, (input_tokens, output_tokens, cached_tokens) in enumerate(observations):
+            snapshot = session()
+            snapshot.usage = Node(
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                input_tokens_details=Node(cached_tokens=cached_tokens),
+            )
+            model.budget["unresolved_generation_requests"] += 1
+            sdk_usage.append(await model._account_boundary(snapshot, str(index), time.monotonic()))
+            costs.append(model.budget["cost_usd"])
+
+    asyncio.run(run())
+    assert [usage.input_tokens for usage in sdk_usage] == [1000, 0, 0, 100]
+    assert [usage.output_tokens for usage in sdk_usage] == [10, 0, 0, 2]
+    assert costs == sorted(costs)
+    assert all(row["estimated_token_cost_usd"] >= 0 for row in model.usage)
+    assert [row["input_tokens"] for row in model.usage] == [1000, 900, 1000, 1100]
+    assert [row["output_tokens"] for row in model.usage] == [10, 8, 10, 12]
+    assert [row["cached_tokens"] for row in model.usage] == [0, 900, 900, 900]
+
+
+def test_unknown_aggregate_estimate_preserves_bounded_session_reservation_and_budget():
+    final = session()
+    final.usage.input_tokens = 320_000
+    sessions = Sessions(
+        [final],
+        [[message()]],
+        [
+            Stream(
+                [
+                    event("agent.session.created", session=final),
+                    event("agent.session.turn.completed", session_id=final.id, turn_id="turn_real"),
+                    event("agent.session.idle", session=final),
+                ]
+            )
+        ],
+    )
+    model, _ = model_for(sessions)
+    model.settings = replace(model.settings, max_cost_usd_per_run=0.30)
+    asyncio.run(request(model))
+    assert sessions.creates[0]["spend_control"] == {"limit": 30}
+    assert model.usage[0]["estimated_token_cost_usd"] is None
+    assert model.usage[0]["cost_usd"] == pytest.approx(0.30)
+    assert model.usage[0]["cost_is_reservation"] is True
+    assert model.budget["cost_usd"] == pytest.approx(0.30)
+    assert model.budget["managed_reserved_cost_usd"] == pytest.approx(0.30)
+    other_sessions = Sessions([], [], [])
+    other, _ = model_for(other_sessions, budget=model.budget)
+    other.settings = model.settings
+    with pytest.raises(BudgetExceeded):
+        asyncio.run(request(other))
+    assert other_sessions.creates == []
 
 
 @pytest.mark.parametrize("output_model_name", ["ReportDraft", "QAReview"])

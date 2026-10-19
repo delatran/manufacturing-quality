@@ -104,7 +104,7 @@ export default function App() {
       setError('');
       try {
         const result = refreshSource
-          ? await refreshDashboard(next)
+          ? await refreshDashboard(next, abort.signal)
           : await getDashboard(next, abort.signal);
         throwIfAborted(signal);
         if (!mounted.current || version !== requestVersion.current) return { status: 'superseded' };

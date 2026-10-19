@@ -1,8 +1,8 @@
 import {DurableObject, WorkerEntrypoint} from "cloudflare:workers";
-import {PREPARE_UPGRADE, UpgradeDeferred, containsHandoffMarker, upgradeReadAllowed} from "./container_upgrade.js";
+import {PREPARE_UPGRADE, UpgradeDeferred, containsHandoffMarker} from "./container_upgrade.js";
 import {
   DAY, PROVIDER_BODY_LIMIT, SNAPSHOT_LIMIT, cleanHeaders,
-  failure, limitedBytes, providerPath, routeKind, setVisitorCookie, validOrigin,
+  failure, limitedBytes, providerPath, routeKind, runtimeRecoveryAllowed, setVisitorCookie, validOrigin,
   validateProviderBody, visitorCookie,
 } from "./policy.js";
 
@@ -39,7 +39,9 @@ export default {
       } catch { return failure("The upload is too large. Files may be up to 8 MB.", 413); }
     }
     const ip = await hash(request.headers.get("cf-connecting-ip") ?? "missing-ip");
-    const guard = await admission(env, "/admit", {ip, token: visitorCookie(request), agent: kind === "agent"});
+    const guard = await admission(env, "/admit", {
+      ip, token: visitorCookie(request), agent: kind === "agent", recovery: runtimeRecoveryAllowed(request),
+    });
     if (!guard.ok) return guard;
     const {token, created} = await guard.json();
     const headers = cleanHeaders(request.headers);
@@ -76,7 +78,9 @@ export class Admission extends DurableObject {
         const visitor = created ? {expires: now + 7 * DAY, minute: now, count: 0} : existing;
         if (now - visitor.minute > 60000) { visitor.minute = now; visitor.count = 0; }
         if (++visitor.count > 120) return failure("Please wait a moment before sending more requests.", 429, 60);
-        if (data.agent) {
+        // Existing visitors can read receipts and cancel work after their lease
+        // expires. New visitors and every prompt-capable transport still need capacity.
+        if (data.agent && (created || data.recovery !== true)) {
           const active = (await tx.get("active") ?? []).filter(entry => entry.until > now && entry.token !== token);
           if (active.length >= 10) return failure("The analyst is busy helping other visitors. Please try again shortly.", 503, 60);
           active.push({token, until: now + ACTIVE_LEASE});
@@ -84,7 +88,9 @@ export class Admission extends DurableObject {
         }
         await tx.put(`ip:${data.ip}`, counts);
         await tx.put(`visitor:${token}`, visitor);
-        await tx.setAlarm(now + DAY);
+        const cleanupAt = now + DAY;
+        const scheduled = await tx.getAlarm();
+        if (scheduled === null || scheduled > cleanupAt) await tx.setAlarm(cleanupAt);
         return Response.json({token, created});
       });
     }
@@ -135,7 +141,7 @@ export class AnalystContainer extends DurableObject {
     this.starting ??= this.start().finally(() => { this.starting = undefined; });
     try { await this.starting; }
     catch (error) {
-      if (!(error instanceof UpgradeDeferred) || !upgradeReadAllowed(request))
+      if (!(error instanceof UpgradeDeferred) || !runtimeRecoveryAllowed(request))
         return failure("The analyst is updating its workspace. Please try again shortly.", 503, 5);
     }
     url.protocol = "http:";

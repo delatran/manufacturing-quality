@@ -56,8 +56,7 @@ export default function EvidencePanel({
       </div>
       {recommendation && <p className="evidence-statement">{prose(recommendation.evidence)}</p>}
       <p className="panel-caption">
-        {month(data.context.filters.start_month)} → {month(data.context.filters.end_month)} ·{' '}
-        {t('ui.the_metrics_and_downloads_below_use_the_applied_snapshot_and_filt')}
+        {month(data.context.filters.start_month)} → {month(data.context.filters.end_month)}
       </p>
       <dl className="evidence-metrics">
         <div>
@@ -77,9 +76,6 @@ export default function EvidencePanel({
           <dd>{number(kpis.reference_output)}</dd>
         </div>
       </dl>
-      <p className="panel-footnote">
-        {t('ui.counts_describe_defect_events_reference_intensity_uses_all_master')}
-      </p>
       <div className="evidence-actions">
         {recommendation?.filters && (
           <button

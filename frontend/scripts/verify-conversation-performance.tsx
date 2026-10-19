@@ -6,6 +6,7 @@ import AgentWorkspace from '../src/AgentWorkspace';
 import { I18nScope } from '../src/i18n';
 import { initialFilters } from '../src/dashboard-types';
 import type { Session, WorkspaceEvent } from '../src/types';
+import { isolateAgentStorage } from './agent-storage-fixture';
 
 const check = (condition: unknown, message: string) => {
   if (!condition) throw new Error(message);
@@ -25,10 +26,8 @@ export async function runAgentConversationBenchmark() {
   const root = createRoot(host);
   const savedFetch = window.fetch;
   const savedSocket = window.WebSocket;
-  const savedSession = localStorage.getItem('analyst.workspace.session.v1');
-  const savedDraft = localStorage.getItem('analyst.workspace.draft.v2');
+  const storage = isolateAgentStorage();
   localStorage.setItem('analyst.workspace.session.v1', sessionId);
-  localStorage.removeItem('analyst.workspace.draft.v2');
   let historicalEventReads = 0;
   let historicalReportReads = 0;
   let sequence = 0;
@@ -293,9 +292,6 @@ export async function runAgentConversationBenchmark() {
     host.remove();
     window.fetch = savedFetch;
     window.WebSocket = savedSocket;
-    if (savedSession === null) localStorage.removeItem('analyst.workspace.session.v1');
-    else localStorage.setItem('analyst.workspace.session.v1', savedSession);
-    if (savedDraft === null) localStorage.removeItem('analyst.workspace.draft.v2');
-    else localStorage.setItem('analyst.workspace.draft.v2', savedDraft);
+    storage.restore();
   }
 }

@@ -119,16 +119,18 @@ export function PriorityCard({
         <strong>{t('ui.dashboard_action')}: </strong>
         {prose(item.action)}
       </p>
-      <details className="priority-plan">
-        <summary>
-          {t('ui.dashboard_measurement_plan')}
-          <ChevronDown size={14} aria-hidden="true" />
-        </summary>
-        <dl>
-          <dt>{t('ui.dashboard_success')}</dt>
-          <dd>{prose(item.success_measure)}</dd>
-        </dl>
-      </details>
+      {item.success_measure ? (
+        <details className="priority-plan">
+          <summary>
+            {t('ui.dashboard_measurement_plan')}
+            <ChevronDown size={14} aria-hidden="true" />
+          </summary>
+          <dl>
+            <dt>{t('ui.dashboard_success')}</dt>
+            <dd>{prose(item.success_measure)}</dd>
+          </dl>
+        </details>
+      ) : null}
       <div className="priority-actions">
         <div className="priority-actions-main">
           <button type="button" className="secondary-button" onClick={onEvidence}>
@@ -212,7 +214,7 @@ export function Kpi({
           viewBox="0 0 100 32"
           preserveAspectRatio="none"
           role="img"
-          aria-label={sparkLabel}
+          aria-label={sparkLabel || label}
         >
           <polyline points={points} />
         </svg>

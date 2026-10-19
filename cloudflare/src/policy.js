@@ -46,6 +46,13 @@ export function routeKind(path, method) {
   return "blocked";
 }
 
+export function runtimeRecoveryAllowed(request) {
+  // A WebSocket is a prompt transport even though its handshake uses GET.
+  if (request.headers.get("upgrade")?.toLowerCase() === "websocket") return false;
+  return ["GET", "HEAD"].includes(request.method) ||
+    (request.method === "POST" && /^\/api\/sessions\/[^/]+\/cancel$/.test(new URL(request.url).pathname));
+}
+
 const identifier = value => typeof value === "string" && /^[A-Za-z0-9_-]{1,256}$/.test(value);
 
 export function providerPath(path, method, search = "") {

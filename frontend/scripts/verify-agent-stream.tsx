@@ -9,8 +9,9 @@ import { initialFilters } from '../src/dashboard-types';
 import type { DashboardData } from '../src/dashboard-types';
 import type { Session, WorkspaceEvent } from '../src/types';
 import type { UiCommand } from '../src/workspace-state';
-import { canonicalPromptRequest, pendingPromptStorageKey } from '../src/agent-prompt-requests';
+import { canonicalPromptRequest } from '../src/agent-prompt-requests';
 import type { PromptRequest } from '../src/agent-prompt-requests';
+import { isolateAgentStorage } from './agent-storage-fixture';
 
 function check(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -47,16 +48,11 @@ export async function runAgentStreamVerification() {
   const originalFetch = window.fetch;
   const originalSocket = window.WebSocket;
   const sessionKey = 'analyst.workspace.session.v1';
-  const draftKey = 'analyst.workspace.draft.v2';
-  const savedSession = localStorage.getItem(sessionKey);
-  const savedDraft = localStorage.getItem(draftKey);
-  const savedPending = localStorage.getItem(pendingPromptStorageKey);
+  const storage = isolateAgentStorage();
   const environment = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean };
   const previousActEnvironment = environment.IS_REACT_ACT_ENVIRONMENT;
   environment.IS_REACT_ACT_ENVIRONMENT = true;
   localStorage.setItem(sessionKey, sessionId);
-  localStorage.removeItem(draftKey);
-  localStorage.removeItem(pendingPromptStorageKey);
   const sockets: FixtureSocket[] = [];
   const sent: Record<string, unknown>[] = [];
   const receiptEvent = (id: number, prompt: Record<string, unknown>, runId?: string) =>
@@ -490,12 +486,7 @@ export async function runAgentStreamVerification() {
     host.remove();
     window.fetch = originalFetch;
     window.WebSocket = originalSocket;
-    if (savedSession === null) localStorage.removeItem(sessionKey);
-    else localStorage.setItem(sessionKey, savedSession);
-    if (savedDraft === null) localStorage.removeItem(draftKey);
-    else localStorage.setItem(draftKey, savedDraft);
-    if (savedPending === null) localStorage.removeItem(pendingPromptStorageKey);
-    else localStorage.setItem(pendingPromptStorageKey, savedPending);
+    storage.restore();
     environment.IS_REACT_ACT_ENVIRONMENT = previousActEnvironment;
   }
 }

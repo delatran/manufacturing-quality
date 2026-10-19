@@ -4,7 +4,7 @@ import {DatabaseSync} from "node:sqlite";
 import {gzipSync} from "node:zlib";
 import test from "node:test";
 import {
-  PROVIDER_BODY_LIMIT, SNAPSHOT_LIMIT, cleanHeaders, providerPath, routeKind, setVisitorCookie,
+  DAY, PROVIDER_BODY_LIMIT, SNAPSHOT_LIMIT, cleanHeaders, providerPath, routeKind, runtimeRecoveryAllowed, setVisitorCookie,
   validOrigin, validateProviderBody, visitorCookie,
 } from "../src/policy.js";
 
@@ -29,6 +29,7 @@ function storage() {
     put: async (key, value) => { data.set(key, structuredClone(value)); },
     delete: async key => data.delete(key),
     list: async ({prefix}) => new Map([...data].filter(([key]) => key.startsWith(prefix))),
+    getAlarm: async () => data.get("alarm") ?? null,
     setAlarm: async value => { data.set("alarm", value); },
     deleteAlarm: async () => { data.delete("alarm"); },
     transaction: async fn => fn(this),
@@ -151,6 +152,9 @@ test("an active previous run retains reads and cancellation while new prompts wa
     const response = await runtime.fetch(new Request(`https://tranthiennhan.com${path}`, {method, headers: {"x-analyst-role": "agent"}}));
     assert.equal(response.status, expected);
   }
+  assert.equal((await runtime.fetch(new Request("https://tranthiennhan.com/api/sessions/s1/ws", {
+    headers: {"x-analyst-role": "agent", Upgrade: "websocket"},
+  }))).status, 503);
   assert.equal(await ctx.storage.get("image-upgrade"), undefined);
 });
 
@@ -529,6 +533,87 @@ test("IP admission survives cookie replacement", async () => {
   for (let i = 0; i < 10; i++)
     assert.equal((await gate.fetch(post({ip: "same-connection", token: "f".repeat(64), agent: false}))).status, 200);
   assert.equal((await gate.fetch(post({ip: "same-connection", token: null, agent: false}))).status, 429);
+});
+
+test("expired capacity leases retain existing visitor reads and cancellation without admitting new work", async t => {
+  let now = 1_000_000_000;
+  t.mock.method(Date, "now", () => now);
+  const ctx = context(); const settings = env(); const gate = new Admission(ctx, settings);
+  settings.ADMISSION = {getByName: () => ({fetch: request => gate.fetch(request)})};
+  const forwarded = [];
+  settings.ANALYST = {getByName: name => ({fetch: async request => {
+    forwarded.push({name, path: new URL(request.url).pathname, method: request.method});
+    return Response.json({ok: true});
+  }})};
+  const request = (path, {ip = "original", cookie, method = "GET", websocket = false} = {}) => new Request(
+    `https://tranthiennhan.com${path}`, {method, headers: {
+      Origin: settings.PUBLIC_ORIGIN, "cf-connecting-ip": ip,
+      ...(cookie ? {Cookie: cookie} : {}), ...(websocket ? {Upgrade: "websocket"} : {}),
+    }},
+  );
+  const first = await worker.fetch(request("/api/sessions", {method: "POST"}), settings);
+  assert.equal(first.status, 200);
+  const cookie = first.headers.get("set-cookie").split(";")[0];
+  const originalContainer = forwarded[0].name;
+  now += 31 * 60 * 1000;
+  for (let index = 0; index < 10; index++) {
+    const response = await worker.fetch(request("/api/sessions", {method: "POST", ip: `new-${index}`}), settings);
+    assert.equal(response.status, 200);
+  }
+  const fullCapacity = await ctx.storage.get("active");
+  assert.equal(fullCapacity.length, 10);
+  for (const path of ["/api/config", "/api/dashboard", "/api/sessions/s1", "/api/sessions/s1/prompt-requests/request-1"]) {
+    const response = await worker.fetch(request(path, {cookie}), settings);
+    assert.equal(response.status, 200, path);
+    assert.equal(response.headers.get("set-cookie"), null);
+    assert.equal(forwarded.at(-1).name, originalContainer);
+  }
+  assert.equal((await worker.fetch(request("/api/sessions/s1/cancel", {cookie, method: "POST"}), settings)).status, 200);
+  assert.equal(forwarded.at(-1).name, originalContainer);
+  const callsAfterRecovery = forwarded.length;
+  for (const path of ["/api/sessions", "/api/sessions/s1/prompt", "/api/sessions/s1/files"]) {
+    assert.equal((await worker.fetch(request(path, {cookie, method: "POST"}), settings)).status, 503, path);
+  }
+  assert.equal((await worker.fetch(request("/api/sessions/s1/ws", {cookie, websocket: true}), settings)).status, 503);
+  for (const unknown of [undefined, "mq_visitor=" + "f".repeat(64)]) {
+    assert.equal((await worker.fetch(request("/api/sessions/s1", {cookie: unknown, ip: "unknown"}), settings)).status, 503);
+    assert.equal((await worker.fetch(request("/api/sessions/s1/cancel", {cookie: unknown, ip: "unknown", method: "POST"}), settings)).status, 503);
+  }
+  assert.equal(forwarded.length, callsAfterRecovery, "blocked requests never reach a visitor container");
+  assert.deepEqual(await ctx.storage.get("active"), fullCapacity, "recovery does not grant or extend an execution lease");
+  assert.equal(runtimeRecoveryAllowed(request("/api/sessions/s1/ws", {websocket: true})), false);
+  const token = cookie.slice("mq_visitor=".length);
+  await ctx.storage.put(`visitor:${token}`, {...await ctx.storage.get(`visitor:${token}`), expires: now - 1});
+  assert.equal((await worker.fetch(request("/api/sessions/s1/cancel", {cookie, method: "POST"}), settings)).status, 503);
+});
+
+test("admission preserves the earliest cleanup alarm and removes expired identifiers when it fires", async t => {
+  let now = 2_000_000_000;
+  t.mock.method(Date, "now", () => now);
+  const ctx = context(); const gate = new Admission(ctx, env());
+  const post = (ip, token = null) => call("/admit", {method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ip, token, agent: false})});
+  const initial = await (await gate.fetch(post("old-ip"))).json();
+  const firstAlarm = await ctx.storage.getAlarm();
+  assert.equal(firstAlarm, now + DAY);
+  await ctx.storage.put("visitor:expired", {expires: firstAlarm - 1});
+  for (let hour = 1; hour <= 23; hour++) {
+    now = firstAlarm - DAY + hour * 60 * 60 * 1000;
+    assert.equal((await gate.fetch(post("current-ip", initial.token))).status, 200);
+    assert.equal(await ctx.storage.getAlarm(), firstAlarm);
+  }
+  const restarted = new Admission(context(ctx.storage), env());
+  now = firstAlarm + 1;
+  await restarted.alarm();
+  assert.equal(await ctx.storage.get("ip:old-ip"), undefined);
+  assert.equal(await ctx.storage.get("visitor:expired"), undefined);
+  assert.ok(await ctx.storage.get("ip:current-ip"));
+  assert.ok(await ctx.storage.get(`visitor:${initial.token}`));
+  assert.equal(await ctx.storage.getAlarm(), now + DAY);
+  const earlier = now + 1000;
+  await ctx.storage.setAlarm(earlier);
+  await restarted.fetch(post("current-ip", initial.token));
+  assert.equal(await ctx.storage.getAlarm(), earlier);
 });
 
 test("an ambiguous managed creation is never retried by the bridge and preserves its idempotency binding", async () => {

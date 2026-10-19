@@ -39,7 +39,11 @@ function friendlyToolLabel(name: string, locale: string = 'vi'): string {
     web_search_call: 'Tìm kiếm web',
     file_search: 'Tìm kiếm tệp',
     file_search_call: 'Tìm kiếm tệp',
-    code_interpreter_call: 'Trình thông dịch mã',
+    code_interpreter_call: 'Thực thi mã',
+    operations_list_cases: 'Rà soát công việc theo dõi',
+    operations_create_draft: 'Chuẩn bị bản nháp công việc',
+    operations_update_draft: 'Chỉnh sửa bản nháp công việc',
+    evidence_detail: 'Tra cứu chi tiết bằng chứng',
   };
   const labelsEn: Record<string, string> = {
     dashboard_context: 'Read Dashboard scope',
@@ -63,6 +67,10 @@ function friendlyToolLabel(name: string, locale: string = 'vi'): string {
     file_search: 'Search files',
     file_search_call: 'Search files',
     code_interpreter_call: 'Run code',
+    operations_list_cases: 'Review follow-up work',
+    operations_create_draft: 'Prepare action draft',
+    operations_update_draft: 'Revise action draft',
+    evidence_detail: 'Inspect evidence details',
   };
   const map = locale === 'vi' ? labelsVi : labelsEn;
   return map[name] || name;
@@ -231,7 +239,7 @@ function StepIcon({ step }: { step: FlowStep }) {
 
 function ThinkingStep({ step }: { step: Extract<FlowStep, { kind: 'thinking' }> }) {
   const { t, locale } = useContext(FlowLanguage);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const [now, setNow] = useState(Date.now);
   const parts = step.parts.map((part) => flowSummaryDisplay(part, locale));
   const empty = parts.every((part) => !part.title && !part.body);
@@ -263,48 +271,42 @@ function ThinkingStep({ step }: { step: Extract<FlowStep, { kind: 'thinking' }> 
       </span>
       <div className="flow-body">
         <div className="flow-headline">
-          {step.done ? (
-            <button
-              type="button"
-              className="flow-thinking-pill"
-              onClick={() => setOpen((prev) => !prev)}
-              aria-expanded={open}
+          <button
+            type="button"
+            className="flow-thinking-pill"
+            onClick={() => setOpen((prev) => !prev)}
+            aria-expanded={open}
+          >
+            <span className="flow-kind">
+              {locale === 'vi' ? 'Tóm tắt suy luận' : 'Reasoning summary'}
+            </span>
+            <span className="flow-pill-badge">
+              {hasTaskStatus && !sectionCount
+                ? locale === 'vi'
+                  ? 'Trạng thái tác vụ'
+                  : 'Task status'
+                : locale === 'vi'
+                  ? `${sectionCount} phần tóm tắt`
+                  : `${sectionCount} summary ${sectionCount === 1 ? 'section' : 'sections'}`}
+              {recordedDuration && ` · ${recordedDuration}`}
+            </span>
+            <ChevronDown
+              className={'flow-chevron ' + (open ? 'is-open' : '')}
+              size={13}
+              aria-hidden="true"
+            />
+          </button>
+          {isActive && elapsed !== undefined && (
+            <span
+              className="flow-live-timer"
+              role="timer"
+              aria-live="off"
+              aria-label={
+                locale === 'vi' ? 'Thời gian từ cập nhật đầu tiên' : 'Time since the first update'
+              }
             >
-              <span className="flow-kind">{t('ui.agent_flow_thinking')}</span>
-              <span className="flow-pill-badge">
-                {hasTaskStatus && !sectionCount
-                  ? locale === 'vi'
-                    ? 'Trạng thái tác vụ'
-                    : 'Task status'
-                  : locale === 'vi'
-                    ? `${sectionCount} phần tóm tắt`
-                    : `${sectionCount} summary ${sectionCount === 1 ? 'section' : 'sections'}`}
-                {recordedDuration && ` · ${recordedDuration}`}
-              </span>
-              <ChevronDown
-                className={'flow-chevron ' + (open ? 'is-open' : '')}
-                size={13}
-                aria-hidden="true"
-              />
-            </button>
-          ) : (
-            <>
-              <span className="flow-kind">{t('ui.agent_flow_thinking')}</span>
-              {isActive && elapsed !== undefined && (
-                <span
-                  className="flow-live-timer"
-                  role="timer"
-                  aria-live="off"
-                  aria-label={
-                    locale === 'vi'
-                      ? 'Thời gian từ cập nhật đầu tiên'
-                      : 'Time since the first update'
-                  }
-                >
-                  {Math.floor(elapsed)}s
-                </span>
-              )}
-            </>
+              {Math.floor(elapsed)}s
+            </span>
           )}
           {step.stopped && <small>{t('ui.agent_flow_unconfirmed')}</small>}
           {step.simulation && <small>{t('ui.agent_flow_simulated')}</small>}
@@ -312,14 +314,41 @@ function ThinkingStep({ step }: { step: Extract<FlowStep, { kind: 'thinking' }> 
         {empty ? (
           <p className="flow-dim">{t('ui.agent_flow_encrypted_reasoning')}</p>
         ) : (
-          <div className="flow-thoughts">
+          <div className="flow-thoughts" hidden={!open}>
             {parts.map((part) => (
               <div className="flow-thought" key={part.index}>
-                {part.displaySource === 'task_status' && (
+                {part.displaySource !== 'translated_provider_summary' && (
                   <span className="flow-summary-source">
-                    {locale === 'vi' ? 'Trạng thái tác vụ' : 'Task status'}
+                    {part.displaySource === 'task_status'
+                      ? locale === 'vi'
+                        ? 'Trạng thái tác vụ'
+                        : 'Task status'
+                      : locale === 'vi'
+                        ? 'Tóm tắt công khai gốc của mô hình'
+                        : 'Original public model summary'}
                   </span>
                 )}
+                {part.displaySource === 'provider_summary' &&
+                  part.translationState &&
+                  part.translationState !== 'translated' && (
+                    <span className="flow-summary-source">
+                      {part.translationState === 'pending'
+                        ? locale === 'vi'
+                          ? 'Đang dịch tóm tắt sang tiếng Việt…'
+                          : 'Translating the summary into English…'
+                        : part.translationState === 'failed'
+                          ? locale === 'vi'
+                            ? 'Chưa dịch thành công. Đang hiển thị bản gốc.'
+                            : 'Translation failed. Showing the original.'
+                          : part.translationState === 'cancelled'
+                            ? locale === 'vi'
+                              ? 'Đã dừng dịch. Đang hiển thị bản gốc.'
+                              : 'Translation stopped. Showing the original.'
+                            : locale === 'vi'
+                              ? 'Chưa dịch. Đang hiển thị bản gốc.'
+                              : 'Translation skipped. Showing the original.'}
+                    </span>
+                  )}
                 {part.title && <strong>{part.title}</strong>}
                 {part.body && <p>{part.body}</p>}
               </div>
@@ -512,12 +541,14 @@ function currentStepSummary(step: FlowStep, t: Translate, locale: string) {
       label: friendlyToolLabel(step.name, locale),
       detail: step.rationale || extractRationale(step.command),
     };
-  // Public reasoning summaries belong to the opt-in timeline. They can contain
-  // model-oriented planning language rather than a user-facing progress update.
+  // The summary is shown in full in the expanded timeline directly below.
   if (step.kind === 'thinking') {
-    const latestPart = [...step.parts].reverse().find((part) => part.title || part.body);
+    const latestPart = [...step.parts]
+      .reverse()
+      .map((part) => flowSummaryDisplay(part, locale === 'vi' ? 'vi' : 'en'))
+      .find((part) => part.title || part.body);
     return {
-      label: t('ui.agent_flow_thinking'),
+      label: locale === 'vi' ? 'Tóm tắt suy luận' : 'Reasoning summary',
       detail: latestPart?.displaySource === 'task_status' ? latestPart.body : undefined,
     };
   }
@@ -589,7 +620,7 @@ function RunFlow({ run }: { run: FlowRun }) {
         step.kind === 'thinking' &&
         step.done &&
         !step.simulation &&
-        step.parts.every((part) => !part.title && !part.body)
+        step.parts.every((part) => !part.raw && !part.title && !part.body)
       ),
   );
   const meta: string[] = [];
@@ -619,7 +650,7 @@ function RunFlow({ run }: { run: FlowRun }) {
     .find((step) => step.kind === 'failure' || (step.kind === 'call' && step.status === 'failed'));
   const issueDetail =
     issue?.kind === 'failure' ? issue.message : issue?.kind === 'call' ? issue.outcome : '';
-  const timelineOpen = disclosure?.runId === run.runId ? disclosure.open : halted;
+  const timelineOpen = disclosure?.runId === run.runId ? disclosure.open : true;
   return (
     <section
       className={'agent-flow ' + (halted ? 'is-stopped' : active ? 'is-active' : 'is-done')}
@@ -712,7 +743,7 @@ function RunFlow({ run }: { run: FlowRun }) {
           </summary>
           <ol className="agent-flow-steps" aria-live="off">
             {visibleSteps.map((step) => (
-              <Step step={step} key={step.id} />
+              <Step step={step} key={run.runId + ':' + step.id} />
             ))}
           </ol>
           {(meta.length > 0 || providerStatuses.length > 0) && (

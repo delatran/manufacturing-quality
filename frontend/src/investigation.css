@@ -309,10 +309,59 @@
 .investigation-meta {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 14px;
   margin-bottom: 20px;
   font-size: 12px;
   color: var(--text-secondary);
+}
+.investigation-verification-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+.investigation-verification-badge.status-verified {
+  background: #edf7ed;
+  border-color: #b2dfdb;
+  color: #1e5239;
+}
+.investigation-verification-badge.status-unverified {
+  background: #fff8e1;
+  border-color: #ffe082;
+  color: #795548;
+}
+.finding-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+.finding-status-badge.status-verified {
+  background: #edf7ed;
+  border-color: #b2dfdb;
+  color: #1e5239;
+}
+.finding-status-badge.status-unverified {
+  background: #fff8e1;
+  border-color: #ffe082;
+  color: #795548;
+}
+.finding-status-badge.status-user_edited {
+  background: #f0f4f8;
+  border-color: #cbd5e1;
+  color: #334155;
 }
 .investigation-unit-notes {
   margin: 0 0 20px;

@@ -31,25 +31,44 @@ export type PendingPromptRequest = {
   request: PromptRequest;
 };
 export const pendingPromptStorageKey = 'analyst.workspace.pending-prompt.v1';
+export const pendingPromptStoragePrefix = 'analyst.workspace.pending-prompt.v2:';
 type PromptStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
-const volatileStorage = new Map<string, string>();
-const fallbackStorage: PromptStorage = {
-  getItem: (key) => volatileStorage.get(key) ?? null,
-  setItem: (key, value) => {
-    volatileStorage.set(key, value);
-  },
-  removeItem: (key) => {
-    volatileStorage.delete(key);
-  },
+export type PromptRequestStorage = {
+  records: PromptStorage;
+  recovery: PromptStorage;
 };
+function memoryStorage(): PromptStorage {
+  const values = new Map<string, string>();
+  return {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => {
+      values.set(key, value);
+    },
+    removeItem: (key) => {
+      values.delete(key);
+    },
+  };
+}
+const fallbackRecords = memoryStorage();
+const fallbackRecovery = memoryStorage();
 
-export function promptRequestStorage(): PromptStorage {
+function browserStorage(name: 'localStorage' | 'sessionStorage', fallback: PromptStorage) {
   try {
-    return localStorage;
+    return window[name];
   } catch {
-    return fallbackStorage;
+    return fallback;
   }
 }
+export function promptRequestStorage(): PromptRequestStorage {
+  return {
+    records: browserStorage('localStorage', fallbackRecords),
+    recovery: browserStorage('sessionStorage', fallbackRecovery),
+  };
+}
+const recoveryKey = (sessionId: string) =>
+  `${pendingPromptStoragePrefix}session:${encodeURIComponent(sessionId)}`;
+const recordKey = (sessionId: string, requestId: string) =>
+  `${pendingPromptStoragePrefix}request:${encodeURIComponent(sessionId)}:${requestId}`;
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
 
@@ -159,12 +178,13 @@ export function samePromptRequest(
   );
 }
 
-export function readPendingPromptRequest(
+function readStoredPendingPrompt(
   storage: Pick<Storage, 'getItem'>,
+  storageKey: string,
   sessionId: string,
 ): PendingPromptRequest | undefined {
   try {
-    const value: unknown = JSON.parse(storage.getItem(pendingPromptStorageKey) || 'null');
+    const value: unknown = JSON.parse(storage.getItem(storageKey) || 'null');
     if (!isRecord(value) || value.session_id !== sessionId || !isRecord(value.request)) return;
     const request = parseRequest(value.request);
     const key = value.request.client_request_id;
@@ -175,28 +195,62 @@ export function readPendingPromptRequest(
   }
 }
 
+export function readPendingPromptRequest(
+  storage: PromptRequestStorage,
+  sessionId: string,
+): PendingPromptRequest | undefined {
+  try {
+    const requestId = storage.recovery.getItem(recoveryKey(sessionId));
+    if (validClientRequestId(requestId)) {
+      const pending = readStoredPendingPrompt(
+        storage.records,
+        recordKey(sessionId, requestId),
+        sessionId,
+      );
+      return pending?.request.client_request_id === requestId ? pending : undefined;
+    }
+  } catch {
+    // Storage restrictions do not authorize replaying a request.
+  }
+  const legacy = readStoredPendingPrompt(storage.records, pendingPromptStorageKey, sessionId);
+  if (legacy) savePendingPromptRequest(storage, legacy);
+  return legacy;
+}
+
 export function savePendingPromptRequest(
-  storage: Pick<Storage, 'setItem' | 'getItem' | 'removeItem'>,
+  storage: PromptRequestStorage,
   pending: PendingPromptRequest,
 ): void {
-  // Store before sending. The server remains the authority across tabs/restarts.
+  // Independent records avoid cross-tab overwrites. Only this tab chooses its recovery key.
+  // Store before sending. The server remains the authority on request admission.
   try {
-    storage.setItem(pendingPromptStorageKey, JSON.stringify(pending));
+    storage.records.setItem(
+      recordKey(pending.session_id, pending.request.client_request_id),
+      JSON.stringify(pending),
+    );
+    storage.recovery.setItem(recoveryKey(pending.session_id), pending.request.client_request_id);
   } catch {
     // A tab without storage retains its key in memory and in visible readback.
   }
 }
 
 export function clearPendingPromptRequest(
-  storage: Pick<Storage, 'getItem' | 'removeItem'>,
+  storage: PromptRequestStorage,
   sessionId: string,
   clientRequestId: string,
 ): void {
   try {
-    const saved = readPendingPromptRequest(storage, sessionId);
-    if (saved?.request.client_request_id === clientRequestId)
-      storage.removeItem(pendingPromptStorageKey);
+    storage.records.removeItem(recordKey(sessionId, clientRequestId));
+    const legacy = readStoredPendingPrompt(storage.records, pendingPromptStorageKey, sessionId);
+    if (legacy?.request.client_request_id === clientRequestId)
+      storage.records.removeItem(pendingPromptStorageKey);
   } catch {
-    // Another tab's pending request must not be removed.
+    // A denied storage operation must not prevent applying a confirmed receipt.
+  }
+  try {
+    if (storage.recovery.getItem(recoveryKey(sessionId)) === clientRequestId)
+      storage.recovery.removeItem(recoveryKey(sessionId));
+  } catch {
+    // Another request's recovery identity must not be removed.
   }
 }

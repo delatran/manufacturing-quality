@@ -11,7 +11,7 @@ import {
   samePromptRequest,
   savePendingPromptRequest,
 } from '../src/agent-prompt-requests';
-import type { PromptRequest } from '../src/agent-prompt-requests';
+import type { PromptRequest, PromptRequestStorage } from '../src/agent-prompt-requests';
 
 const key = 'f56db45e-73e9-48ac-a1c7-a316b0a9bc42';
 assert.equal(
@@ -175,34 +175,90 @@ for (const changed of [
 ])
   assert.equal(samePromptRequest(request, changed), false);
 
-const values = new Map<string, string>();
-const storage = {
-  getItem: (name: string) => values.get(name) ?? null,
-  setItem: (name: string, value: string) => {
-    values.set(name, value);
-  },
-  removeItem: (name: string) => {
-    values.delete(name);
-  },
+const memoryStorage = () => {
+  const values = new Map<string, string>();
+  return {
+    values,
+    getItem: (name: string) => values.get(name) ?? null,
+    setItem: (name: string, value: string) => {
+      values.set(name, value);
+    },
+    removeItem: (name: string) => {
+      values.delete(name);
+    },
+  };
 };
+const records = memoryStorage();
+const tabA = memoryStorage();
+const storage: PromptRequestStorage = { records, recovery: tabA };
 const pending = { session_id: 'session', request };
 savePendingPromptRequest(storage, pending);
-assert.deepEqual(readPendingPromptRequest(storage, 'session'), {
+const canonicalPending = {
   session_id: 'session',
   request: { ...canonicalPromptRequest(request), client_request_id: key },
-});
+};
+assert.deepEqual(readPendingPromptRequest(storage, 'session'), canonicalPending);
 assert.equal(readPendingPromptRequest(storage, 'another'), undefined);
 clearPendingPromptRequest(storage, 'another', key);
-assert.ok(values.has(pendingPromptStorageKey), 'Another visitor/session cannot clear this request');
+assert.deepEqual(readPendingPromptRequest(storage, 'session'), canonicalPending);
 clearPendingPromptRequest(storage, 'session', 'b56db45e-73e9-48ac-a1c7-a316b0a9bc42');
-assert.ok(
-  values.has(pendingPromptStorageKey),
-  'A different tab/request cannot clear the pending key',
+assert.deepEqual(
+  readPendingPromptRequest(storage, 'session'),
+  canonicalPending,
+  'A receipt for another request cannot clear this tab recovery identity',
 );
 clearPendingPromptRequest(storage, 'session', key);
-assert.equal(values.size, 0);
-storage.setItem(pendingPromptStorageKey, '{broken');
+assert.equal(records.values.size, 0);
+assert.equal(tabA.values.size, 0);
+records.setItem(pendingPromptStorageKey, '{broken');
 assert.equal(readPendingPromptRequest(storage, 'session'), undefined);
+records.removeItem(pendingPromptStorageKey);
+
+for (const otherSession of ['session', 'another']) {
+  const tabB = memoryStorage();
+  const storageB: PromptRequestStorage = { records, recovery: tabB };
+  // Both tabs exist before either dispatch. Each reload keeps its own sessionStorage.
+  assert.equal(readPendingPromptRequest(storage, 'session'), undefined);
+  assert.equal(readPendingPromptRequest(storageB, otherSession), undefined);
+  const otherRequest = { ...request, client_request_id: 'b56db45e-73e9-48ac-a1c7-a316b0a9bc42' };
+  const otherPending = { session_id: otherSession, request: otherRequest };
+  savePendingPromptRequest(storage, pending);
+  savePendingPromptRequest(storageB, otherPending);
+  assert.equal(records.values.size, 2, 'Each request has an independent durable record');
+  assert.deepEqual(
+    readPendingPromptRequest({ records, recovery: tabA }, 'session'),
+    canonicalPending,
+  );
+  assert.equal(
+    readPendingPromptRequest({ records, recovery: tabB }, otherSession)?.request.client_request_id,
+    otherRequest.client_request_id,
+  );
+  clearPendingPromptRequest(storageB, otherSession, otherRequest.client_request_id);
+  assert.deepEqual(
+    readPendingPromptRequest({ records, recovery: tabA }, 'session'),
+    canonicalPending,
+    'Acknowledging another tab leaves this pending request recoverable after reload',
+  );
+  clearPendingPromptRequest(storage, 'session', key);
+  assert.equal(records.values.size, 0);
+  assert.equal(tabA.values.size, 0);
+  assert.equal(tabB.values.size, 0);
+}
+
+records.setItem(pendingPromptStorageKey, JSON.stringify(pending));
+assert.equal(readPendingPromptRequest(storage, 'another'), undefined);
+assert.deepEqual(readPendingPromptRequest(storage, 'session'), canonicalPending);
+assert.ok(records.getItem(pendingPromptStorageKey), 'Legacy data remains available until receipt');
+records.removeItem(pendingPromptStorageKey);
+assert.deepEqual(
+  readPendingPromptRequest({ records, recovery: tabA }, 'session'),
+  canonicalPending,
+  'Migrated legacy pending requests recover from the independent record on reload',
+);
+records.setItem(pendingPromptStorageKey, JSON.stringify(pending));
+clearPendingPromptRequest(storage, 'session', key);
+assert.equal(records.values.size, 0, 'A matching receipt also removes its legacy pending data');
+assert.equal(tabA.values.size, 0);
 console.log(
-  'Verified seven Agent tool contracts, explicit stable request keys, strict runtime validation, abort-before-action, session-bound receipt parsing and reload storage without retries. This is an isolated deterministic fixture, not native browser or provider evidence.',
+  'Verified seven Agent tool contracts, explicit stable request keys, strict runtime validation, abort-before-action, session-bound receipt parsing, independent two-tab reload recovery for same/different sessions, receipt isolation and legacy migration without retries. This is an isolated deterministic fixture, not native browser or provider evidence.',
 );

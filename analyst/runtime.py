@@ -13,6 +13,7 @@ import unicodedata
 import uuid
 from calendar import month_abbr, month_name
 from collections import Counter
+from dataclasses import replace
 from datetime import date
 from decimal import Decimal
 from html import escape
@@ -92,6 +93,12 @@ from .product_tools import (
     ToolEnvelope,
     product_schemas,
     tool_code,
+)
+from .public_summary import (
+    TRANSLATOR_INSTRUCTIONS,
+    PublicSummaryDisplay,
+    PublicSummaryTranslations,
+    validate_translation_batch,
 )
 from .report_output import (
     adjacent_value_error,
@@ -2068,13 +2075,22 @@ class AnalystRuntime:
         async def _safe_emit(event: str, data: Any = None) -> Any:
             if self._raw_emit is None:
                 return None
+            alias_displays = []
             if isinstance(data, dict):
                 data = {**data, "language": self.language}
                 if event in {"reasoning_summary", "reasoning_part"}:
-                    data = self.public_summary_event(data)
+                    data = self.public_summary_event(data, event=event)
+                elif event == "reasoning_alias":
+                    alias_displays = self._public_summaries.alias(data)
             res = self._raw_emit(event, data) if data is not None else self._raw_emit(event)
             if inspect.isawaitable(res):
-                return await res
+                res = await res
+            for part, display in alias_displays:
+                await self._emit_summary_display(
+                    part,
+                    display["translation_state"],
+                    display["display_text"] if display["display_localized"] else None,
+                )
             return res
 
         self.emit = _safe_emit
@@ -2112,7 +2128,8 @@ class AnalystRuntime:
         self.context_entry = None
         self.comparison_entries = []
         self._language = normalize_language(language)
-        self._public_summary_parts: dict[tuple, str] = {}
+        self._public_summaries = PublicSummaryDisplay(self._language)
+        self._public_summary_lock = asyncio.Lock()
         if action_intent not in {"none", "draft_create", "draft_update"}:
             raise ValueError("Unsupported action intent")
         self._action_intent = action_intent
@@ -2621,46 +2638,124 @@ class AnalystRuntime:
     def language(self):
         return self._language
 
-    def public_summary_event(self, data):
-        """Keep public provider text for audit and project a language-safe status.
+    def public_summary_event(self, data, *, event="reasoning_summary"):
+        """Keep all public provider text visible until an actual translation exists."""
+        return self._public_summaries.project(event, data)
 
-        Display snapshots replace one whole summary part. They never reinterpret
-        tiny deltas separately or present a generic task status as a translation.
-        The provider's original fields and item identities remain unchanged.
+    async def _emit_summary_display(self, part, state, translated=None):
+        data = self._public_summaries.resolve(part, state, translated)
+        if self._raw_emit is not None:
+            result = self._raw_emit(part.event, {**data, "language": self.language})
+            if inspect.isawaitable(result):
+                await result
+
+    async def _translate_public_summary(self, text):
+        translated = (await self._translate_public_summaries([text]))[0]
+        if isinstance(translated, ValueError):
+            raise translated
+        return translated
+
+    async def _translate_public_summaries(self, texts):
+        if not texts:
+            return []
+
+        async def emit_accounting(event, data=None):
+            # Translator reasoning, answer deltas and progress are never shown as
+            # the analyst's public summary. Keep provider accounting observable.
+            if event in {
+                "model_started",
+                "managed_session_created",
+                "managed_session_rejected",
+                "usage",
+                "provider_cancel",
+            }:
+                await self.emit(event, {**(data or {}), "role": "Summary Translator"})
+
+        model = ManagedAgentsModel(
+            replace(self.settings, reasoning_summary="off"),
+            emit_accounting,
+            budget=self.budget,
+            role="Summary Translator",
+        )
+        self.models.append(model)
+        agent = Agent(
+            name="Summary Translator",
+            instructions=TRANSLATOR_INSTRUCTIONS,
+            model=model,
+            tools=[],
+            output_type=PublicSummaryTranslations,
+        )
+        try:
+            result = await Runner.run(
+                agent,
+                canonical(
+                    {
+                        "target_language": self.language,
+                        "public_summaries": [
+                            {"index": index, "text": text} for index, text in enumerate(texts)
+                        ],
+                    }
+                ),
+                max_turns=self.run_limit("max_turns"),
+                run_config=RunConfig(
+                    tracing_disabled=True, workflow_name="Public summary translation"
+                ),
+            )
+            return validate_translation_batch(texts, result.final_output, self.language)
+        finally:
+            await model.client.close()
+
+    async def drain_public_summaries(self, *, translate=True):
+        """Translate complete public parts at an unlocked model boundary.
+
+        This serial, awaited hook creates no background tasks. The managed
+        adapter owns cancellation and usage even when translation fails, while
+        an unavailable translation cannot invalidate a verified analysis.
         """
-        session = data.get("provider_session_id") or data.get("session_id")
-        turn = data.get("provider_turn_id") or data.get("turn_id") or data.get("response_id")
-        item = (
-            ("item", data["item_id"])
-            if data.get("item_id") is not None
-            else ("output", data.get("output_index"))
-        )
-        key = (session, turn, item, data.get("summary_index", 0))
-        # Legacy fixture events have no stable part identity. Treat them as
-        # standalone messages instead of merging unrelated agents' summaries.
-        identified = any(value is not None for value in (session, turn, item[1]))
-        previous = self._public_summary_parts.get(key, "") if identified else ""
-        if isinstance(data.get("delta"), str):
-            text = previous + data["delta"]
-        elif isinstance(data.get("text"), str) and data["text"]:
-            text = data["text"]
+        async with self._public_summary_lock:
+            try:
+                await self._drain_public_summaries(translate=translate)
+            except asyncio.CancelledError:
+                await self._cancel_pending_public_summaries()
+                raise
+
+    async def _cancel_pending_public_summaries(self):
+        for part in self._public_summaries.pending():
+            await self._emit_summary_display(part, "cancelled")
+
+    async def cancel_public_summaries(self):
+        async with self._public_summary_lock:
+            await self._cancel_pending_public_summaries()
+
+    async def _drain_public_summaries(self, *, translate):
+        parts = self._public_summaries.pending()
+        if not parts:
+            return
+        if (
+            not translate
+            or self.simulation
+            or not self.settings.live
+            or self.budget.get("blocked")
+            or self.budget.get("provider_stopped")
+        ):
+            for part in parts:
+                await self._emit_summary_display(part, "skipped")
+            return
+        try:
+            translations = await self._translate_public_summaries([part.text for part in parts])
+            if len(translations) != len(parts):
+                raise ValueError("Summary translation returned a different source count")
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            for part in parts:
+                await self._emit_summary_display(part, "failed")
         else:
-            text = previous
-        if identified:
-            self._public_summary_parts[key] = text
-        matches_language = text_language(text) == self.language
-        fallback = (
-            "Đang xem xét yêu cầu và bằng chứng để chuẩn bị câu trả lời."
-            if self.language == "vi"
-            else "Reviewing the request and evidence to prepare the answer."
-        )
-        return {
-            **data,
-            "display_text": text if matches_language else fallback,
-            "display_mode": "snapshot",
-            "display_localized": not matches_language,
-            "display_source": "provider_summary" if matches_language else "task_status",
-        }
+            for part, translated in zip(parts, translations, strict=True):
+                if isinstance(translated, ValueError):
+                    await self._emit_summary_display(part, "failed")
+                else:
+                    await self._emit_summary_display(part, "translated", translated)
 
     @property
     def action_intent(self):
@@ -3580,8 +3675,16 @@ class AnalystRuntime:
                 "ok": False,
                 "write_occurred": True,
                 "case_id": result["id"],
-                "error": f"The local draft write returned, but exact durable read-back failed: {type(error).__name__}: {error}",
-                "effect": "A local draft write occurred. Its requested content is unverified; do not automatically repeat the mutation.",
+                "error": (
+                    f"Bản nháp cục bộ đã ghi, nhưng đọc lại thất bại: {type(error).__name__}: {error}"
+                    if self.language == "vi"
+                    else f"Local draft write completed, but durable read-back failed: {type(error).__name__}: {error}"
+                ),
+                "effect": (
+                    "Bản nháp cục bộ đã ghi nhưng nội dung chưa được xác thực; không tự động lặp lại thao tác."
+                    if self.language == "vi"
+                    else "A local draft write occurred. Its requested content is unverified; do not automatically repeat the mutation."
+                ),
             }
         return {
             "ok": True,
@@ -3589,7 +3692,11 @@ class AnalystRuntime:
             "saved_fields_verified": True,
             "content_validation": "numeric_claims_v1",
             "semantic_review": semantic_review,
-            "effect": "Local draft only; no assignment or external message was delivered",
+            "effect": (
+                "Đã lưu bản nháp cục bộ; không phân công hoặc gửi thông báo bên ngoài."
+                if self.language == "vi"
+                else "Local draft saved; no external assignment or message dispatched."
+            ),
         }
 
     async def date_sensitivity(self):
@@ -3854,10 +3961,11 @@ class AnalystRuntime:
         return consume
 
     def model(self, role):
-        model = (
-            FixtureModel(role, self)
-            if self.simulation
-            else ManagedAgentsModel(
+        model: FixtureModel | ManagedAgentsModel
+        if self.simulation:
+            model = FixtureModel(role, self)
+        else:
+            model = ManagedAgentsModel(
                 self.settings,
                 self.emit,
                 steering=self.model_steering(role),
@@ -3865,7 +3973,7 @@ class AnalystRuntime:
                 tool_dispatch=self.start_async_tool,
                 role=role,
             )
-        )
+            model.response_boundary = self.drain_public_summaries
         self.models.append(model)
         return model
 
@@ -3931,9 +4039,14 @@ class AnalystRuntime:
                     result["error_fields"] = error.fields
                     result["validation_errors"] = error.details
                     result["repair_hint"] = (
-                        "No investigation fields were saved. Repair all listed fields together. "
-                        "Copy a current scoped [value:ID] into each measured phrase; do not append "
-                        "unrelated markers or replace identifiers with unlabelled numbers."
+                        "Chưa lưu trường điều tra nào. Cần sửa đồng thời tất cả các trường bị báo lỗi. "
+                        "Gắn đúng nhãn [value:ID] trong phạm vi cho từng số đo; không thêm marker không liên quan hoặc thay mã định danh bằng số chưa gắn nhãn."
+                        if self.language == "vi"
+                        else (
+                            "Investigation fields not saved. Correct all flagged fields together. "
+                            "Insert current scoped [value:ID] markers into measured phrases; do not append "
+                            "unrelated markers or replace identifiers with raw numbers."
+                        )
                     )
             entry = self.toolkit.ledger.record(
                 name,
@@ -4325,7 +4438,7 @@ class AnalystRuntime:
                 schemas.append(
                     {
                         "name": "operations_list_cases",
-                        "description": "List local investigation cases in this exact Dashboard scope. Reading does not modify anything. Returned user UI workflow transitions are not Agent authority; use the app-supplied Agent capabilities.",
+                        "description": "List local investigation cases in this Dashboard scope. Read-only. UI workflow transitions do not grant Agent authority.",
                         "properties": {},
                     }
                 )
@@ -4346,7 +4459,7 @@ class AnalystRuntime:
                     schemas.append(
                         {
                             "name": "operations_create_draft",
-                            "description": "Create one local draft linked to this Dashboard scope. Every numeric claim in title, description, proposed_owner or action_plan needs its issued claim marker or value placeholder before saving. The server validates, stores clean prose and reads it back. Owner is a proposal only; no assignment, notification, confirmation or outcome. Repeated calls in a run return the same draft.",
+                            "description": "Create one local draft linked to this Dashboard scope. Numeric claims in narrative fields require issued claim markers or value placeholders. Owner is a proposal only; no external assignment or notification occurs. Idempotent within a run.",
                             "properties": fields,
                         }
                     )
@@ -4354,7 +4467,7 @@ class AnalystRuntime:
                     schemas.append(
                         {
                             "name": "operations_update_draft",
-                            "description": "Update explicitly identified draft fields in this Dashboard scope. List cases for identity/version. Numeric claims in changed narrative fields require issued markers or value placeholders and pass server validation before saving. Never update a non-draft, assigned owner, status or outcomes. Ask for the target if ambiguous.",
+                            "description": "Update explicit draft fields in this Dashboard scope. Numeric claims in changed narrative fields require issued markers or value placeholders. Only draft cases can be modified; assigned owner, status, and outcomes cannot be altered.",
                             "properties": {
                                 "case_id": {"type": "string"},
                                 "expected_version": {"type": "integer"},
@@ -5732,15 +5845,27 @@ result
                 else "incomplete"
             )
             message = str(error) or (
-                f"The investigation exceeded its configured {self.settings.run_timeout_seconds:g}-second deadline; "
-                "successful tool receipts remain available in the execution trace, but no verified report was delivered."
+                (
+                    f"Thời gian điều tra vượt quá hạn mức {self.settings.run_timeout_seconds:g} giây đã cấu hình; "
+                    "biên nhận công cụ hợp lệ vẫn được giữ trong vết thực thi, nhưng chưa thể bàn giao báo cáo đã kiểm chứng."
+                    if self.language == "vi"
+                    else (
+                        f"Investigation exceeded its configured {self.settings.run_timeout_seconds:g}-second deadline; "
+                        "successful tool receipts remain in the execution trace, but no verified report was delivered."
+                    )
+                )
                 if isinstance(error, TimeoutError)
-                else f"{type(error).__name__}: the provider did not deliver a complete verified response"
+                else (
+                    f"{type(error).__name__}: nhà cung cấp không trả về phản hồi hoàn chỉnh đã kiểm chứng"
+                    if self.language == "vi"
+                    else f"{type(error).__name__}: provider did not deliver a complete verified response"
+                )
             )
             self.last_qa = {"verified": False, "errors": [message]}
         except asyncio.CancelledError:
             self.accepting_steering = False
             await self.reconcile_async_jobs()
+            await self.cancel_public_summaries()
             await self.emit("run_cancelled", {"status": "cancelled"})
             raise
         except Exception as error:
@@ -5811,6 +5936,7 @@ result
                 "errors": list(dict.fromkeys(self.last_qa.get("errors", []) + delivery_errors)),
             }
             delivery, _ = self.delivery_packet(report, narrative_audit=self.delivery_audit)
+        await self.drain_public_summaries(translate=status == "completed")
         history = (
             lead.model.history
             if isinstance(lead.model, ManagedAgentsModel) and lead.model.history
