@@ -426,44 +426,6 @@
   overflow-wrap: anywhere;
   color: var(--text-secondary);
 }
-.trace-button {
-  display: block;
-  font-size: 12px;
-  margin-top: 6px;
-}
-.record-trace {
-  margin: 22px 0;
-  padding: 22px;
-  background: var(--surface-subtle);
-  border: 1px solid #bbcebf;
-  border-radius: 6px;
-}
-.record-trace h3 {
-  margin: 0;
-  font-size: 15px;
-}
-.record-trace p {
-  font-size: 12px;
-  line-height: 1.8;
-  color: var(--text-secondary);
-}
-.record-trace pre {
-  overflow: auto;
-  max-height: 400px;
-  padding: 14px;
-  border: 1px solid #d8e2d7;
-  background: var(--surface-raised);
-  font-size: 12px;
-  line-height: 1.75;
-}
-.trace-source-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
-}
-.trace-source-grid strong {
-  font-size: 12px;
-}
 .investigation-priorities fieldset {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -496,8 +458,7 @@
 }
 @media (max-width: 760px) {
   .scenario-header,
-  .investigation-columns,
-  .trace-source-grid {
+  .investigation-columns {
     grid-template-columns: minmax(0, 1fr);
     gap: 20px;
   }

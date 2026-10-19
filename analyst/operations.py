@@ -26,7 +26,7 @@ from .case_study.analytics import Scope
 from .case_study.ingestion import SourceError
 from .config import Settings
 from .dashboard import AnalysisService, ContextNotFound, EvidenceIntegrityError, SnapshotUnavailable
-from .evidence import canonical, sha256
+from .evidence import canonical, clean_draft_text, sha256
 
 STATUSES = ("draft", "acknowledged", "investigating", "action_planned", "resolved", "dismissed")
 TRANSITIONS = {
@@ -222,10 +222,7 @@ def _content_evidence(
             values[field]
         ):
             raise ValueError(f"content_evidence for {field} does not match the exact text hashes")
-        # Keep this deterministic cleaner aligned with the runtime's proof builder.
-        clean = "\n".join(
-            re.sub(r"[^\S\r\n]+", " ", line) for line in _CITATION.sub("", annotated).splitlines()
-        ).strip()
+        clean = clean_draft_text(annotated)
         if clean != values[field] or _EVIDENCE_TOKEN.search(clean):
             raise ValueError(f"content_evidence for {field} does not produce clean stored text")
         if not isinstance(proof["claims"], list) or not isinstance(proof["receipts"], list):
@@ -302,7 +299,16 @@ class OperationsService:
         self.state_dir = (state if state.is_absolute() else settings.root / state).resolve()
         self.state_dir.mkdir(parents=True, exist_ok=True)
         self.path = self.state_dir / "operations.sqlite3"
-        self.code_sha256 = sha256(Path(__file__).read_bytes().replace(b"\r\n", b"\n"))
+        self.code_sha256 = sha256(
+            canonical(
+                {
+                    name: sha256(
+                        Path(__file__).with_name(name).read_bytes().replace(b"\r\n", b"\n")
+                    )
+                    for name in ("operations.py", "evidence.py")
+                }
+            )
+        )
         with self._connect() as db:
             db.execute("PRAGMA journal_mode=WAL")
             db.executescript("""

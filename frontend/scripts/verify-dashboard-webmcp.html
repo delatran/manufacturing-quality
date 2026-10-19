@@ -11,13 +11,13 @@
     </p>
     <button id="run" type="button">Run isolated verification</button>
     <pre id="result" role="status">Not run.</pre>
-    <button id="regression" type="button">Run existing records and trace regressions</button>
+    <button id="regression" type="button">Run existing records regressions</button>
     <pre id="regression-result" role="status">Not run.</pre>
     <script type="module">
       import { runDashboardWebMcpVerification } from './verify-dashboard-webmcp-browser.tsx';
       import {
         runDashboardRequestVerification,
-        profileDashboardTrace,
+        profileDashboardRecords,
       } from './verify-dashboard-performance.tsx';
       document.querySelector('#run').addEventListener('click', async (event) => {
         event.currentTarget.disabled = true;
@@ -42,10 +42,9 @@
         result.textContent = 'Running...';
         try {
           const requests = await runDashboardRequestVerification();
-          const small = await profileDashboardTrace({ rawCount: 1, auditCount: 6 });
-          const large = await profileDashboardTrace({ rawCount: 20, auditCount: 2000 });
+          const records = await profileDashboardRecords({ pagingActions: 2 });
           result.textContent = JSON.stringify(
-            { passed: true, synthetic: true, requests, small, large },
+            { passed: true, synthetic: true, requests, records },
             null,
             2,
           );

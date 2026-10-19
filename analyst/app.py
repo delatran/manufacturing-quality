@@ -1630,6 +1630,8 @@ class Workspace:
                 raise ValueError("The configured runtime does not support work-item requests")
             if accepts_options or "state_store" in parameters:
                 runtime_options["state_store"] = self.store
+            if accepts_options or "defer_model_cleanup" in parameters:
+                runtime_options["defer_model_cleanup"] = True
             if referenced_presentation and (
                 accepts_options or "referenced_presentation" in parameters
             ):
@@ -1852,37 +1854,48 @@ class Workspace:
                 },
             )
         finally:
-            async with self.lock:
-                self.steering_closed.discard(rid)
-                if self.active_runtimes.get(sid) is runtime:
-                    self.active_runtimes.pop(sid, None)
-                if self.active_run_ids.get(sid) == rid:
-                    self.active_run_ids.pop(sid)
-                if (
-                    allow_followup
-                    and self.store.has_queued_instruction(sid)
-                    and not self.closed
-                    and not self.store.stopped(sid)
-                ):
-                    pending = self.store.next_queued_run(sid)
-                    if pending is not None:
-                        context_id = pending["analysis_context_id"]
-                        next_language = pending["language"]
-                        next_action_intent = pending["action_intent"]
-                        self.active_contexts[sid] = context_id
-                        self.active_languages[sid] = next_language
-                        self.active_action_intents[sid] = next_action_intent
-                        self.tasks[sid] = asyncio.create_task(
-                            self._run(
-                                sid,
-                                "",
-                                context_id,
-                                next_language,
-                                next_action_intent,
-                                pending.get("reply_to"),
-                                pending.get("queued_instruction_id"),
+            try:
+                # Runtime ownership is deferred here until provider cancellation,
+                # accounting checks and durable terminal state have been reconciled.
+                close = getattr(runtime, "aclose", None)
+                if callable(close):
+                    await close()
+            except asyncio.CancelledError:
+                self.user_cancelled.discard(sid)
+                allow_followup = False
+                raise
+            finally:
+                async with self.lock:
+                    self.steering_closed.discard(rid)
+                    if self.active_runtimes.get(sid) is runtime:
+                        self.active_runtimes.pop(sid, None)
+                    if self.active_run_ids.get(sid) == rid:
+                        self.active_run_ids.pop(sid)
+                    if (
+                        allow_followup
+                        and self.store.has_queued_instruction(sid)
+                        and not self.closed
+                        and not self.store.stopped(sid)
+                    ):
+                        pending = self.store.next_queued_run(sid)
+                        if pending is not None:
+                            context_id = pending["analysis_context_id"]
+                            next_language = pending["language"]
+                            next_action_intent = pending["action_intent"]
+                            self.active_contexts[sid] = context_id
+                            self.active_languages[sid] = next_language
+                            self.active_action_intents[sid] = next_action_intent
+                            self.tasks[sid] = asyncio.create_task(
+                                self._run(
+                                    sid,
+                                    "",
+                                    context_id,
+                                    next_language,
+                                    next_action_intent,
+                                    pending.get("reply_to"),
+                                    pending.get("queued_instruction_id"),
+                                )
                             )
-                        )
 
     async def close(self) -> None:
         self.closed = True

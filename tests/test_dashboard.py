@@ -623,6 +623,44 @@ def test_routes_filter_context_evidence_exports_and_errors(tmp_path):
         assert client.get(payload["links"]["export_zip"]).status_code == 409
 
 
+@pytest.mark.parametrize("scenario", ["", "exclude_cost_10"])
+def test_record_source_trace_is_absent_from_api_links_and_restored_contexts(tmp_path, scenario):
+    subject = service(tmp_path)
+    assert not hasattr(subject, "trace_records")
+    with make_client(subject) as client:
+        payload = client.get("/api/dashboard", params={"scenario": scenario}).json()
+        context_id = payload["context"]["context_id"]
+        base = "/api/dashboard/contexts/" + context_id
+        retired_path = base + "/trace"
+        assert "trace" not in payload["links"]
+        assert "trace" not in client.get(base).json()["links"]
+        assert (
+            "/api/dashboard/contexts/{context_id}/trace"
+            not in client.get("/openapi.json").json()["paths"]
+        )
+        for arguments in (
+            {},
+            {"defect_id": 1},
+            {"source_row": 1, "limit": 100},
+            {"defect_id": 1, "source_row": 1, "limit": 0},
+        ):
+            assert client.get(retired_path, params=arguments).status_code == 404
+        with ZipFile(io.BytesIO(client.get(payload["links"]["export_zip"]).content)) as archive:
+            assert "trace" not in json.loads(archive.read("context.json"))["links"]
+        receipt_bytes = (subject.contexts_dir / context_id / "receipt.json").read_bytes()
+        ledger_bytes = (subject.contexts_dir / context_id / "ledger.jsonl").read_bytes()
+
+    restarted = service(tmp_path)
+    with make_client(restarted) as client:
+        restored = client.get(base)
+        assert restored.status_code == 200
+        assert "trace" not in restored.json()["links"]
+        assert restored.json()["evidence"] == payload["evidence"]
+        assert client.get(retired_path, params={"defect_id": 1}).status_code == 404
+    assert (subject.contexts_dir / context_id / "receipt.json").read_bytes() == receipt_bytes
+    assert (subject.contexts_dir / context_id / "ledger.jsonl").read_bytes() == ledger_bytes
+
+
 def test_source_failure_has_clear_503_without_local_raw_fallback(tmp_path):
     subject = service(tmp_path, Loader(SourceError("Synthetic source outage")))
     with make_client(subject) as client:

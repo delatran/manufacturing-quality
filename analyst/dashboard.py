@@ -33,8 +33,8 @@ from .case_study.analytics import Scope
 from .case_study.brief import render_brief
 from .case_study.ingestion import SourceError
 from .case_study.models import Event, Product, Snapshot
-from .case_study.preparation import load_snapshot, positive_integer
-from .case_study.scenarios import SCENARIOS, scenario_snapshot, validate_scenario
+from .case_study.preparation import load_snapshot
+from .case_study.scenarios import validate_scenario
 from .evidence import EvidenceLedger, canonical, numeric_values, sha256
 
 ID_PATTERN = re.compile(r"[a-f0-9]{64}\Z")
@@ -354,7 +354,6 @@ class AnalysisService:
             "export_zip": base + "/export.zip",
             "brief": base + "/brief.md",
             "quality_workbook": "/api/dashboard/quality-workbook",
-            "trace": base + "/trace",
             "compare_periods": base + "/compare-periods",
         }
 
@@ -1132,131 +1131,6 @@ class AnalysisService:
             "status": copy.deepcopy(self._status),
         }
 
-    async def trace_records(
-        self,
-        context_id: str,
-        *,
-        defect_id: int | None = None,
-        source_row: int | None = None,
-        limit: int = 20,
-    ) -> dict[str, Any]:
-        if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 100:
-            raise ValueError("Trace limit must be between 1 and 100")
-        if defect_id is not None and positive_integer(defect_id) != defect_id:
-            raise ValueError("defect_id must be a positive integer")
-        if source_row is not None and positive_integer(source_row) != source_row:
-            raise ValueError("source_row must be a positive integer")
-        if defect_id is not None and source_row is not None:
-            raise ValueError("Choose defect_id or source_row for a trace")
-        payload = await self._context_by_id(context_id)
-        snapshot = self._snapshots[payload["context"]["snapshot_id"]].snapshot
-        if not snapshot.raw_records:
-            raise SnapshotUnavailable(
-                "Original HTTP rows are unavailable in this server; refresh the source to inspect raw lineage"
-            )
-        raw = [json.loads(row) for row in snapshot.raw_records]
-        if source_row is not None:
-            if source_row > len(raw):
-                raise ValueError("source_row exceeds the received source rows")
-            defect_id = positive_integer(raw[source_row - 1].get("defect_id"))
-            identifiers = {defect_id} if defect_id is not None else set()
-        elif defect_id is not None:
-            identifiers = {defect_id}
-        else:
-            identifiers = {
-                event.defect_id
-                for event in analytics.filter_events(
-                    snapshot, _scope(payload["context"]["filters"])
-                )[:limit]
-            }
-        scope = _scope(payload["context"]["filters"])
-        interpreted = scenario_snapshot(snapshot, scope.scenario)
-        selected_ids = {event.defect_id for event in analytics.filter_events(snapshot, scope)}
-        matches = [
-            {"source_row": index, "raw": row}
-            for index, row in enumerate(raw, start=1)
-            if positive_integer(row.get("defect_id")) in identifiers or index == source_row
-        ]
-        row_numbers = {row["source_row"] for row in matches}
-        product_ids = {positive_integer(row["raw"].get("product_id")) for row in matches}
-        master_rows = (
-            list(csv.DictReader(io.StringIO(snapshot.master_bytes.decode("utf-8-sig"))))
-            if snapshot.master_bytes
-            else []
-        )
-        return {
-            "context": payload["context"],
-            "raw_source_kind": "immutable in-memory rows from successful HTTP fetch",
-            "raw_records": matches[:limit],
-            "raw_match_count": len(matches),
-            "truncated": len(matches) > limit,
-            "canonical_records": [
-                event.as_record() for event in snapshot.events if event.defect_id in identifiers
-            ][:limit],
-            "processed_records": [
-                {**event.as_record(), "in_selected_scope": event.defect_id in selected_ids}
-                for event in interpreted.events
-                if event.defect_id in identifiers
-            ][:limit],
-            "master_lineage": [
-                {
-                    "source_row": index,
-                    "raw": row,
-                    "processed": next(
-                        (
-                            asdict(product)
-                            for product in snapshot.products
-                            if product.product_id == positive_integer(row.get("product_id"))
-                        ),
-                        None,
-                    ),
-                    "normalization_audit": [
-                        asdict(entry)
-                        for entry in snapshot.audit
-                        if entry.source == "master" and entry.source_row == index
-                    ],
-                }
-                for index, row in enumerate(master_rows, start=2)
-                if positive_integer(row.get("product_id")) in product_ids
-            ],
-            "normalization_audit": [
-                asdict(entry)
-                for entry in snapshot.audit
-                if entry.source == "defects" and entry.source_row in row_numbers
-            ],
-            "scenario_audit": (
-                [
-                    asdict(entry)
-                    for entry in interpreted.audit
-                    if entry.source == "defects"
-                    and entry.source_row in row_numbers
-                    and entry.code == "scenario_date_projection"
-                ]
-                if scope.scenario in {"ambiguous_dm", "year_2024"}
-                else [
-                    {
-                        "source_row": event.source_row,
-                        "record_id": str(event.defect_id),
-                        "field": "repair_cost",
-                        "raw_value": str(event.repair_cost),
-                        "processed_value": None,
-                        "action": "scenario",
-                        "code": "scenario_excluded_cost_10",
-                        "policy_version": payload["context"]["policy_version"],
-                        "detail": SCENARIOS[scope.scenario]["assumption"],
-                    }
-                    for event in snapshot.events
-                    if event.defect_id in identifiers
-                    and event.repair_cost
-                    == SCENARIOS[scope.scenario]["parameters"]["repair_cost_equal"]
-                ]
-                if scope.scenario == "exclude_cost_10"
-                else []
-            ),
-            "quality_scope": QUALITY_SCOPE,
-            "status": payload["status"],
-        }
-
     async def _export(self, context_id: str, name: str) -> bytes:
         await self._context_by_id(context_id)
         return await asyncio.to_thread(self._export_bytes, self._contexts[context_id], name)
@@ -1401,23 +1275,6 @@ def register_routes(app: FastAPI, service: AnalysisService) -> None:
     @app.get("/api/dashboard/contexts/{context_id}/evidence")
     async def evidence(context_id: str) -> dict[str, Any]:
         return (await _http(service.context_by_id, context_id))["evidence"]
-
-    @app.get("/api/dashboard/contexts/{context_id}/trace")
-    async def trace(
-        context_id: str,
-        request: Request,
-        defect_id: int | None = Query(None, ge=1),
-        source_row: int | None = Query(None, ge=1),
-        limit: int = Query(20, ge=1, le=100),
-    ) -> dict[str, Any]:
-        query(request, {"defect_id", "source_row", "limit"})
-        return await _http(
-            service.trace_records,
-            context_id,
-            defect_id=defect_id,
-            source_row=source_row,
-            limit=limit,
-        )
 
     @app.get("/api/dashboard/contexts/{context_id}/scenarios")
     async def scenarios(context_id: str, request: Request, scenario: str = "") -> dict[str, Any]:

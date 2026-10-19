@@ -37,10 +37,10 @@ def native_summary_event(row):
     )
 
 
-def test_captured_native_regrouping_migrates_two_translations_without_another_request(monkeypatch):
+@pytest.mark.parametrize("language", ["en", "vi"])
+def test_captured_native_regrouping_preserves_original_summaries_without_another_request(language):
     rows = captured_regrouping()
     source = [row for row in rows if row["id"] in {5098, 5195}]
-    translated = [row for row in rows if row["id"] in {5295, 5299}]
     replay = [row for row in rows if row["id"] in {11170, 11172}]
     item = next(row["data"] for row in rows if row["id"] == 11174)
     records = [
@@ -54,36 +54,29 @@ def test_captured_native_regrouping_migrates_two_translations_without_another_re
     ]
     original_records = copy.deepcopy(records)
     assert records[0]["status"] == "incomplete"
-    translations = {row["data"]["text"]: row["data"]["display_text"] for row in translated}
 
     async def run():
-        emitted, requests = [], []
+        emitted = []
         runtime = AnalystRuntime(
             Settings(mode="live", api_key="offline-regrouping-fixture"),
             object(),
             lambda kind, data: emitted.append((kind, data)),
-            language="vi",
+            language=language,
         )
-
-        async def translate(texts):
-            requests.append(list(texts))
-            return [translations[text] for text in texts]
-
-        monkeypatch.setattr(runtime, "_translate_public_summaries", translate)
         model, _ = model_for(Sessions([], [], []))
         model.session_id, model.turn_id = item["session_id"], item["turn_id"]
         model.emit = runtime.emit
         await model._observe(Stream([native_summary_event(row) for row in source]))
-        await runtime.drain_public_summaries()
-        assert requests == [[row["data"]["text"] for row in source]]
         await model._observe(Stream([native_summary_event(row) for row in replay]))
         await model._reconcile_reasoning_aliases(records)
-        await runtime.drain_public_summaries()
         aliases = [data for kind, data in emitted if kind == "reasoning_alias"]
         assert [data["canonical_summary_indices"] for data in aliases] == [[0], [1]]
         assert {data["canonical_item_id"] for data in aliases} == {item["item_id"]}
-        assert len(requests) == 1, "Durable aliases reuse the already billed translation batch"
-        assert runtime._public_summaries.pending() == []
+        assert runtime.models == [], "Source summaries never start another model request"
+        assert runtime.budget == {"cost_usd": 0.0}
+        assert len([kind for kind, _ in emitted if kind == "reasoning_summary"]) == len(
+            source + replay
+        )
         latest = {
             data["summary_index"]: data
             for kind, data in emitted
@@ -93,10 +86,12 @@ def test_captured_native_regrouping_migrates_two_translations_without_another_re
         for index, row in enumerate(replay):
             final = latest[index]
             assert final["text"] == row["data"]["text"]
-            assert final["display_text"] == translations[final["text"]]
-            assert final["display_source"] == "translated_provider_summary"
-            assert final["translation_state"] == "translated"
-            assert "event_id" not in final
+            assert final["display_text"] == final["text"]
+            assert final["display_source"] == "provider_summary"
+            assert final["display_localized"] is False
+            assert final["display_language"] == "en"
+            assert "translation_state" not in final
+            assert final["event_id"] == row["data"]["event_id"]
         assert records == original_records, "Identity aliases do not upgrade incomplete items"
 
     asyncio.run(run())
@@ -144,7 +139,7 @@ def test_summary_subsequence_alias_preserves_distinct_or_ambiguous_items(case):
 
 
 def test_partial_alias_keeps_future_unmapped_summary_parts_separate():
-    display = PublicSummaryDisplay("vi")
+    display = PublicSummaryDisplay()
     base = {"session_id": "session", "turn_id": "turn", "item_id": "source"}
     display.alias(
         {

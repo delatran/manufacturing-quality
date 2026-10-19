@@ -89,11 +89,19 @@ class AgentModel(Model):
         settings.validate()
         self.settings = settings
         self.emit = emit
-        self.client = client or AsyncOpenAI(
-            api_key=settings.api_key,
-            base_url=settings.openai_base_url or "https://api.openai.com/v1",
-            max_retries=0,
+        self.client = (
+            client
+            if client is not None
+            else AsyncOpenAI(
+                api_key=settings.api_key,
+                base_url=settings.openai_base_url or "https://api.openai.com/v1",
+                max_retries=0,
+            )
         )
+        # with_options returns another SDK wrapper over this same HTTP client.
+        # Keep one ownership handle and never close a caller-supplied client.
+        self._owned_client = self.client if client is None else None
+        self._close_task: asyncio.Task[None] | None = None
         self.steering = steering
         self.tool_dispatch = tool_dispatch
         self.budget: dict[str, Any] = budget if budget is not None else {"cost_usd": 0.0}
@@ -101,6 +109,16 @@ class AgentModel(Model):
         self.budget.setdefault("unresolved_generation_requests", 0)
         self.history: list[dict] = []
         self.usage: list[dict] = []
+
+    async def _close_owned_client(self) -> None:
+        if self._owned_client is not None:
+            await self._owned_client.close()
+
+    async def aclose(self) -> None:
+        """Release owned HTTP resources once, without stopping provider work."""
+        if self._close_task is None:
+            self._close_task = asyncio.create_task(self._close_owned_client())
+        await asyncio.shield(self._close_task)
 
     async def _input(self, value: Any) -> list[dict[str, Any]]:
         items = [{"role": "user", "content": value}] if isinstance(value, str) else dump(value)

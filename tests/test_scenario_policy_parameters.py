@@ -125,16 +125,21 @@ async def test_criterion_is_claimable_in_the_sealed_comparison_and_model_view(tm
 
 
 @pytest.mark.asyncio
-async def test_financial_trace_uses_the_same_criterion_as_the_event_projection(
+async def test_financial_context_uses_the_same_criterion_as_the_internal_event_projection(
     tmp_path, monkeypatch
 ):
     snapshot, _ = prepared_snapshot()
     monkeypatch.setitem(SCENARIOS["exclude_cost_10"]["parameters"], "repair_cost_equal", 11)
     service = AnalysisService(ROOT, tmp_path, snapshot_loader=lambda: snapshot)
     payload = await service.get_context({"scenario": "exclude_cost_10"})
-    trace = await service.trace_records(payload["context"]["context_id"], defect_id=2)
-    assert trace["scenario_audit"][0]["raw_value"] == "11.0"
-    assert trace["processed_records"][0]["repair_cost"] is None
-    unchanged = await service.trace_records(payload["context"]["context_id"], defect_id=1)
-    assert unchanged["scenario_audit"] == []
-    assert unchanged["processed_records"][0]["repair_cost"] == 10
+    projected = scenario_snapshot(snapshot, payload["context"]["scenario"])
+    canonical = {event.defect_id: event for event in snapshot.events}
+    interpreted = {event.defect_id: event for event in projected.events}
+    assert canonical[2].repair_cost == 11
+    assert interpreted[2].repair_cost is None
+    assert interpreted[2].cost_status == "scenario_excluded_cost_10"
+    assert canonical[1].repair_cost == interpreted[1].repair_cost == 10
+    records = await service.records(payload["context"]["context_id"], sort_by="defect_id")
+    assert {row["defect_id"]: row["repair_cost"] for row in records["rows"]} == {
+        identity: event.repair_cost for identity, event in interpreted.items()
+    }

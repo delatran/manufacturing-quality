@@ -257,6 +257,214 @@ for (const entry of aEntries)
   assert.ok(next.entries.includes(entry), 'Untouched entries retain identity.');
 assert.equal(snapshot(state), historyBefore);
 assert.equal(appendConversationState(state, []), state);
+
+// A growing run keeps completed receipts and unchanged summary parts stable,
+// while amendments and late identity reconciliation invalidate the right nodes.
+const stableHistory = [
+  event('run_started', { question: 'Keep every public part.', language: 'vi' }, runC),
+  event('status', { state: 'running' }, runC),
+  event(
+    'tool',
+    {
+      tool_id: 'stable-call',
+      name: 'analysis_query',
+      status: 'completed',
+      result: { ok: true, event_count: 12 },
+    },
+    runC,
+  ),
+  event(
+    'reasoning_summary',
+    { item_id: 'stable-summary', summary_index: 0, text: 'First complete part.', final: true },
+    runC,
+  ),
+  event(
+    'reasoning_summary',
+    { item_id: 'stable-summary', summary_index: 1, text: 'Second ' },
+    runC,
+  ),
+];
+const stableState = createConversationState(stableHistory);
+const stableSnapshot = snapshot(stableState);
+const oldSteps = stableState.flowRuns.get(runC)!.steps;
+const oldThought = oldSteps.find((step) => step.kind === 'thinking')!;
+assert.ok(oldThought.kind === 'thinking');
+const summaryDelta = event(
+  'reasoning_summary',
+  { item_id: 'stable-summary', summary_index: 1, text: 'streaming part.' },
+  runC,
+);
+const updatedState = appendConversationState(stableState, [summaryDelta]);
+const updatedSteps = updatedState.flowRuns.get(runC)!.steps;
+const updatedThought = updatedSteps.find((step) => step.kind === 'thinking')!;
+assert.ok(updatedThought.kind === 'thinking');
+assert.equal(updatedSteps[0], oldSteps[0], 'An unchanged receipt does not rerender for a delta.');
+assert.notEqual(updatedThought, oldThought);
+assert.equal(updatedThought.parts[0], oldThought.parts[0]);
+assert.notEqual(updatedThought.parts[1], oldThought.parts[1]);
+assert.equal(updatedThought.parts[1].body, 'Second streaming part.');
+assert.equal(snapshot(stableState), stableSnapshot);
+equivalent(updatedState, [...stableHistory, summaryDelta], []);
+const amendedReceipt = event(
+  'tool',
+  {
+    tool_id: 'stable-call',
+    name: 'analysis_query',
+    status: 'completed',
+    result: { ok: true, event_count: 13 },
+  },
+  runC,
+);
+const amendedState = appendConversationState(updatedState, [amendedReceipt]);
+assert.notEqual(amendedState.flowRuns.get(runC)!.steps[0], updatedSteps[0]);
+assert.equal(amendedState.flowRuns.get(runC)!.steps[1], updatedThought);
+equivalent(amendedState, [...stableHistory, summaryDelta, amendedReceipt], []);
+const lateAliases = [
+  ...['First aliased part.', 'Second aliased part.'].map((text, index) =>
+    event(
+      'reasoning_summary',
+      {
+        item_id: index === 0 ? 'transient-a' : 'transient-b',
+        text,
+        provider_api: 'agents',
+        session_id: 'projection-provider',
+        turn_id: 'projection-turn',
+      },
+      runA,
+    ),
+  ),
+  ...['transient-a', 'transient-b'].map((item_id, index) =>
+    event(
+      'reasoning_alias',
+      {
+        item_id,
+        canonical_item_id: 'canonical-parts',
+        canonical_summary_indices: [index],
+        source: 'session_snapshot',
+        reconciled: true,
+        provider_api: 'agents',
+        session_id: 'projection-provider',
+        turn_id: 'projection-turn',
+      },
+      runA,
+    ),
+  ),
+];
+const aliasState = verifyPrefixes(lateAliases);
+const aliasSteps = aliasState.flowRuns.get(runA)!.steps;
+assert.equal(aliasSteps.length, 1);
+assert.ok(aliasSteps[0].kind === 'thinking');
+assert.deepEqual(
+  aliasSteps[0].parts.map((part) => part.raw),
+  ['First aliased part.', 'Second aliased part.'],
+);
+
+// The conversation-only projection never opens reasoning payloads. The full
+// flow still consumes every original source event and reconciles late aliases.
+let reasoningDataReads = 0;
+const guardedReasoning = lateAliases.map((source) => ({
+  ...source,
+  get data() {
+    reasoningDataReads += 1;
+    return source.data;
+  },
+}));
+guardedReasoning.splice(
+  2,
+  0,
+  ...[
+    event(
+      'reasoning',
+      {
+        item_id: 'third-native',
+        text: 'Third source part.',
+        provider_api: 'agents',
+        session_id: 'projection-provider',
+        turn_id: 'projection-turn',
+      },
+      runA,
+    ),
+    event(
+      'reasoning_part',
+      {
+        item_id: 'third-native',
+        phase: 'done',
+        text: 'Third source part.',
+        provider_api: 'agents',
+        session_id: 'projection-provider',
+        turn_id: 'projection-turn',
+      },
+      runA,
+    ),
+  ].map((source) => ({
+    ...source,
+    get data() {
+      reasoningDataReads += 1;
+      return source.data;
+    },
+  })),
+);
+const projectionChart = chart(runA, 'd');
+const projectionReport = event(
+  'message',
+  {
+    role: 'assistant',
+    text: 'A source-bound answer.',
+    qa: { verified: true },
+    delivery: delivery(projectionChart),
+  },
+  runA,
+);
+const conversationOnly = [
+  event('message', { role: 'user', text: 'Inspect this source.' }),
+  event('status', { state: 'running' }, runA),
+  event(
+    'tool',
+    {
+      tool_id: 'projection-tool',
+      name: 'analysis_query',
+      status: 'completed',
+      result: { ok: true },
+    },
+    runA,
+  ),
+  projectionReport,
+  projectionChart,
+  event('status', { state: 'completed' }, runA),
+];
+const conversationWithReasoning = [
+  ...conversationOnly.slice(0, 2),
+  ...guardedReasoning,
+  ...conversationOnly.slice(2),
+];
+assert.deepEqual(
+  projectConversation(conversationWithReasoning),
+  projectConversation(conversationOnly),
+);
+assert.equal(reasoningDataReads, 0, 'Conversation/chart projection does not read reasoning data');
+const fullSourceFlow = projectAgentFlow(conversationWithReasoning).get(runA)!;
+assert.ok(reasoningDataReads > 0, 'Full flow still reads original reasoning source');
+assert.deepEqual(
+  fullSourceFlow.steps.flatMap((step) =>
+    step.kind === 'thinking' ? step.parts.map((part) => part.raw) : [],
+  ),
+  ['First aliased part.', 'Second aliased part.', 'Third source part.'],
+);
+const collidingReasoning = { ...guardedReasoning[0], id: projectionReport.id };
+const collisionProjection = projectConversation([collidingReasoning, ...conversationOnly]);
+assert.ok(
+  !collisionProjection.some((item) => item.type === 'message' && item.data.role === 'assistant'),
+  'An earlier reasoning ID still shadows a corrupted report with that same ID',
+);
+assert.ok(
+  collisionProjection.some((item) => item.type === 'artifact'),
+  'Duplicate report metadata retains the existing chart selection behavior',
+);
+assert.deepEqual(
+  projectConversation([...conversationOnly, collidingReasoning]),
+  projectConversation(conversationOnly),
+  'A later reasoning duplicate cannot shadow an earlier report',
+);
 verifyPrefixes([...history, history[3], history[15]], savedRuns);
 verifyPrefixes([
   event('message', { role: 'user', text: 'Old pending' }, runA),

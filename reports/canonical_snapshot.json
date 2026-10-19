@@ -18,7 +18,7 @@
     "analyst/case_study/__init__.py": "14e5e9f2171bae2c9edcfab9c69aa93c9d5d4bebf273d8cbaacad5d4bf28a591",
     "analyst/case_study/__main__.py": "5baa4268ef3a822a6476fb4aff9c0e7e416ce69c588eb1ec34413abb32a2d5dc",
     "analyst/case_study/analytics.py": "9199b7419161c41cd1f8b9e5b08ba87d41bf82a395a970030a4ff1a1b93c0c76",
-    "analyst/case_study/brief.py": "2d8ec108f27cab33d5ea1a2c3b2a2a52342ba546a415becb2b6d8defba290d05",
+    "analyst/case_study/brief.py": "d9203014c7c967903f97ded3acf521c75d9d244d6582b96662b7ca15e0c1269b",
     "analyst/case_study/config.py": "db006f22ce520cb5d3fd3ab2d37474b50328d10fa234cbc0fb9fc58d9b896c98",
     "analyst/case_study/contracts.py": "9a23cae9d3a0970b4896a2fe12b68e648cfbd7fa1a77b4bf7bfa1f0140bdf90f",
     "analyst/case_study/ingestion.py": "e06ffa7c92875bc306af3e01df7be507c10998598a3acc7ffa4b4ffdb8ef7bd3",
@@ -26,13 +26,13 @@
     "analyst/case_study/oracle_builder.py": "2bc0ebf88a83150a5f7be40124df845b24a9de27a6eb8a9dbbf2a96eeb6541a7",
     "analyst/case_study/pipeline.py": "ea4e9c07fe721cdd37cac9cf3a1058f574df6b1ef5e438fd0c82f2c9675b36d2",
     "analyst/case_study/preparation.py": "285f7c9452b96ae12f61163adba4d462c66c210d8ca53132103dee6e7bb7817e",
-    "analyst/case_study/scenarios.py": "7bbc5ff32e2ecad8f64e3462f28fc02dd4479f77a6030b3a871c257f19309f4f",
+    "analyst/case_study/scenarios.py": "bb380a30b2b7f192c0ad8ea464adcf67f50ab6461c8bd0a32d13a609196eb837",
     "analyst/case_study/sensitivity.py": "5a6a5ae26e4b59ef5066d811b6109d0000542adfdabd36f477ca44f314bf7448",
     "analyst/case_study/workbook.py": "886046fa323bc2ababe55423501bcfa455f31cc3f8eafddf629c0f463a2d0013",
     "scripts/generate_submission.py": "713655c54a7f8f8a2a419ce87bb1af0375843cc686ba84ae6ec67ba67f612772"
   },
-  "report_id": "2aad0c28d1757a95e5a58a45",
-  "generated_at": "2026-10-19T03:28:20.324972+00:00",
+  "report_id": "a484bfa6924c5c24209884e9",
+  "generated_at": "2026-10-19T05:48:11.823229+00:00",
   "source_receipts": {
     "defects": {
       "url": "https://raw.githubusercontent.com/phongtdt/RFID_Data-Analyst_Case-Study-Oct-2026/f6adf2451ac6297c1b749abc131cff8a46020dc9/mock-api/defect_records.json",
@@ -41,9 +41,9 @@
       "etag": "W/\"b91dc67e3d8dcf216d0e507667dfb9ce8b3f44f224867bd4592985f6d5fb0e1f\"",
       "bytes": 272164,
       "http_status": 200,
-      "fetched_at": "2026-10-19T03:28:19.129203+00:00",
+      "fetched_at": "2026-10-19T05:48:10.674608+00:00",
       "runtime_url": "https://raw.githubusercontent.com/phongtdt/RFID_Data-Analyst_Case-Study-Oct-2026/main/mock-api/defect_records.json",
-      "runtime_fetched_at": "2026-10-19T03:28:18.346528+00:00",
+      "runtime_fetched_at": "2026-10-19T05:48:09.843244+00:00",
       "schema": [
         "defect_id",
         "product_id",
@@ -62,7 +62,7 @@
       "etag": "W/\"7ad623d851f1e24f19582580f1e907f3149a80c6d8f6f930f7d54023a6b01882\"",
       "bytes": 3672,
       "http_status": 200,
-      "fetched_at": "2026-10-19T03:28:19.439199+00:00",
+      "fetched_at": "2026-10-19T05:48:10.975712+00:00",
       "schema": [
         "product_id",
         "product_name",
@@ -78,7 +78,7 @@
       "etag": "W/\"3a5c6fe8c22488854cb8767fb37422448b2e5a26616c29b0c3066fad0ce200c5\"",
       "bytes": 8222,
       "http_status": 200,
-      "fetched_at": "2026-10-19T03:28:19.820203+00:00",
+      "fetched_at": "2026-10-19T05:48:11.315947+00:00",
       "schema": [
         "Summary",
         "Issues Found",
@@ -136,7 +136,7 @@
           ]
         }
       },
-      "fetched_at": "2026-10-19T03:28:18.346528+00:00",
+      "fetched_at": "2026-10-19T05:48:09.843244+00:00",
       "http_status": 200,
       "http_attempts": 1,
       "master_sha256": "8772e8f0d0fbe1bf66b259859055e1742b066f91a31777b9f5e4630f606b9a86",
@@ -165,7 +165,7 @@
       "currency": "local currency (unspecified)",
       "stale": false,
       "last_error": null,
-      "last_attempt_at": "2026-10-19T03:28:18.346528+00:00",
+      "last_attempt_at": "2026-10-19T05:48:09.843244+00:00",
       "reference_output_note": "Reference-output intensity = linked logged defect events / (sum of monthly_output for all eligible master products × selected full months) × 1,000. Static reference output is not verified actual production; this is not a defect probability. Event filters change the numerator only.",
       "limitations": [
         "The supplied records are a historical January-June 2024 case study; refresh time is not event freshness.",
@@ -23173,7 +23173,7 @@
             ]
           }
         },
-        "fetched_at": "2026-10-19T03:28:18.346528+00:00",
+        "fetched_at": "2026-10-19T05:48:09.843244+00:00",
         "http_status": 200,
         "http_attempts": 1,
         "master_sha256": "8772e8f0d0fbe1bf66b259859055e1742b066f91a31777b9f5e4630f606b9a86",
@@ -23202,7 +23202,7 @@
         "scenario_definition": {
           "id": "exclude_cost_10",
           "name": "Withhold costs equal to 10",
-          "assumption": "Treat observed repair costs equal to 10 as financially unavailable. Keep every canonical event and its original value in the trace.",
+          "assumption": "Treat observed repair costs equal to 10 as financially unavailable. Preserve every canonical event and its original value in the source snapshot.",
           "affects": [
             "financial availability",
             "cost rankings"
@@ -23218,7 +23218,7 @@
         "currency": "local currency (unspecified)",
         "stale": false,
         "last_error": null,
-        "last_attempt_at": "2026-10-19T03:28:18.346528+00:00",
+        "last_attempt_at": "2026-10-19T05:48:09.843244+00:00",
         "reference_output_note": "Reference-output intensity = linked logged defect events / (sum of monthly_output for all eligible master products × selected full months) × 1,000. Static reference output is not verified actual production; this is not a defect probability. Event filters change the numerator only.",
         "limitations": [
           "The supplied records are a historical January-June 2024 case study; refresh time is not event freshness.",
@@ -23291,7 +23291,7 @@
         "scenario_definition": {
           "id": "exclude_cost_10",
           "name": "Withhold costs equal to 10",
-          "assumption": "Treat observed repair costs equal to 10 as financially unavailable. Keep every canonical event and its original value in the trace.",
+          "assumption": "Treat observed repair costs equal to 10 as financially unavailable. Preserve every canonical event and its original value in the source snapshot.",
           "affects": [
             "financial availability",
             "cost rankings"
@@ -24140,7 +24140,7 @@
             ]
           }
         },
-        "fetched_at": "2026-10-19T03:28:18.346528+00:00",
+        "fetched_at": "2026-10-19T05:48:09.843244+00:00",
         "http_status": 200,
         "http_attempts": 1,
         "master_sha256": "8772e8f0d0fbe1bf66b259859055e1742b066f91a31777b9f5e4630f606b9a86",
@@ -24182,7 +24182,7 @@
         "currency": "local currency (unspecified)",
         "stale": false,
         "last_error": null,
-        "last_attempt_at": "2026-10-19T03:28:18.346528+00:00",
+        "last_attempt_at": "2026-10-19T05:48:09.843244+00:00",
         "reference_output_note": "Reference-output intensity = linked logged defect events / (sum of monthly_output for all eligible master products × selected full months) × 1,000. Static reference output is not verified actual production; this is not a defect probability. Event filters change the numerator only.",
         "limitations": [
           "The supplied records are a historical January-June 2024 case study; refresh time is not event freshness.",
@@ -25101,7 +25101,7 @@
             ]
           }
         },
-        "fetched_at": "2026-10-19T03:28:18.346528+00:00",
+        "fetched_at": "2026-10-19T05:48:09.843244+00:00",
         "http_status": 200,
         "http_attempts": 1,
         "master_sha256": "8772e8f0d0fbe1bf66b259859055e1742b066f91a31777b9f5e4630f606b9a86",
@@ -25130,7 +25130,7 @@
         "scenario_definition": {
           "id": "year_2024",
           "name": "Assume source event years are 2024",
-          "assumption": "Set interpreted event years to 2024 while preserving month and day. This is an unverified year-correction assumption; the original source years remain in the trace.",
+          "assumption": "Set interpreted event years to 2024 while preserving month and day. This is an unverified year-correction assumption; the canonical source snapshot preserves the original years.",
           "affects": [
             "event dates",
             "in-period population",
@@ -25143,7 +25143,7 @@
         "currency": "local currency (unspecified)",
         "stale": false,
         "last_error": null,
-        "last_attempt_at": "2026-10-19T03:28:18.346528+00:00",
+        "last_attempt_at": "2026-10-19T05:48:09.843244+00:00",
         "reference_output_note": "Reference-output intensity = linked logged defect events / (sum of monthly_output for all eligible master products × selected full months) × 1,000. Static reference output is not verified actual production; this is not a defect probability. Event filters change the numerator only.",
         "limitations": [
           "The supplied records are a historical January-June 2024 case study; refresh time is not event freshness.",
@@ -25216,7 +25216,7 @@
         "scenario_definition": {
           "id": "year_2024",
           "name": "Assume source event years are 2024",
-          "assumption": "Set interpreted event years to 2024 while preserving month and day. This is an unverified year-correction assumption; the original source years remain in the trace.",
+          "assumption": "Set interpreted event years to 2024 while preserving month and day. This is an unverified year-correction assumption; the canonical source snapshot preserves the original years.",
           "affects": [
             "event dates",
             "in-period population",

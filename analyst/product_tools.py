@@ -19,8 +19,8 @@ from .report_output import unit_note
 from .tools import ToolEnvelope as ToolEnvelope
 from .tools import function_schema
 
-TOOLS_VERSION = "dashboard-analysis-v15"
-INSTRUCTIONS_VERSION = "investigation-v16"
+TOOLS_VERSION = "dashboard-analysis-v16"
+INSTRUCTIONS_VERSION = "investigation-v17"
 SCENARIOS = ["", "exclude_cost_10", "ambiguous_dm", "year_2024"]
 SECTIONS = [
     "overview",
@@ -151,7 +151,7 @@ def product_schemas():
         ),
         function_schema(
             "analysis_records",
-            "Page retained records for explicit filters on the frozen dataset. Use this tool to inspect individual record details, sample defects, or drill into specific defect dates; do not use to compute cohort-level aggregates. Null preserves the immutable run base, never follows UI implicitly. Use defect_date to drill into an exact anomaly day without changing the monthly analysis scope; null includes all selected days. Repeat query filters to inspect its evidence. Source row identities link to analysis_provenance. Unknown repair costs stay null.",
+            "Page retained records for explicit filters on the frozen dataset. Use this tool to inspect individual record details, sample defects, or drill into specific defect dates; do not use to compute cohort-level aggregates. Null preserves the immutable run base, never follows UI implicitly. Use defect_date to drill into an exact anomaly day without changing the monthly analysis scope; null includes all selected days. Repeat query filters to inspect its evidence. Unknown repair costs stay null.",
             {
                 "page": {"type": "integer", "minimum": 1},
                 "page_size": {"type": "integer", "minimum": 1, "maximum": 100},
@@ -164,17 +164,6 @@ def product_schemas():
                     "type": ["string", "null"],
                     "pattern": r"^\d{4}-\d{2}-\d{2}$",
                 },
-                "filters": scope_schema(),
-                "rationale": rationale,
-            },
-        ),
-        function_schema(
-            "analysis_provenance",
-            "Read source identity and normalization audit for one defect ID or original source row, including quarantined/out-of-period variants. Use this tool for tracing ingestion provenance, data cleaning rules, and audit logs of individual records; do not use for standard KPI reporting or aggregate comparisons. Choose only one selector. Both null reads source schema, full-source quality and cleaning rules. Provenance does not imply that every audited row belongs to the selected event scope.",
-            {
-                "defect_id": {"type": ["integer", "null"], "minimum": 1},
-                "source_row": {"type": ["integer", "null"], "minimum": 1},
-                "limit": {"type": "integer", "minimum": 1, "maximum": 100},
                 "filters": scope_schema(),
                 "rationale": rationale,
             },
@@ -231,8 +220,6 @@ class ProductTools:
     async def call(self, name, arguments):
         if name == "analysis_records":
             arguments = {"defect_date": None, **arguments}
-        if name == "analysis_provenance":
-            arguments = {"source_row": None, "limit": 20, **arguments}
         if (
             name in {"analysis_query", "analysis_compare", "scenario_compare"}
             and "plan" not in arguments
@@ -245,7 +232,6 @@ class ProductTools:
                 "analysis_compare",
                 "scenario_compare",
                 "analysis_records",
-                "analysis_provenance",
                 "analysis_sql",
             }
             and "rationale" not in arguments
@@ -256,7 +242,6 @@ class ProductTools:
             in {
                 "investigation_update",
                 "analysis_records",
-                "analysis_provenance",
                 "analysis_sql",
             }
             and "filters" not in arguments
@@ -429,54 +414,6 @@ class ProductTools:
                     else {}
                 ),
             }, target["context"]
-        if name == "analysis_provenance":
-            target = await runtime.read_dashboard_context(
-                arguments["filters"]
-                if any(value is not None for value in arguments["filters"].values())
-                else None
-            )
-            context = target["context"]
-            if arguments["defect_id"] is not None or arguments["source_row"] is not None:
-                return {
-                    "ok": True,
-                    **await runtime.analysis_service.trace_records(
-                        context["context_id"],
-                        defect_id=arguments["defect_id"],
-                        source_row=arguments["source_row"],
-                        limit=arguments["limit"],
-                    ),
-                    **(
-                        {"rationale": arguments["rationale"]}
-                        if arguments.get("rationale") is not None
-                        else {}
-                    ),
-                }, context
-            snapshot = await runtime.analysis_service.snapshot_for_context(context["context_id"])
-            defect_id = arguments["defect_id"]
-            audit = [
-                asdict(entry)
-                for entry in snapshot.audit
-                if defect_id is not None and entry.record_id == str(defect_id)
-            ]
-            retained = [
-                event.as_record() for event in snapshot.events if event.defect_id == defect_id
-            ]
-            return {
-                "ok": True,
-                "source": snapshot.provenance,
-                "quality_scope": bound.get("quality_scope"),
-                "defect_id": defect_id,
-                "audit": audit[:100],
-                "audit_truncated": len(audit) > 100,
-                "canonical_retained_event": retained,
-                "quality": snapshot.quality if defect_id is None else None,
-                "interpretation": "Audit covers the complete source before current filters. Retained events are canonical; scenario assumptions are separately disclosed in the scope.",
-                **(
-                    {"rationale": arguments["rationale"]}
-                    if arguments.get("rationale") is not None
-                    else {}
-                ),
-            }, context
         if name == "ui_command":
             if runtime.ui_handler is None:
                 raise ValueError("UI commands are unavailable in this execution context")

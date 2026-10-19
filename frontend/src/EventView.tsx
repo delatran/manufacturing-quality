@@ -839,7 +839,7 @@ export function toolStep(name: unknown, t: Translate): string {
     return t('ui.comparing_the_selected_views');
   if (/dashboard_context|analysis_query|evidence_detail/.test(value))
     return t('ui.reading_the_selected_data');
-  if (/profile|source|fetch|read|search|analysis_records|analysis_provenance/.test(value))
+  if (/profile|source|fetch|read|search|analysis_records/.test(value))
     return t('ui.checking_the_data');
   if (/export|artifact|report|report_table/.test(value)) return t('ui.preparing_the_report');
   return t('ui.analyzing_the_results');

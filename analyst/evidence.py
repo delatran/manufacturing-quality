@@ -7,11 +7,26 @@ import json
 import math
 import mimetypes
 import numbers
+import re
 import threading
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+_CITATION = re.compile(r"\[claim:((?:[^\[\]]|\[\d+\])+)\]")
+
+
+def clean_draft_text(annotated_text: str) -> str:
+    """Strip evidence markers using the same rules before and during a save."""
+    annotated_text = re.sub(
+        r"[^\S\r\n]*(?:" + _CITATION.pattern + r"[^\S\r\n]*)+(?=[,.;:!?](?!\d))",
+        "",
+        annotated_text,
+    )
+    return "\n".join(
+        re.sub(r"[^\S\r\n]+", " ", line) for line in _CITATION.sub("", annotated_text).splitlines()
+    ).strip()
 
 
 def canonical(value: Any) -> str:

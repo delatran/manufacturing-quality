@@ -1156,13 +1156,16 @@ for (const locale of ['en', 'vi'] as const) {
     </I18nProvider>,
   );
   assert.equal((markup.match(/class="flow-thought"/g) || []).length, 2);
-  for (const translation of [
-    'Rà soát các số liệu tổng hợp đã chọn.',
-    'Kiểm tra chi phí thiếu và chi phí bằng không.',
+  for (const original of [
+    'Review the selected SQL aggregates.',
+    'Check missing versus zero repair costs.',
   ]) {
-    assert.ok(markup.includes(translation));
+    assert.ok(markup.includes(original));
   }
-  assert.doesNotMatch(markup, /Đang dịch tóm tắt/);
+  assert.doesNotMatch(
+    markup,
+    /Đang dịch tóm tắt|Rà soát các số liệu tổng hợp|Kiểm tra chi phí thiếu/,
+  );
 }
 // Per-part completion must not stop streaming a later transient sibling.
 const splitStreaming = projectAgentFlow([
@@ -1257,7 +1260,7 @@ const changedPart = changedSource.steps.find((step) => step.kind === 'thinking')
 assert.ok(changedPart?.kind === 'thinking');
 assert.equal(changedPart.parts[0].displayText, undefined);
 assert.equal(
-  flowSummaryDisplay(changedPart.parts[0], 'vi').body,
+  flowSummaryDisplay(changedPart.parts[0]).body,
   'Changed public source requires a new translation.',
 );
 
@@ -1600,7 +1603,7 @@ for (const status of ['failed', 'cancelled']) {
   assert.equal(stoppedCall.command, '{"scope":"Line-3"}');
 }
 
-// Recorded model and effort appear in the header; transport stays in the timeline.
+// Recorded model and effort appear in the header; execution mode stays internal.
 // Replayed phases update their own turn, without adding generic timeline rows.
 const lifecycleRun = projectAgentFlow([
   event('status', { state: 'running' }),
@@ -1631,7 +1634,7 @@ for (const locale of ['en', 'vi'] as const) {
   assert.doesNotMatch(header, /background|chạy nền/);
   assert.doesNotMatch(timeline, /Processing status|Trạng thái xử lý/);
   assert.doesNotMatch(markup, /agent-flow-details|Chi tiết xử lý|Processing details/);
-  assert.match(markup, /<details class="agent-flow-timeline"[\s\S]*(?:background|chạy nền)/);
+  assert.doesNotMatch(markup, /background|chạy nền/);
   assert.match(
     timeline,
     locale === 'vi' ? /Chuẩn bị hướng dẫn phân tích/ : /Preparing analysis guidance/,
@@ -1854,11 +1857,11 @@ const bilingualHistory = [
   event('run_started', { language: 'vi' }, 'bilingual-vi'),
   event('tool', { name: 'analysis_query', tool_id: 'vi-query', status: 'running' }, 'bilingual-vi'),
   event('status', { state: 'completed', language: 'vi' }, 'bilingual-en'),
-  event('message', { role: 'user', text: 'Now check data provenance.', language: 'en' }, null),
+  event('message', { role: 'user', text: 'Now look up the defect records.', language: 'en' }, null),
   event('run_started', { language: 'en' }, 'bilingual-next-en'),
   event(
     'tool',
-    { name: 'analysis_provenance', tool_id: 'provenance', status: 'running' },
+    { name: 'analysis_records', tool_id: 'records', status: 'running' },
     'bilingual-next-en',
   ),
 ];
@@ -1870,7 +1873,7 @@ assert.deepEqual(
   [
     ['bilingual-en', 'en', 'Compare the defect trends.'],
     ['bilingual-vi', 'vi', 'Đối chiếu chi phí sửa chữa.'],
-    ['bilingual-next-en', 'en', 'Now check data provenance.'],
+    ['bilingual-next-en', 'en', 'Now look up the defect records.'],
   ],
   'A later question or inconsistent late event cannot change an earlier run language',
 );
@@ -1888,7 +1891,7 @@ for (const pageLocale of ['en', 'vi'] as const) {
   assert.doesNotMatch(sections[0], /Luồng xử lý|Truy vấn sổ cái chất lượng/);
   assert.match(sections[1], /lang="vi"[\s\S]*Luồng xử lý[\s\S]*Truy vấn sổ cái chất lượng/);
   assert.doesNotMatch(sections[1], /Agent flow|Query the quality ledger/);
-  assert.match(sections[2], /lang="en"[\s\S]*Check data provenance/);
+  assert.match(sections[2], /lang="en"[\s\S]*Look up defect records/);
 }
 // Source-backed presentation tools follow the recorded run language in both
 // the current work panel and processing history, independent of page locale.
@@ -2017,6 +2020,7 @@ const nativeDisplayRun = projectAgentFlow([
     display_text: '**Đọc phạm vi**\n\nĐối chiếu dữ liệu đã chọn.',
     display_mode: 'snapshot',
     display_source: 'provider_summary',
+    display_language: 'vi',
     final: true,
   }),
   event('output_item', { item_id: 'native-display', item_type: 'reasoning', phase: 'done' }),
@@ -2031,6 +2035,7 @@ const nativeDisplayMarkup = renderToStaticMarkup(
   </I18nProvider>,
 );
 assert.match(nativeDisplayMarkup, /1 phần tóm tắt/);
+assert.match(nativeDisplayMarkup, /<div class="flow-thought" lang="vi">/);
 assert.doesNotMatch(nativeDisplayMarkup, /Trạng thái tác vụ|Đang xem xét yêu cầu/);
 
 const laterPublicPartRun = projectAgentFlow([
@@ -2072,7 +2077,7 @@ assert.doesNotMatch(
 assert.match(unverifiedDraftMarkup, /An unverified conclusion/);
 
 // Public partial summaries stay visible regardless of the page language or
-// mixed quoted labels. Only explicit translation metadata selects a translation.
+// mixed quoted labels. Historical translations never replace the source.
 const uncertainSummaryText =
   '**Assessing the request**\n\nNeed to review "dữ liệu" before continuing.';
 const uncertainSummaryPart: FlowPart = {
@@ -2085,14 +2090,13 @@ const uncertainSummaryPart: FlowPart = {
   displaySource: 'task_status',
 };
 const uncertainCopy = structuredClone(uncertainSummaryPart);
-for (const locale of ['en', 'vi'] as const) {
-  for (const done of [false, true]) {
-    const displayed = flowSummaryDisplay({ ...uncertainSummaryPart, done }, locale);
-    assert.equal(displayed.displaySource, 'provider_summary');
-    assert.equal(displayed.title, 'Assessing the request');
-    assert.equal(displayed.body, uncertainSummaryPart.body);
-    assert.equal(displayed.raw, uncertainSummaryText);
-  }
+for (const done of [false, true]) {
+  const displayed = flowSummaryDisplay({ ...uncertainSummaryPart, done });
+  assert.equal(displayed.displaySource, 'provider_summary');
+  assert.equal(displayed.title, 'Assessing the request');
+  assert.equal(displayed.body, uncertainSummaryPart.body);
+  assert.equal(displayed.raw, uncertainSummaryText);
+  assert.equal(displayed.displayLanguage, 'en');
 }
 assert.deepEqual(uncertainSummaryPart, uncertainCopy);
 const translatedText = '**Đánh giá yêu cầu**\n\nCần kiểm tra dữ liệu trước khi tiếp tục.';
@@ -2103,17 +2107,70 @@ const translatedPart: FlowPart = {
   displayLocalized: true,
   displayLanguage: 'vi',
 };
+assert.equal(flowSummaryDisplay(translatedPart).body, uncertainSummaryPart.body);
+assert.equal(flowSummaryDisplay(translatedPart).displayLanguage, 'en');
+const originalNormalize = String.prototype.normalize;
+let sourceLanguageNormalizations = 0;
+String.prototype.normalize = function (form) {
+  sourceLanguageNormalizations += 1;
+  return originalNormalize.call(this, form);
+};
+try {
+  const explicitSourcePart = { ...translatedPart, sourceLanguage: 'en' as const };
+  const explicitSourceCopy = structuredClone(explicitSourcePart);
+  const displayedSource = flowSummaryDisplay(explicitSourcePart);
+  assert.equal(sourceLanguageNormalizations, 0, 'Recorded source language skips heuristic work');
+  assert.equal(flowSummaryDisplay(explicitSourcePart), displayedSource);
+  assert.equal(sourceLanguageNormalizations, 0, 'An unchanged part reuses its display projection');
+  const changedSourcePart = { ...explicitSourcePart, raw: 'An amended public summary.' };
+  const changedDisplay = flowSummaryDisplay(changedSourcePart);
+  assert.notEqual(changedDisplay, displayedSource);
+  assert.equal(changedDisplay.body, 'An amended public summary.');
+  assert.equal(displayedSource.body, uncertainSummaryPart.body);
+  const legacySourcePart = { ...translatedPart, sourceLanguage: undefined };
+  const legacyDisplay = flowSummaryDisplay(legacySourcePart);
+  assert.equal(sourceLanguageNormalizations, 1, 'A legacy source is classified once');
+  assert.equal(flowSummaryDisplay(legacySourcePart), legacyDisplay);
+  assert.equal(sourceLanguageNormalizations, 1, 'Legacy display reuse skips reclassification');
+  assert.deepEqual(
+    explicitSourcePart,
+    explicitSourceCopy,
+    'Display caching never annotates source',
+  );
+} finally {
+  String.prototype.normalize = originalNormalize;
+}
 assert.equal(
-  flowSummaryDisplay(translatedPart, 'vi').body,
-  'Cần kiểm tra dữ liệu trước khi tiếp tục.',
+  flowSummaryDisplay({
+    ...translatedPart,
+    raw: '**Đọc phạm vi**\n\nĐối chiếu dữ liệu đã chọn.',
+  }).displayLanguage,
+  'vi',
+  'A genuinely Vietnamese original is preserved in its own language',
 );
-assert.equal(flowSummaryDisplay(translatedPart, 'en').body, uncertainSummaryPart.body);
 assert.equal(
-  flowSummaryDisplay({ ...translatedPart, displayLocalized: false }, 'vi').body,
+  flowSummaryDisplay({
+    ...translatedPart,
+    raw: 'I will inspect "dữ liệu" before continuing.',
+  }).displayLanguage,
+  'en',
+  'A quoted Vietnamese label does not relabel English prose',
+);
+assert.equal(
+  flowSummaryDisplay({
+    ...translatedPart,
+    raw: '**Assessing dữ liệu**\n\nInspect the selected records.',
+    sourceLanguage: 'en',
+  }).displayLanguage,
+  'en',
+  'Explicit source metadata takes precedence over quoted labels',
+);
+assert.equal(
+  flowSummaryDisplay({ ...translatedPart, displayLocalized: false }).body,
   uncertainSummaryPart.body,
 );
 assert.equal(
-  flowSummaryDisplay({ ...translatedPart, displayLanguage: undefined }, 'vi').body,
+  flowSummaryDisplay({ ...translatedPart, displayLanguage: undefined }).body,
   uncertainSummaryPart.body,
 );
 for (const done of [false, true]) {
@@ -2165,15 +2222,19 @@ for (const done of [false, true]) {
     assert.match(markup, /aria-expanded="true"/);
     assert.doesNotMatch(markup, /class="flow-thoughts" hidden/);
     assert.doesNotMatch(markup, /Bản dịch tóm tắt công khai của mô hình|Translation of the model/);
-    assert.match(markup, /Cần kiểm tra dữ liệu trước khi tiếp tục\./);
+    assert.match(markup, /<div class="flow-thought" lang="en">/);
+    assert.match(markup, /Need to review &quot;dữ liệu&quot; before continuing\./);
     assert.doesNotMatch(markup, /flow-summary-original|Xem bản gốc|View original/);
-    assert.doesNotMatch(markup, /Need to review &quot;dữ liệu&quot; before continuing\./);
-    assert.equal((markup.match(/Cần kiểm tra dữ liệu trước khi tiếp tục\./g) || []).length, 1);
+    assert.doesNotMatch(markup, /Cần kiểm tra dữ liệu trước khi tiếp tục\./);
+    assert.equal(
+      (markup.match(/Need to review &quot;dữ liệu&quot; before continuing\./g) || []).length,
+      1,
+    );
   }
   assert.deepEqual(translationEvents, original);
 }
-// Translation progress describes the recorded run target, including recovery
-// and unavailable states, while retaining the original public summary.
+// Old translation metadata remains auditable without displaying progress for a
+// translation this interface no longer requests.
 const translationStatuses = {
   pending: ['Translating the summary into English…', 'Đang dịch tóm tắt sang tiếng Việt…'],
   failed: [
@@ -2208,7 +2269,8 @@ for (const locale of ['en', 'vi'] as const) {
           <AgentFlow run={stateRun} />
         </I18nProvider>,
       );
-      assert.ok(markup.includes(labels[locale === 'vi' ? 1 : 0]));
+      for (const label of labels) assert.ok(!markup.includes(label));
+      assert.match(markup, /<div class="flow-thought" lang="en">/);
       assert.match(markup, /I will inspect Line-3\./);
       assert.doesNotMatch(markup, /Bản dịch tóm tắt công khai|Translation of the model/);
     }

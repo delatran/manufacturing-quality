@@ -4,6 +4,7 @@ import asyncio
 import json
 
 import pytest
+from analyst import prompts
 from analyst.analysis_sql import execute_snapshot_query, query_snapshot
 from analyst.claim_feedback import source_contexts
 from analyst.evidence import sha256
@@ -61,16 +62,23 @@ async def test_exact_day_record_drilldown_does_not_change_analysis_scope(runtime
 
 
 @pytest.mark.asyncio
-async def test_original_source_row_can_trace_quarantined_duplicate(runtime):
-    arguments = {"defect_id": None, "source_row": 8, "limit": 100, "filters": filters()}
-    actual, context = await runtime.product_tools.call("analysis_provenance", arguments)
-    expected = await runtime.analysis_service.trace_records(
-        context["context_id"], source_row=8, limit=100
-    )
-    assert actual == {"ok": True, **expected}
-    assert any(row["source_row"] == 8 for row in actual["raw_records"])
-    with pytest.raises(ValueError, match="Choose defect_id or source_row"):
-        await runtime.product_tools.call("analysis_provenance", {**arguments, "defect_id": 7})
+@pytest.mark.parametrize("selector", [{}, {"defect_id": 7}, {"source_row": 8}])
+async def test_record_source_trace_is_not_advertised_or_dispatched(runtime, selector):
+    arguments = {"defect_id": None, "source_row": None, "limit": 100, "filters": filters()}
+    arguments.update(selector)
+    schemas = product_schemas()
+    assert "analysis_provenance" not in {schema["name"] for schema in schemas}
+    assert "analysis_provenance" not in json.dumps(schemas)
+    assert "analysis_provenance" not in {tool.name for tool in runtime.sdk_tools()}
+    for instructions in (prompts.PRODUCT_LEAD, prompts.LEAD, prompts.ENGINEER):
+        assert "analysis_provenance" not in instructions
+    before = runtime.toolkit.ledger.records()
+    with pytest.raises(ValueError, match="Unsupported product tool"):
+        await runtime.product_tools.call("analysis_provenance", arguments)
+    with pytest.raises(ValueError, match="Unknown local tool"):
+        await runtime._call("analysis_provenance", arguments)
+    assert runtime.toolkit.ledger.records() == before
+    assert not hasattr(runtime.analysis_service, "trace_records")
 
 
 @pytest.mark.asyncio
@@ -311,7 +319,6 @@ def test_analysis_tools_have_nullable_rationale_and_strict_decision_boundaries()
         "analysis_compare",
         "scenario_compare",
         "analysis_records",
-        "analysis_provenance",
         "analysis_sql",
     ]
     expected_desc = (

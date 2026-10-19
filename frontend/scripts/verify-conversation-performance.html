@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mobile conversation performance verification</title>
+  </head>
+  <body>
+    <script type="module">
+      import '../src/fonts.css';
+      import '../src/styles.css';
+      import '../src/dashboard.css';
+      import '../src/i18n.css';
+      import '../src/agent-experience.css';
+      import '../src/agent-flow.css';
+      import '../src/investigation.css';
+      import { runAgentConversationBenchmark } from './verify-conversation-performance.tsx';
+      window.runAgentConversationBenchmark = runAgentConversationBenchmark;
+    </script>
+  </body>
+</html>

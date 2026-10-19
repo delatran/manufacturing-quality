@@ -847,7 +847,6 @@ export default memo(function Dashboard({
                   delta={change(halves?.event_count_change_pct)}
                   detail={t('ui.dashboard_kpi_defects_detail')}
                   spark={monthlySeries((row) => row.event_count)}
-                  sparkLabel={t('ui.dashboard_spark_label')}
                 />
                 <Kpi
                   label={t('ui.dashboard_kpi_critical')}
@@ -862,7 +861,6 @@ export default memo(function Dashboard({
                   }
                   tone="critical"
                   spark={monthlySeries((row) => row.critical_count)}
-                  sparkLabel={t('ui.dashboard_spark_label')}
                 />
                 <Kpi
                   label={t('ui.dashboard_kpi_rate')}
@@ -878,7 +876,6 @@ export default memo(function Dashboard({
                           })
                   }
                   spark={monthlySeries((row) => row.reference_intensity_per_1000)}
-                  sparkLabel={t('ui.dashboard_spark_label')}
                 />
                 <Kpi
                   label={t('ui.dashboard_kpi_cost')}
@@ -897,7 +894,6 @@ export default memo(function Dashboard({
                   spark={monthlySeries((row) =>
                     row.cost_available ? row.known_repair_cost : null,
                   )}
-                  sparkLabel={t('ui.dashboard_spark_label')}
                 />
               </section>
               {kpis.event_count === 0 && (
@@ -1118,7 +1114,6 @@ export default memo(function Dashboard({
                       : t('ui.dashboard_kpi_avg_detail_simple')
                   }
                   spark={monthlySeries((row) => row.average_known_repair_cost)}
-                  sparkLabel={t('ui.dashboard_spark_label')}
                 />
               </div>
               <div className="dashboard-grid equal">

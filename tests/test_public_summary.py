@@ -1,22 +1,18 @@
-"""Public-summary localization through the real SDK and fake managed sessions."""
+"""Public provider summaries retain their source text without extra model work."""
 
 import asyncio
-import json
+from copy import deepcopy
 from types import SimpleNamespace
 
-import httpx2
 import pytest
-from agents import ModelResponse, Usage
 from analyst import runtime as runtime_module
 from analyst.config import Settings
 from analyst.managed_agents import ManagedAgentsModel
-from analyst.managed_recovery import recover_managed_sessions
-from analyst.model import AgentModel, ResponseProtocolError
-from analyst.public_summary import PublicSummaryDisplay, validate_translation
+from analyst.managed_recovery import RECOVERY_STOP, recover_managed_sessions
+from analyst.public_summary import PublicSummaryDisplay
 from analyst.runtime import AnalystRuntime
 from analyst.store import SessionStore
-from openai import BadRequestError
-from test_managed_agents import Sessions, Stream, event, message, session
+from test_managed_agents import Sessions, Stream, event, message, request, session
 from test_managed_recovery import Provider
 
 IDENTITY = {
@@ -31,29 +27,60 @@ ENGLISH = "Reviewing the request and checking 12 records in `event_count`."
 VIETNAMESE = "Đang kiểm tra yêu cầu và 12 dòng dữ liệu trong `event_count`."
 
 
-def translator_sessions(translated, *, response=None):
-    translations = translated if isinstance(translated, list) else [translated]
+@pytest.mark.parametrize("language", ["en", "vi"])
+@pytest.mark.parametrize(
+    "source", [ENGLISH, VIETNAMESE, "Validate totals.", "", "CSV `event_count`"]
+)
+@pytest.mark.parametrize("stop", [None, "blocked", "provider_stopped"])
+def test_completed_provider_summary_never_creates_a_model_or_changes_accounting(
+    monkeypatch, language, source, stop
+):
+    def unexpected_model(*args, **kwargs):
+        pytest.fail("Displaying a provider summary must not create another model")
+
+    monkeypatch.setattr(runtime_module, "ManagedAgentsModel", unexpected_model)
+
+    async def run():
+        events = []
+        runtime = AnalystRuntime(
+            Settings(mode="live", api_key="offline-test"),
+            object(),
+            lambda kind, data: events.append((kind, data)),
+            language=language,
+        )
+        runtime.budget.update({"cost_usd": 0.42, "unresolved_generation_requests": 1})
+        if stop:
+            runtime.budget[stop] = True
+        original_budget = deepcopy(runtime.budget)
+        raw = {**IDENTITY, "text": source, "done": True}
+        await runtime.emit("reasoning_summary", raw)
+        await runtime.emit("reasoning_part", {**raw, "phase": "done"})
+        await runtime.emit("reasoning_summary", raw)
+        assert raw == {**IDENTITY, "text": source, "done": True}
+        assert len(events) == 3
+        for _, data in events:
+            assert data["text"] == data["display_text"] == source
+            assert data["display_source"] == "provider_summary"
+            assert data["display_mode"] == "snapshot"
+            assert data["display_localized"] is False
+            assert data["event_id"] == IDENTITY["event_id"]
+            assert data["language"] == language
+            assert "translation_state" not in data
+            assert "source_provider_event_id" not in data
+        assert runtime.models == []
+        assert runtime.budget == original_budget
+        assert not [task for task in asyncio.all_tasks() if task is not asyncio.current_task()]
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("language", ["en", "vi"])
+def test_managed_response_uses_only_the_analyst_session_and_usage(monkeypatch, language):
     final = session()
     final.spend_control = None
-    return Sessions(
+    sessions = Sessions(
         [final],
-        [
-            [
-                message(
-                    response
-                    if response is not None
-                    else json.dumps(
-                        {
-                            "translations": [
-                                {"index": index, "text": text}
-                                for index, text in enumerate(translations)
-                            ]
-                        },
-                        ensure_ascii=False,
-                    )
-                )
-            ]
-        ],
+        [[message()]],
         [
             Stream(
                 [
@@ -62,9 +89,9 @@ def translator_sessions(translated, *, response=None):
                         "agent.session.turn.reasoning_summary_text.done",
                         session_id=final.id,
                         turn_id="turn_real",
-                        item_id="translator-reasoning",
+                        item_id="reasoning-original",
                         summary_index=0,
-                        text="Translator public text must stay separate.",
+                        text=ENGLISH,
                     ),
                     event("agent.session.turn.completed", session_id=final.id, turn_id="turn_real"),
                     event("agent.session.idle", session=final),
@@ -73,12 +100,8 @@ def translator_sessions(translated, *, response=None):
         ],
     )
 
-
-def bind_translator(monkeypatch, sessions):
-    sessions.client_closed = False
-
     async def close():
-        sessions.client_closed = True
+        pass
 
     def model(settings, emit, **kwargs):
         client = SimpleNamespace(
@@ -88,17 +111,6 @@ def bind_translator(monkeypatch, sessions):
 
     monkeypatch.setattr(runtime_module, "ManagedAgentsModel", model)
 
-
-@pytest.mark.parametrize(
-    ("language", "source", "translated"),
-    [("vi", ENGLISH, VIETNAMESE), ("en", VIETNAMESE, ENGLISH)],
-)
-def test_completed_summary_translates_once_with_real_managed_accounting(
-    monkeypatch, language, source, translated
-):
-    sessions = translator_sessions(translated)
-    bind_translator(monkeypatch, sessions)
-
     async def run():
         events = []
         runtime = AnalystRuntime(
@@ -107,607 +119,190 @@ def test_completed_summary_translates_once_with_real_managed_accounting(
             lambda kind, data: events.append((kind, data)),
             language=language,
         )
-        for delta in (source[:2], source[2:10], source[10:]):
-            await runtime.emit("reasoning_summary", {**IDENTITY, "delta": delta})
-        assert not sessions.creates
-        assert events[-1][1]["display_text"] == source
-        assert events[-1][1]["display_localized"] is False
-        await runtime.emit("reasoning_summary", {**IDENTITY, "text": source, "done": True})
-        await runtime.emit("reasoning_part", {**IDENTITY, "text": source, "phase": "done"})
-        # Concurrent boundary hooks still share a single translation request.
-        await asyncio.gather(runtime.drain_public_summaries(), runtime.drain_public_summaries())
-        await runtime.emit("reasoning_summary", {**IDENTITY, "text": source, "done": True})
-        await runtime.drain_public_summaries()
-        assert len(sessions.creates) == 1
-        create = sessions.creates[0]
-        assert create["environment"] == {"type": "none"}
-        assert "spend_control" not in create
-        assert create["agent"]["model"] == "gpt-6-luna"
-        assert create["agent"]["reasoning"] == {"effort": "max"}
-        assert create["agent"]["tools"] == []
-        assert create["agent"]["multi_agent"] == {"enabled": False}
-        output_format = create["agent"]["text"]["format"]
-        assert output_format["type"] == "json_schema"
-        assert output_format["schema"]["required"] == ["translations"]
-        assert output_format["schema"]["properties"]["translations"]["type"] == "array"
-        item_schema = output_format["schema"]["$defs"]["PublicSummaryTranslation"]
-        assert item_schema["required"] == ["index", "text"]
-        assert item_schema["properties"]["index"]["type"] == "integer"
-        assert item_schema["properties"]["text"]["type"] == "string"
-        assert item_schema["additionalProperties"] is False
-        assert output_format["schema"]["additionalProperties"] is False
-        instructions = create["agent"]["instructions"]
-        assert "PUBLIC provider summaries" in instructions
-        assert "Do not reconstruct private reasoning" in instructions
-        assert "exactly\none item for every supplied index" in instructions
-        assert "Keep written-out numbers as target-language words" in instructions
-        prompt = json.loads(create["input"][0]["content"][0]["text"])
-        assert prompt == {
-            "target_language": language,
-            "public_summaries": [{"index": 0, "text": source}],
-        }
-        summaries = [
-            data for kind, data in events if kind in {"reasoning_summary", "reasoning_part"}
-        ]
-        final = summaries[-1]
-        assert final["text"] == source
-        assert final["display_text"] == translated
-        assert final["display_localized"] is True
-        assert final["display_source"] == "translated_provider_summary"
-        assert final["display_language"] == language
-        assert final["translation_state"] == "translated"
-        assert all(row["item_id"] == IDENTITY["item_id"] for row in summaries)
-        assert "Translator public text" not in str(summaries)
-        supplemental = [data for data in summaries if "source_provider_event_id" in data]
-        assert len(supplemental) == 1
-        assert supplemental[0]["source_provider_event_id"] == IDENTITY["event_id"]
-        assert "event_id" not in supplemental[0]
-        assert "text_delta" not in [kind for kind, _ in events]
-        assert len(runtime.models) == 1
-        model = runtime.models[0]
-        assert model.role == "Summary Translator"
-        assert model.settings.reasoning_summary == "off"
-        assert model.budget is runtime.budget
-        assert model.session_id == "sess_real"
-        assert len(model.usage) == 1
-        assert runtime.budget["cost_usd"] > 0
-        assert runtime.budget["unresolved_generation_requests"] == 0
-        assert sessions.client_closed is True
-        assert any(kind == "usage" and row["role"] == "Summary Translator" for kind, row in events)
+        analyst = runtime.model("Lead Analyst")
+        try:
+            result = await request(analyst)
+            assert result.output[0].content[0].text == "Verified result"
+            assert len(sessions.creates) == 1
+            assert sessions.creates[0]["agent"]["model"] == "gpt-6-luna"
+            assert "spend_control" not in sessions.creates[0]
+            assert runtime.models == [analyst]
+            assert analyst.role == "Lead Analyst"
+            assert len(analyst.usage) == 1
+            assert runtime.budget["cost_usd"] > 0
+            assert runtime.budget["unresolved_generation_requests"] == 0
+            summaries = [data for kind, data in events if kind == "reasoning_summary"]
+            assert len(summaries) == 1
+            assert summaries[0]["text"] == summaries[0]["display_text"] == ENGLISH
+            assert summaries[0]["display_language"] == "en"
+            assert summaries[0]["display_localized"] is False
+            assert "translation_state" not in summaries[0]
+            assert not any(data.get("role") == "Summary Translator" for _, data in events)
+        finally:
+            await analyst.client.close()
 
     asyncio.run(run())
 
 
-def test_multiple_completed_parts_share_one_batch_and_keep_their_source_binding(monkeypatch):
-    sources = [ENGLISH.replace("12", str(number)) for number in (12, 13, 14)]
-    translations = [VIETNAMESE.replace("12", str(number)) for number in (12, 13, 14)]
-    # Output order is independent of source identity; explicit indices bind it.
-    response = json.dumps(
-        {"translations": [{"index": index, "text": translations[index]} for index in (2, 0, 1)]},
-        ensure_ascii=False,
-    )
-    sessions = translator_sessions(translations, response=response)
-    bind_translator(monkeypatch, sessions)
-
-    async def run():
-        events = []
-        runtime = AnalystRuntime(
-            Settings(mode="live", api_key="offline-test"),
-            object(),
-            lambda kind, data: events.append((kind, data)),
-            language="vi",
-        )
-        for source_index, source in zip((7, 9, 40), sources, strict=True):
-            await runtime.emit(
-                "reasoning_summary",
-                {**IDENTITY, "summary_index": source_index, "text": source, "done": True},
-            )
-        await asyncio.gather(runtime.drain_public_summaries(), runtime.drain_public_summaries())
-        await runtime.drain_public_summaries()
-        assert len(sessions.creates) == 1
-        prompt = json.loads(sessions.creates[0]["input"][0]["content"][0]["text"])
-        assert prompt["public_summaries"] == [
-            {"index": index, "text": source} for index, source in enumerate(sources)
-        ]
-        final = {
-            data["summary_index"]: data for kind, data in events if kind == "reasoning_summary"
-        }
-        assert list(final) == [7, 9, 40]
-        for index, data in enumerate(final.values()):
-            assert data["text"] == sources[index]
-            assert data["display_text"] == translations[index]
-            assert data["translation_state"] == "translated"
-        assert len(runtime.models) == 1
-        assert len(runtime.models[0].usage) == 1
-        assert runtime.budget["unresolved_generation_requests"] == 0
-        assert sessions.client_closed is True
-
-    asyncio.run(run())
-
-
-@pytest.mark.parametrize("indices", [(0, 0), (0,), (0, 1, 2), (0, 2), (), (False, 1)])
-def test_batch_rejects_duplicate_missing_extra_empty_or_boolean_indices(monkeypatch, indices):
-    response = json.dumps(
-        {"translations": [{"index": index, "text": VIETNAMESE} for index in indices]},
-        ensure_ascii=False,
-    )
-    sessions = translator_sessions(VIETNAMESE, response=response)
-    bind_translator(monkeypatch, sessions)
-
-    async def run():
-        events = []
-        runtime = AnalystRuntime(
-            Settings(mode="live", api_key="offline-test"),
-            object(),
-            lambda kind, data: events.append((kind, data)),
-            language="vi",
-        )
-        for index in range(2):
-            await runtime.emit(
-                "reasoning_summary",
-                {**IDENTITY, "summary_index": index, "text": ENGLISH, "done": True},
-            )
-        await runtime.drain_public_summaries()
-        final = {
-            data["summary_index"]: data for kind, data in events if kind == "reasoning_summary"
-        }
-        assert len(final) == 2
-        assert all(data["translation_state"] == "failed" for data in final.values())
-        assert all(data["display_text"] == data["text"] == ENGLISH for data in final.values())
-        await runtime.drain_public_summaries()
-        assert len(sessions.creates) == 1
-        assert len(runtime.models[0].usage) == 1
-        assert runtime.budget["unresolved_generation_requests"] == 0
-        assert sessions.client_closed is True
-
-    asyncio.run(run())
-
-
-def test_one_invalid_batch_translation_keeps_valid_sibling_translations(monkeypatch):
-    sources = [ENGLISH.replace("12", str(number)) for number in (12, 13, 14)]
-    translated = [VIETNAMESE.replace("12", str(number)) for number in (12, 999, 14)]
-    sessions = translator_sessions(translated)
-    bind_translator(monkeypatch, sessions)
-
-    async def run():
-        events = []
-        runtime = AnalystRuntime(
-            Settings(mode="live", api_key="offline-test"),
-            object(),
-            lambda kind, data: events.append((kind, data)),
-            language="vi",
-        )
-        for index, source in enumerate(sources):
-            await runtime.emit(
-                "reasoning_summary",
-                {**IDENTITY, "summary_index": index, "text": source, "done": True},
-            )
-        await runtime.drain_public_summaries()
-        final = {
-            data["summary_index"]: data for kind, data in events if kind == "reasoning_summary"
-        }
-        assert [data["translation_state"] for data in final.values()] == [
-            "translated",
-            "failed",
-            "translated",
-        ]
-        assert final[0]["display_text"] == translated[0]
-        assert final[1]["display_text"] == sources[1]
-        assert final[1]["display_localized"] is False
-        assert final[2]["display_text"] == translated[2]
-        assert all(data["text"] == sources[index] for index, data in final.items())
-        await runtime.drain_public_summaries()
-        assert len(sessions.creates) == 1
-        assert len(runtime.models[0].usage) == 1
-
-    asyncio.run(run())
-
-
-def test_structured_summary_translation_validates_only_the_authored_text_from_native_regression(
-    monkeypatch,
-):
-    # Frozen public source and translation text from the observed plaintext
-    # envelope failure. Keep the token validator strict; parse a defined schema.
+def test_streamed_source_snapshots_preserve_every_raw_fragment_and_protected_token():
+    display = PublicSummaryDisplay()
     source = (
-        "**Analyzing SQL Count Queries**\n\n"
-        "I'm working on an SQL query to count null and zero values in `repair_cost` "
-        "while grouping by `production_line`. I need to consider how to handle "
-        "unknown values too. I'll compare nulls to zeros and see how `cost_status` "
-        "plays into identifying valid `repair_cost` entries. I want to ensure I'm "
-        "correctly counting known values and assessing the validity of `repair_cost`. "
-        "The user's question about the difference between absent and zero costs is "
-        "clear, so I need to clarify that in my results."
+        "Reviewing 12 records and 123,456.90 in `event_count`. "
+        "[claim:analysis.monthly[0].known_repair_cost] "
+        "https://example.test/report2024.md"
     )
-    translated = (
-        "**Phân tích các truy vấn đếm trong SQL**\n\n"
-        "Tôi đang viết một truy vấn SQL để đếm các giá trị null và zero trong "
-        "`repair_cost` khi nhóm theo `production_line`. Tôi cần cân nhắc cách xử lý "
-        "cả những giá trị chưa biết. Tôi sẽ so sánh các giá trị null với zero và "
-        "xem `cost_status` ảnh hưởng thế nào đến việc xác định các mục `repair_cost` "
-        "hợp lệ. Tôi muốn đảm bảo mình đếm chính xác các giá trị đã biết và đánh "
-        "giá tính hợp lệ của `repair_cost`. Câu hỏi của người dùng về sự khác nhau "
-        "giữa chi phí không có và chi phí bằng zero đã rõ, vì vậy tôi cần làm rõ "
-        "điều đó trong kết quả của mình."
+    fragments = [source[:2], source[2:11], source[11:]]
+    events = [
+        {**IDENTITY, "event_id": f"delta-{index}", "delta": delta}
+        for index, delta in enumerate(fragments)
+    ]
+    original = deepcopy(events)
+    projected = [display.project(data) for data in events]
+    assert events == original
+    assert [data["delta"] for data in projected] == fragments
+    assert [data["event_id"] for data in projected] == ["delta-0", "delta-1", "delta-2"]
+    assert [data["display_text"] for data in projected] == [source[:2], source[:11], source]
+    done = display.project({**IDENTITY, "phase": "done", "text": source})
+    assert done["text"] == done["display_text"] == source
+    assert done["display_language"] == "en"
+
+
+def test_summary_parts_keep_session_turn_item_and_index_boundaries():
+    display = PublicSummaryDisplay()
+    for index, changes in enumerate(
+        (
+            {},
+            {"session_id": "other-session"},
+            {"turn_id": "other-turn"},
+            {"item_id": "other-item"},
+            {"summary_index": 1},
+        )
+    ):
+        identity = {**IDENTITY, **changes}
+        display.project({**identity, "delta": f"Part {index}"})
+        result = display.project({**identity, "delta": "."})
+        assert result["display_text"] == f"Part {index}."
+    anonymous = PublicSummaryDisplay()
+    assert anonymous.project({"delta": "First"})["display_text"] == "First"
+    assert anonymous.project({"delta": "Second"})["display_text"] == "Second"
+    assert anonymous.parts == {}
+
+
+def test_alias_keeps_completed_source_snapshot_for_later_native_parts():
+    display = PublicSummaryDisplay()
+    display.project({**IDENTITY, "text": ENGLISH, "done": True})
+    receipt = {
+        **IDENTITY,
+        "canonical_item_id": "durable",
+        "canonical_summary_indices": [2],
+        "reconciled": True,
+    }
+    original = deepcopy(receipt)
+    display.alias(receipt)
+    canonical = {**IDENTITY, "item_id": "durable", "summary_index": 2}
+    result = display.project({**canonical, "phase": "done"})
+    assert result["display_text"] == ENGLISH
+    assert display.project({**IDENTITY, "delta": " Next."})["display_text"] == ENGLISH + " Next."
+    assert display.project({**canonical, "phase": "done"})["display_text"] == ENGLISH + " Next."
+    assert receipt == original
+
+
+def test_alias_does_not_replace_a_durable_snapshot_or_another_sessions_text():
+    display = PublicSummaryDisplay()
+    display.project({**IDENTITY, "text": "Transient"})
+    display.project({**IDENTITY, "item_id": "durable", "text": "Durable"})
+    other = {**IDENTITY, "session_id": "other-session"}
+    display.project({**other, "text": "Other session"})
+    display.alias({**IDENTITY, "canonical_item_id": "durable", "reconciled": True})
+    assert display.project({**IDENTITY, "phase": "done"})["display_text"] == "Durable"
+    assert display.project({**other, "delta": "."})["display_text"] == "Other session."
+
+
+@pytest.mark.parametrize("indices", [[], [0, 0], [-1], [True], ["0"], "0"])
+def test_invalid_index_alias_keeps_source_identity_and_text(indices):
+    display = PublicSummaryDisplay()
+    display.project({**IDENTITY, "text": ENGLISH})
+    display.alias(
+        {
+            **IDENTITY,
+            "canonical_item_id": "durable",
+            "canonical_summary_indices": indices,
+            "reconciled": True,
+        }
     )
-    invalid_plaintext_wrapper = json.dumps({"public_summary": translated}, ensure_ascii=False)
-    with pytest.raises(ValueError, match="protected source tokens"):
-        validate_translation(source, invalid_plaintext_wrapper, "vi")
-    sessions = translator_sessions(translated)
-    bind_translator(monkeypatch, sessions)
-
-    async def run():
-        runtime = AnalystRuntime(
-            Settings(mode="live", api_key="offline-test"),
-            object(),
-            lambda *args: None,
-            language="vi",
-        )
-        assert await runtime._translate_public_summary(source) == translated
-        assert len(sessions.creates) == 1
-        assert sessions.client_closed is True
-        assert runtime.budget["unresolved_generation_requests"] == 0
-
-    asyncio.run(run())
+    assert display.key(IDENTITY)[2:] == (("item", IDENTITY["item_id"]), 0)
+    assert display.project({**IDENTITY, "phase": "done"})["display_text"] == ENGLISH
 
 
-def test_translation_schema_rejects_an_unexpected_json_wrapper_without_unwrapping(monkeypatch):
-    sessions = translator_sessions(
-        VIETNAMESE, response=json.dumps({"public_summary": VIETNAMESE}, ensure_ascii=False)
-    )
-    bind_translator(monkeypatch, sessions)
-
-    async def run():
-        events = []
-        runtime = AnalystRuntime(
-            Settings(mode="live", api_key="offline-test"),
-            object(),
-            lambda kind, data: events.append((kind, data)),
-            language="vi",
-        )
-        await runtime.emit("reasoning_summary", {**IDENTITY, "text": ENGLISH, "done": True})
-        await runtime.drain_public_summaries()
-        assert events[-1][1]["translation_state"] == "failed"
-        assert events[-1][1]["display_text"] == ENGLISH
-        assert events[-1][1]["display_localized"] is False
-        assert len(runtime.models[0].usage) == 1
-        assert runtime.budget["unresolved_generation_requests"] == 0
-        await runtime.drain_public_summaries()
-        assert len(sessions.creates) == 1
-        assert sessions.client_closed is True
-
-    asyncio.run(run())
-
-
-def test_summary_alias_replay_reuses_a_prior_translation_without_another_request(monkeypatch):
-    async def run():
-        events, calls = [], []
-        runtime = AnalystRuntime(
-            Settings(mode="live", api_key="offline-test"),
-            object(),
-            lambda kind, data: events.append((kind, data)),
-            language="vi",
-        )
-
-        async def translate(texts):
-            calls.extend(texts)
-            return [VIETNAMESE]
-
-        monkeypatch.setattr(runtime, "_translate_public_summaries", translate)
-        await runtime.emit("reasoning_summary", {**IDENTITY, "text": ENGLISH, "done": True})
-        await runtime.drain_public_summaries()
-        await runtime.emit(
-            "reasoning_summary",
-            {**IDENTITY, "item_id": "transient-replay", "text": ENGLISH, "done": True},
-        )
-        await runtime.emit(
-            "reasoning_alias",
-            {
-                **IDENTITY,
-                "item_id": "transient-replay",
-                "canonical_item_id": IDENTITY["item_id"],
-                "reconciled": True,
-            },
-        )
-        await runtime.drain_public_summaries()
-        assert calls == [ENGLISH]
-        assert runtime._public_summaries.pending() == []
-        assert events[-1][1]["item_id"] == IDENTITY["item_id"]
-        assert events[-1][1]["display_text"] == VIETNAMESE
-        assert events[-1][1]["translation_state"] == "translated"
-
-    asyncio.run(run())
-
-
-def test_native_language_empty_and_unknown_summary_parts_never_trigger_translation():
-    display = PublicSummaryDisplay("en")
-    for index, text in enumerate(("", ENGLISH, "CSV `event_count`")):
-        result = display.project(
-            "reasoning_summary", {**IDENTITY, "summary_index": index, "text": text, "done": True}
-        )
-        assert result["display_text"] == text
-        assert result["display_localized"] is False
-        assert result["display_source"] == "provider_summary"
-        assert "translation_state" not in result
-    assert display.pending() == []
-
-
-@pytest.mark.parametrize(
-    ("language", "source", "translated"),
-    [("vi", "Validate totals.", "Xác thực tổng."), ("en", "Xác thực tổng.", "Validate totals.")],
-)
-def test_short_summary_prose_translates_without_requiring_request_classifier_vocabulary(
-    monkeypatch, language, source, translated
-):
-    async def run():
-        events, calls = [], []
-        runtime = AnalystRuntime(
-            Settings(mode="live", api_key="offline-test"),
-            object(),
-            lambda kind, data: events.append((kind, data)),
-            language=language,
-        )
-
-        async def translate(texts):
-            calls.extend(texts)
-            return [validate_translation(texts[0], translated, language)]
-
-        monkeypatch.setattr(runtime, "_translate_public_summaries", translate)
-        await runtime.emit("reasoning_summary", {**IDENTITY, "text": source, "done": True})
-        assert events[-1][1]["display_text"] == source
-        assert events[-1][1]["translation_state"] == "pending"
-        await runtime.drain_public_summaries()
-        assert calls == [source]
-        assert events[-1][1]["display_text"] == translated
-        assert events[-1][1]["display_language"] == language
-        assert events[-1][1]["display_localized"] is True
-
-    asyncio.run(run())
-
-
-@pytest.mark.parametrize(
-    "failure", [RuntimeError("translation unavailable"), ValueError("wrong language")]
-)
-def test_translation_failure_keeps_original_and_does_not_retry(monkeypatch, failure):
-    async def run():
-        events, calls = [], []
-        runtime = AnalystRuntime(
-            Settings(mode="live", api_key="offline-test"),
-            object(),
-            lambda kind, data: events.append((kind, data)),
-            language="vi",
-        )
-
-        async def fail(texts):
-            calls.extend(texts)
-            raise failure
-
-        monkeypatch.setattr(runtime, "_translate_public_summaries", fail)
-        await runtime.emit("reasoning_summary", {**IDENTITY, "text": ENGLISH, "done": True})
-        await runtime.drain_public_summaries()
-        await runtime.drain_public_summaries()
-        assert calls == [ENGLISH]
-        final = events[-1][1]
-        assert final["text"] == final["display_text"] == ENGLISH
-        assert final["display_language"] == "en"
-        assert final["display_localized"] is False
-        assert final["translation_state"] == "failed"
-
-    asyncio.run(run())
-
-
-def test_failed_provider_translation_retains_unresolved_accounting_and_blocks_more_spend(
-    monkeypatch,
-):
-    class FailedSessions(Sessions):
-        async def create(self, **kwargs):
-            self.creates.append(kwargs)
-            raise ResponseProtocolError("Provider admission is uncertain")
-
-    sessions = FailedSessions([], [], [])
-    bind_translator(monkeypatch, sessions)
-
-    async def run():
-        events = []
-        runtime = AnalystRuntime(
-            Settings(mode="live", api_key="offline-test"),
-            object(),
-            lambda kind, data: events.append((kind, data)),
-            language="vi",
-        )
-        runtime.last_qa = {"verified": True, "errors": []}
-        await runtime.emit("reasoning_summary", {**IDENTITY, "text": ENGLISH, "done": True})
-        await runtime.drain_public_summaries()
-        assert events[-1][1]["translation_state"] == "failed"
-        assert events[-1][1]["display_text"] == ENGLISH
-        assert sessions.client_closed is True
-        assert runtime.budget["blocked"] is True
-        assert runtime.budget["unresolved_generation_requests"] == 1
-        assert runtime.budget["cost_usd"] == 0
-        assert runtime.models[0].usage == []
-        assert runtime.last_qa == {"verified": True, "errors": []}
-        await runtime.emit(
-            "reasoning_summary", {**IDENTITY, "summary_index": 1, "text": ENGLISH, "done": True}
-        )
-        await runtime.drain_public_summaries()
-        assert events[-1][1]["translation_state"] == "skipped"
-        assert len(sessions.creates) == 1
-        assert len(runtime.models) == 1
-
-    asyncio.run(run())
-
-
-def test_rejected_translation_remains_resolved_after_durable_restart(monkeypatch, tmp_path):
-    class RejectedSessions(Sessions):
-        async def create(self, **kwargs):
-            self.creates.append(kwargs)
-            raise BadRequestError(
-                "The provider rejected the translation schema",
-                response=httpx2.Response(
-                    400,
-                    request=httpx2.Request("POST", "https://api.openai.com/v1/agents/sessions"),
-                ),
-                body={"code": "invalid_json_schema", "param": "agent.text.format"},
-            )
-
-    sessions = RejectedSessions([], [], [])
-    bind_translator(monkeypatch, sessions)
+@pytest.mark.parametrize("state", ["active", "unknown", "rejected", "settled"])
+def test_historical_translator_receipts_retain_original_storage_and_recovery(tmp_path, state):
     store = SessionStore(tmp_path)
     with store.db:
         store.db.execute("INSERT INTO sessions(id,created) VALUES ('visitor','fixture')")
     run_id, _ = store.begin_run("visitor")
-
-    async def run():
-        runtime = AnalystRuntime(
-            Settings(mode="live", api_key="offline-test"),
-            object(),
-            lambda kind, data: store.emit("visitor", run_id, kind, data),
-            language="vi",
+    role = {"provider_api": "agents", "role": "Summary Translator"}
+    store.emit(
+        "visitor",
+        run_id,
+        "reasoning_summary",
+        {
+            **IDENTITY,
+            "text": ENGLISH,
+            "display_text": VIETNAMESE,
+            "display_source": "translated_provider_summary",
+            "display_localized": True,
+            "translation_state": "translated",
+            "language": "vi",
+        },
+    )
+    store.emit(
+        "visitor",
+        run_id,
+        "model_started",
+        {**role, "boundary_id": "historical-boundary", "session_id": None},
+    )
+    if state in {"active", "settled"}:
+        store.emit(
+            "visitor",
+            run_id,
+            "managed_session_created",
+            {**role, "session_id": "asess_known"},
         )
-        await runtime.emit("reasoning_summary", {**IDENTITY, "text": ENGLISH, "done": True})
-        await runtime.drain_public_summaries()
-        assert len(sessions.creates) == 1
-        assert runtime.budget["unresolved_generation_requests"] == 0
-        assert runtime.budget["cost_usd"] == 0
-        assert sessions.client_closed
-        return runtime
-
-    runtime = asyncio.run(run())
+    if state == "rejected":
+        store.emit(
+            "visitor",
+            run_id,
+            "managed_session_rejected",
+            {**role, "generation_dispatched": False},
+        )
+    elif state == "settled":
+        store.emit(
+            "visitor",
+            run_id,
+            "usage",
+            {
+                **role,
+                "provider_session_id": "asess_known",
+                "provider_terminal": True,
+                "cost_usd": 0.0123,
+                "input_tokens": 12,
+                "output_tokens": 4,
+            },
+        )
+    original_events = store.events("visitor")
     store.close()
+
     reopened = SessionStore(tmp_path)
     try:
         reopened.recover_interrupted()
         provider = Provider()
-        asyncio.run(recover_managed_sessions(reopened, runtime.settings, client=provider))
-        assert provider.calls == []
-        assert not reopened.stopped("visitor")
-        rejected = [
-            entry["data"]
-            for entry in reopened.events("visitor")
-            if entry["type"] == "managed_session_rejected"
-        ]
-        assert len(rejected) == 1
-        assert rejected[0]["role"] == "Summary Translator"
-        assert rejected[0]["generation_dispatched"] is False
+        asyncio.run(recover_managed_sessions(reopened, Settings(), client=provider))
+        persisted = {event["id"]: event for event in reopened.events("visitor")}
+        assert all(persisted[event["id"]] == event for event in original_events)
+        if state == "active":
+            assert [call[0] for call in provider.calls] == ["cancel", "retrieve", "turns"]
+        else:
+            assert provider.calls == []
+        assert reopened.stopped("visitor") == (RECOVERY_STOP if state == "unknown" else None)
     finally:
         reopened.close()
-
-
-@pytest.mark.parametrize("stop", ["blocked", "provider_stopped"])
-def test_stopped_shared_budget_does_not_start_translation(monkeypatch, stop):
-    async def run():
-        events = []
-        runtime = AnalystRuntime(
-            Settings(mode="live", api_key="offline-test"),
-            object(),
-            lambda kind, data: events.append((kind, data)),
-            language="vi",
-        )
-        runtime.budget[stop] = True
-        await runtime.emit("reasoning_summary", {**IDENTITY, "text": ENGLISH, "done": True})
-        await runtime.drain_public_summaries()
-        assert runtime.models == []
-        assert events[-1][1]["translation_state"] == "skipped"
-        assert events[-1][1]["display_text"] == ENGLISH
-
-    asyncio.run(run())
-
-
-def test_model_boundary_releases_shared_lock_before_summary_translation(monkeypatch):
-    async def run():
-        budget = {"model_lock": asyncio.Lock()}
-        response = ModelResponse(output=[], usage=Usage(), response_id=None)
-        called = []
-
-        async def base_response(self, *args, **kwargs):
-            async with self.budget["model_lock"]:
-                return response
-
-        async def boundary():
-            assert not budget["model_lock"].locked()
-            async with budget["model_lock"]:
-                called.append(True)
-
-        monkeypatch.setattr(AgentModel, "get_response", base_response)
-        model = ManagedAgentsModel(
-            Settings(api_key="offline-test"),
-            lambda *args: None,
-            budget=budget,
-        )
-        model.response_boundary = boundary
-        assert await asyncio.wait_for(model.get_response(), timeout=1) is response
-        assert called == [True]
-        await model.client.close()
-
-    asyncio.run(run())
-
-
-def test_cancellation_cancels_and_joins_translator_session(monkeypatch):
-    async def run():
-        opened = asyncio.Event()
-        live, final = session(status="in_progress"), session()
-        live.spend_control = final.spend_control = None
-
-        class WaitingStream(Stream):
-            async def __aiter__(self):
-                yield event("agent.session.created", session=live)
-                opened.set()
-                await asyncio.Event().wait()
-
-        stream = WaitingStream([])
-        sessions = Sessions([final], [[]], [stream])
-        bind_translator(monkeypatch, sessions)
-        events = []
-        runtime = AnalystRuntime(
-            Settings(mode="live", api_key="offline-test"),
-            object(),
-            lambda kind, data: events.append((kind, data)),
-            language="vi",
-        )
-        await runtime.emit("reasoning_summary", {**IDENTITY, "text": ENGLISH, "done": True})
-        await runtime.emit(
-            "reasoning_summary", {**IDENTITY, "summary_index": 1, "text": ENGLISH, "done": True}
-        )
-        task = asyncio.create_task(runtime.drain_public_summaries())
-        await asyncio.wait_for(opened.wait(), timeout=1)
-        task.cancel()
-        with pytest.raises(asyncio.CancelledError):
-            await task
-        assert stream.closed
-        assert sessions.client_closed is True
-        assert sessions.inputs[0]["events"] == [{"type": "agent.session.input.cancel"}]
-        assert runtime.models[0]._cancel_task.done()
-        assert runtime.budget["blocked"] is True
-        assert runtime.budget["unresolved_generation_requests"] == 1
-        assert events[-1][1]["translation_state"] == "cancelled"
-        assert events[-1][1]["display_text"] == ENGLISH
-        final_parts = {
-            data["summary_index"]: data for kind, data in events if kind == "reasoning_summary"
-        }
-        assert set(final_parts) == {0, 1}
-        assert all(data["translation_state"] == "cancelled" for data in final_parts.values())
-        assert len(sessions.creates) == 1
-        assert not [task for task in asyncio.all_tasks() if task is not asyncio.current_task()]
-
-    asyncio.run(run())
-
-
-@pytest.mark.parametrize(
-    "translated",
-    [
-        "Đang kiểm tra 13 dòng dữ liệu trong `event_count`.",
-        "Đang kiểm tra 12 dòng dữ liệu trong `record_count`.",
-        ENGLISH,
-        "",
-    ],
-)
-def test_translation_validation_rejects_changed_tokens_or_wrong_language(translated):
-    with pytest.raises(ValueError):
-        validate_translation(ENGLISH, translated, "vi")
-
-
-def test_translation_keeps_written_number_words_out_of_numeric_tokens():
-    source = "Checking null and zero values in `repair_cost`, then comparing nulls to zeros."
-    translated = "Đang kiểm tra các giá trị null và không trong `repair_cost`, rồi so sánh các giá trị null với không."
-    assert validate_translation(source, translated, "vi") == translated
-    with pytest.raises(ValueError, match="protected source tokens"):
-        validate_translation(source, translated.replace("không", "0"), "vi")

@@ -13,7 +13,6 @@ import unicodedata
 import uuid
 from calendar import month_abbr, month_name
 from collections import Counter
-from dataclasses import replace
 from datetime import date
 from decimal import Decimal
 from html import escape
@@ -66,6 +65,7 @@ from .claim_feedback import (
     typed_policy_text,
 )
 from .evidence import EvidenceLedger, canonical, numeric_values, sha256
+from .evidence import clean_draft_text as clean_draft_text
 from .localization import (
     display_number,
     localize_report,
@@ -77,6 +77,7 @@ from .localization import (
 )
 from .managed_agents import ManagedAgentsModel
 from .model import (
+    AgentModel,
     BudgetExceeded,
     ProviderStopped,
     ResponseIncomplete,
@@ -94,12 +95,7 @@ from .product_tools import (
     product_schemas,
     tool_code,
 )
-from .public_summary import (
-    TRANSLATOR_INSTRUCTIONS,
-    PublicSummaryDisplay,
-    PublicSummaryTranslations,
-    validate_translation_batch,
-)
+from .public_summary import PublicSummaryDisplay
 from .report_output import (
     adjacent_value_error,
     display_errors,
@@ -199,7 +195,6 @@ _TABLE_SOURCE_TOOLS = {
     "analysis_compare",
     "scenario_compare",
     "analysis_records",
-    "analysis_provenance",
 }
 _TABLE_RENDERER = "source_rows_v1"
 
@@ -733,18 +728,6 @@ def audit_table_blocks(markdown, ledger, *, entries=None):
     if "evidence-table:" in checked.lower():
         errors.append("An unknown, incomplete or modified source-table marker remains")
     return {"errors": list(dict.fromkeys(errors)), "tables": used, "numeric_text": checked}
-
-
-def clean_draft_text(annotated_text):
-    """Remove server evidence markers while preserving the authored prose."""
-    annotated_text = re.sub(
-        r"[^\S\r\n]*(?:" + _CITATION.pattern + r"[^\S\r\n]*)+(?=[,.;:!?](?!\d))",
-        "",
-        annotated_text,
-    )
-    return "\n".join(
-        re.sub(r"[^\S\r\n]+", " ", line) for line in _CITATION.sub("", annotated_text).splitlines()
-    ).strip()
 
 
 def aggregate_availability(result):
@@ -1657,7 +1640,6 @@ def business_scope(ledger, claims=(), *, source_execution_ids=()):
             "analysis_query",
             "analysis_sql",
             "analysis_records",
-            "analysis_provenance",
             "analysis_export",
         }:
             provenance = entry.get("analysis_context", {})
@@ -1996,16 +1978,7 @@ class FixtureModel(Model):
                 )
         await asyncio.sleep(0)
         self.step += 1
-        role = {
-            "Lead Analyst": "Trưởng nhóm phân tích",
-            "Data Engineer": "Kỹ sư dữ liệu",
-            "QA Verifier": "Người kiểm chứng",
-        }.get(self.role, self.role)
-        summary = (
-            f"Mô phỏng: {role} đang kiểm tra bằng chứng từ công cụ đã chạy."
-            if self.runtime.language == "vi"
-            else f"Offline simulation: {self.role} is checking observed tool evidence."
-        )
+        summary = f"Offline simulation: {self.role} is checking observed tool evidence."
         await self.runtime.emit("reasoning_summary", {"delta": summary})
         call = None
         output: list[Any]
@@ -2069,28 +2042,22 @@ class AnalystRuntime:
         input_sources=None,
         state_store=None,
         ui_handler=None,
+        defer_model_cleanup=False,
     ):
         self._raw_emit = emit
 
         async def _safe_emit(event: str, data: Any = None) -> Any:
             if self._raw_emit is None:
                 return None
-            alias_displays = []
             if isinstance(data, dict):
                 data = {**data, "language": self.language}
                 if event in {"reasoning_summary", "reasoning_part"}:
-                    data = self.public_summary_event(data, event=event)
+                    data = self.public_summary_event(data)
                 elif event == "reasoning_alias":
-                    alias_displays = self._public_summaries.alias(data)
+                    self._public_summaries.alias(data)
             res = self._raw_emit(event, data) if data is not None else self._raw_emit(event)
             if inspect.isawaitable(res):
                 res = await res
-            for part, display in alias_displays:
-                await self._emit_summary_display(
-                    part,
-                    display["translation_state"],
-                    display["display_text"] if display["display_localized"] else None,
-                )
             return res
 
         self.emit = _safe_emit
@@ -2110,6 +2077,8 @@ class AnalystRuntime:
         }
         self.reasoning_effort: str = getattr(settings, "reasoning_effort", "medium")
         self.models = []
+        self._defer_model_cleanup = defer_model_cleanup
+        self._model_cleanup_task: asyncio.Task[None] | None = None
         self.case_entry = None
         self.applied_steering = []
         self._legacy_applied_steering: list[str] = []
@@ -2128,8 +2097,7 @@ class AnalystRuntime:
         self.context_entry = None
         self.comparison_entries = []
         self._language = normalize_language(language)
-        self._public_summaries = PublicSummaryDisplay(self._language)
-        self._public_summary_lock = asyncio.Lock()
+        self._public_summaries = PublicSummaryDisplay()
         if action_intent not in {"none", "draft_create", "draft_update"}:
             raise ValueError("Unsupported action intent")
         self._action_intent = action_intent
@@ -2638,124 +2606,9 @@ class AnalystRuntime:
     def language(self):
         return self._language
 
-    def public_summary_event(self, data, *, event="reasoning_summary"):
-        """Keep all public provider text visible until an actual translation exists."""
-        return self._public_summaries.project(event, data)
-
-    async def _emit_summary_display(self, part, state, translated=None):
-        data = self._public_summaries.resolve(part, state, translated)
-        if self._raw_emit is not None:
-            result = self._raw_emit(part.event, {**data, "language": self.language})
-            if inspect.isawaitable(result):
-                await result
-
-    async def _translate_public_summary(self, text):
-        translated = (await self._translate_public_summaries([text]))[0]
-        if isinstance(translated, ValueError):
-            raise translated
-        return translated
-
-    async def _translate_public_summaries(self, texts):
-        if not texts:
-            return []
-
-        async def emit_accounting(event, data=None):
-            # Translator reasoning, answer deltas and progress are never shown as
-            # the analyst's public summary. Keep provider accounting observable.
-            if event in {
-                "model_started",
-                "managed_session_created",
-                "managed_session_rejected",
-                "usage",
-                "provider_cancel",
-            }:
-                await self.emit(event, {**(data or {}), "role": "Summary Translator"})
-
-        model = ManagedAgentsModel(
-            replace(self.settings, reasoning_summary="off"),
-            emit_accounting,
-            budget=self.budget,
-            role="Summary Translator",
-        )
-        self.models.append(model)
-        agent = Agent(
-            name="Summary Translator",
-            instructions=TRANSLATOR_INSTRUCTIONS,
-            model=model,
-            tools=[],
-            output_type=PublicSummaryTranslations,
-        )
-        try:
-            result = await Runner.run(
-                agent,
-                canonical(
-                    {
-                        "target_language": self.language,
-                        "public_summaries": [
-                            {"index": index, "text": text} for index, text in enumerate(texts)
-                        ],
-                    }
-                ),
-                max_turns=self.run_limit("max_turns"),
-                run_config=RunConfig(
-                    tracing_disabled=True, workflow_name="Public summary translation"
-                ),
-            )
-            return validate_translation_batch(texts, result.final_output, self.language)
-        finally:
-            await model.client.close()
-
-    async def drain_public_summaries(self, *, translate=True):
-        """Translate complete public parts at an unlocked model boundary.
-
-        This serial, awaited hook creates no background tasks. The managed
-        adapter owns cancellation and usage even when translation fails, while
-        an unavailable translation cannot invalidate a verified analysis.
-        """
-        async with self._public_summary_lock:
-            try:
-                await self._drain_public_summaries(translate=translate)
-            except asyncio.CancelledError:
-                await self._cancel_pending_public_summaries()
-                raise
-
-    async def _cancel_pending_public_summaries(self):
-        for part in self._public_summaries.pending():
-            await self._emit_summary_display(part, "cancelled")
-
-    async def cancel_public_summaries(self):
-        async with self._public_summary_lock:
-            await self._cancel_pending_public_summaries()
-
-    async def _drain_public_summaries(self, *, translate):
-        parts = self._public_summaries.pending()
-        if not parts:
-            return
-        if (
-            not translate
-            or self.simulation
-            or not self.settings.live
-            or self.budget.get("blocked")
-            or self.budget.get("provider_stopped")
-        ):
-            for part in parts:
-                await self._emit_summary_display(part, "skipped")
-            return
-        try:
-            translations = await self._translate_public_summaries([part.text for part in parts])
-            if len(translations) != len(parts):
-                raise ValueError("Summary translation returned a different source count")
-        except asyncio.CancelledError:
-            raise
-        except Exception:
-            for part in parts:
-                await self._emit_summary_display(part, "failed")
-        else:
-            for part, translated in zip(parts, translations, strict=True):
-                if isinstance(translated, ValueError):
-                    await self._emit_summary_display(part, "failed")
-                else:
-                    await self._emit_summary_display(part, "translated", translated)
+    def public_summary_event(self, data):
+        """Keep public provider text in its original language for either UI locale."""
+        return self._public_summaries.project(data)
 
     @property
     def action_intent(self):
@@ -2840,7 +2693,16 @@ class AnalystRuntime:
         """Validate every authored narrative before any durable draft mutation."""
         clean, proofs = dict(values), {}
         entries = {entry["execution_id"]: entry for entry in self.toolkit.ledger.records()}
-        validator_hash = sha256(Path(__file__).read_bytes().replace(b"\r\n", b"\n"))
+        validator_hash = sha256(
+            canonical(
+                {
+                    name: sha256(
+                        Path(__file__).with_name(name).read_bytes().replace(b"\r\n", b"\n")
+                    )
+                    for name in ("runtime.py", "evidence.py")
+                }
+            )
+        )
         for field in _DRAFT_NARRATIVE_FIELDS & values.keys():
             value = values[field]
             if value is None:
@@ -3973,7 +3835,6 @@ class AnalystRuntime:
                 tool_dispatch=self.start_async_tool,
                 role=role,
             )
-            model.response_boundary = self.drain_public_summaries
         self.models.append(model)
         return model
 
@@ -5364,7 +5225,34 @@ result
             ],
         }, errors
 
+    async def aclose(self) -> None:
+        """Drain model cleanup before the owning run or Workspace finishes."""
+        if self._model_cleanup_task is None:
+
+            async def close_models() -> None:
+                await asyncio.gather(
+                    *(model.aclose() for model in self.models if isinstance(model, AgentModel)),
+                    return_exceptions=True,
+                )
+
+            self._model_cleanup_task = asyncio.create_task(close_models())
+        cancelled = False
+        while not self._model_cleanup_task.done():
+            try:
+                await asyncio.shield(self._model_cleanup_task)
+            except asyncio.CancelledError:
+                cancelled = True
+        if cancelled:
+            raise asyncio.CancelledError
+
     async def run(self, prompt: str) -> dict:
+        try:
+            return await self._run(prompt)
+        finally:
+            if not self._defer_model_cleanup:
+                await self.aclose()
+
+    async def _run(self, prompt: str) -> dict:
         self.prompt = prompt + "".join(
             "\n" + entry["text"] for entry in self._direct_steering.values()
         )
@@ -5865,7 +5753,6 @@ result
         except asyncio.CancelledError:
             self.accepting_steering = False
             await self.reconcile_async_jobs()
-            await self.cancel_public_summaries()
             await self.emit("run_cancelled", {"status": "cancelled"})
             raise
         except Exception as error:
@@ -5936,7 +5823,6 @@ result
                 "errors": list(dict.fromkeys(self.last_qa.get("errors", []) + delivery_errors)),
             }
             delivery, _ = self.delivery_packet(report, narrative_audit=self.delivery_audit)
-        await self.drain_public_summaries(translate=status == "completed")
         history = (
             lead.model.history
             if isinstance(lead.model, ManagedAgentsModel) and lead.model.history

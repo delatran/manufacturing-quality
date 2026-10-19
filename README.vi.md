@@ -62,7 +62,7 @@ Bắt đầu từ phần tổng quan, chọn một hạng mục ưu tiên, sau �
 | **Chuyền và sản phẩm** | Xếp hạng chuyền và sản phẩm theo số sự kiện hoặc số sự kiện trên 1.000 đơn vị sản lượng tham chiếu, kết hợp so sánh nhóm sản phẩm trong từng chuyền để mô tả cơ cấu sản phẩm và khác biệt giữa các chuyền. |
 | **Chi phí sửa chữa** | Chi phí sửa chữa hợp lệ theo chuyền, loại lỗi và mức độ nghiêm trọng, phân phối chi phí và các sản phẩm chiếm tỷ trọng chi phí cao nhất. |
 
-Lọc dữ liệu theo tháng, chuyền, nhóm sản phẩm, sản phẩm, mức độ nghiêm trọng, loại lỗi, vị trí lỗi và phương pháp kiểm tra. Nút **Xem bằng chứng** chuyển thẳng tới biểu đồ hoặc bảng số liệu liên quan; nút **Tra cứu danh sách bản ghi lỗi** mở bảng dữ liệu đã làm sạch kèm truy vết về dòng HTTP gốc và quy tắc xử lý.
+Lọc dữ liệu theo tháng, chuyền, nhóm sản phẩm, sản phẩm, mức độ nghiêm trọng, loại lỗi, vị trí lỗi và phương pháp kiểm tra. Nút **Xem bằng chứng** chuyển thẳng tới biểu đồ hoặc bảng số liệu liên quan; nút **Tra cứu danh sách bản ghi lỗi** mở bảng dữ liệu đã làm sạch, hỗ trợ lọc theo ngày, sắp xếp và phân trang.
 
 Menu **Xuất dữ liệu & DATA_QUALITY.xlsx** cho phép tải CSV theo bộ lọc đang chọn hoặc trọn bộ workbook [DATA_QUALITY.xlsx](DATA_QUALITY.xlsx) của đề bài.
 
@@ -74,7 +74,7 @@ Menu **Xuất dữ liệu & DATA_QUALITY.xlsx** cho phép tải CSV theo bộ l�
 
 Tab **Agent** kế thừa phạm vi đang chọn trên Dashboard và hiển thị rõ kỳ phân tích, bộ lọc, bốn chỉ số chính cùng ba câu hỏi gợi ý (`Câu 1`–`Câu 3`). Mỗi lượt hỏi cố định ngữ cảnh ngay khi gửi để các câu hỏi nối tiếp giữ nguyên phạm vi so sánh kể cả khi bộ lọc bên Dashboard thay đổi sau đó. Các nút thao tác trong câu trả lời của Agent có thể mở trực tiếp bằng chứng trên Dashboard hoặc áp dụng bộ lọc mới kèm nút hoàn tác.
 
-Agent hiển thị trực tiếp tiến trình gọi công cụ, tóm tắt suy luận, đối chiếu từng con số với kết quả công cụ và xuất báo cáo kèm biểu đồ nội tuyến ngay trong khung hội thoại. Với các câu hỏi đào sâu, Agent kết hợp các phân mục chuẩn của Dashboard với truy vấn SQL chỉ đọc trên bảng sự kiện và bảng sản phẩm tham chiếu thuộc phạm vi đang xét—hỗ trợ phép nối tùy chỉnh, window function, kiểm tra chi tiết ngày bất thường và truy vết dòng dữ liệu gốc mà vẫn giữ nguyên định nghĩa mẫu số chuẩn.
+Agent hiển thị trực tiếp tiến trình gọi công cụ, tóm tắt suy luận, đối chiếu từng con số với kết quả công cụ và xuất báo cáo kèm biểu đồ nội tuyến ngay trong khung hội thoại. Với các câu hỏi đào sâu, Agent kết hợp các phân mục chuẩn của Dashboard với truy vấn SQL chỉ đọc trên bảng sự kiện và bảng sản phẩm tham chiếu thuộc phạm vi đang xét, hỗ trợ phép nối tùy chỉnh, window function và kiểm tra chi tiết ngày bất thường mà vẫn giữ nguyên định nghĩa mẫu số chuẩn.
 
 Các câu hỏi gợi ý có thể thử ngay sau khi cấu hình `OPENAI_API_KEY`:
 
@@ -117,7 +117,7 @@ Trên macOS/Linux dùng `sh scripts/check.sh`. Lệnh này kiểm tra lockfile d
 
 ## Phân tích đề bài: Part 3
 
-Phạm vi: tháng 1–6/2024 theo canonical policy `canonical-v2`, dataset `dataset-4586b9cf07494f8c8481a2f8f8a578359fbab7c4c7435b06ccb7defef31fa515` và snapshot báo cáo `2aad0c28d1757a95e5a58a45`. Dữ liệu lỗi được lấy qua HTTP lúc `2026-10-19T03:28:18.346528+00:00`. Tiền tệ là **local currency (chưa xác định loại tiền)**. Số chưa làm tròn, định nghĩa và bằng chứng nguồn nằm trong [snapshot chuẩn](reports/canonical_snapshot.json); dashboard hiển thị đúng các số này.
+Phạm vi: tháng 1–6/2024 theo canonical policy `canonical-v2`, dataset `dataset-4586b9cf07494f8c8481a2f8f8a578359fbab7c4c7435b06ccb7defef31fa515` và snapshot báo cáo `a484bfa6924c5c24209884e9`. Dữ liệu lỗi được lấy qua HTTP lúc `2026-10-19T05:48:09.843244+00:00`. Tiền tệ là **local currency (chưa xác định loại tiền)**. Số chưa làm tròn, định nghĩa và bằng chứng nguồn nằm trong [snapshot chuẩn](reports/canonical_snapshot.json); dashboard hiển thị đúng các số này.
 
 ### Phát hiện chính
 

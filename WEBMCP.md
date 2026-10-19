@@ -8,7 +8,7 @@ Read current tool descriptions and schemas after changing workspace or opening t
 
 ## Tool coverage
 
-Workspace tools are available through the root application. Dashboard tools require the visible Dashboard. The four records tools also require its records panel to be open. Agent action and answer tools require the mounted current visitor session.
+Workspace tools are available through the root application. Dashboard tools require the visible Dashboard. The two records tools also require its records panel to be open. Agent action and answer tools require the mounted current visitor session.
 
 | Tool | Effect and completion boundary |
 | --- | --- |
@@ -24,8 +24,6 @@ Workspace tools are available through the root application. Dashboard tools requ
 | `request_dashboard_export` | Fetches the existing CSV or quality workbook and requests a browser download. Returns byte count, MIME and SHA-256, with `download_requested` and `save_confirmed: false`. |
 | `read_dashboard_records` | Reads the current visible records page, exact date, sort, pagination and loading/error state. |
 | `set_dashboard_records_view` | Applies allowlisted sorting or paging to the open table and waits for the replacement backend page to commit. |
-| `open_dashboard_record_trace` | Opens a defect from the current visible records page and waits for its source rows and audit to load. |
-| `read_dashboard_record_trace` | Reads the displayed trace, canonical event, policy audit and truncation state. It does not fetch another record. |
 | `read_agent_status` | Reads the current visitor session, staged draft, active immutable run context, pending request key and cancellation state. |
 | `stage_agent_prompt` | Replaces the visible composer draft using its known context. During a run it stages a detail for that run. It does not submit. |
 | `stage_agent_answer_followup` | Stages text linked to an eligible verified answer and its original context. It does not submit. |
@@ -44,7 +42,7 @@ Workspace tools are available through the root application. Dashboard tools requ
 
 Dashboard section identifiers are `overview`, `trend`, `warnings`, `location`, `hotspots`, `cost`, `records`, `evidence` and `exports`. Scope changes use the values returned by current workspace state. Existing scenario identifiers are the empty canonical choice, `exclude_cost_10`, `ambiguous_dm` and `year_2024`; these are policy assumptions, not observed improvements. Retired Scenario, Operations and Investigation panels are not exposed.
 
-Records support the existing exact `defect_date`, sort and page controls. There is no new free-text or arbitrary-ID search API. Trace opening requires a `defect_id` already present on the visible page. A trace can remain readable while paging within the same applied record scope. Raw lineage may include source rows excluded by canonical policy and retains its untrusted-source status.
+Records support the existing exact `defect_date`, sort and page controls. There is no free-text or arbitrary-ID search API. Record tools return the cleaned records in the applied scope and their pagination state.
 
 The filtered CSV uses the applied Dashboard context. Record-table date, sorting and pagination do not alter CSV scope. The quality workbook is the existing completed full-case workbook and does not adopt Dashboard filters. A download request confirms fetched response metadata and the browser handoff, not a saved file on disk.
 

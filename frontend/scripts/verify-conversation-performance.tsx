@@ -7,6 +7,7 @@ import { I18nScope } from '../src/i18n';
 import { initialFilters } from '../src/dashboard-types';
 import type { Session, WorkspaceEvent } from '../src/types';
 import { isolateAgentStorage } from './agent-storage-fixture';
+import type { Locale } from '../src/i18n';
 
 const check = (condition: unknown, message: string) => {
   if (!condition) throw new Error(message);
@@ -14,11 +15,21 @@ const check = (condition: unknown, message: string) => {
 const pause = (delay: number) => new Promise((resolve) => setTimeout(resolve, delay));
 const frame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
-export async function runAgentConversationBenchmark() {
-  const completedRuns = 100;
+export async function runAgentConversationBenchmark(
+  options: {
+    locale?: Locale;
+    completedRuns?: number;
+    activeSummaryParts?: number;
+    freshBatches?: number;
+    keepMounted?: boolean;
+  } = {},
+) {
+  const locale = options.locale ?? 'en';
+  const completedRuns = options.completedRuns ?? 100;
   const providerEventsPerRun = 64;
-  const freshBatches = 10;
+  const freshBatches = options.freshBatches ?? 10;
   const eventsPerBatch = 8;
+  const activeSummaryParts = options.activeSummaryParts ?? 0;
   const sessionId = 'conversation-performance-fixture';
   const contextId = 'performance-context';
   const host = document.createElement('div');
@@ -144,6 +155,14 @@ export async function runAgentConversationBenchmark() {
     return response;
   };
   const commits: { actualDuration: number; commitTime: number }[] = [];
+  const frameIntervals: number[] = [];
+  let previousFrame: number | undefined;
+  let frameRequest = 0;
+  const recordFrame = (time: number) => {
+    if (previousFrame !== undefined) frameIntervals.push(time - previousFrame);
+    previousFrame = time;
+    frameRequest = requestAnimationFrame(recordFrame);
+  };
   const longTasks: { startTime: number; duration: number }[] = [];
   const longTaskObserver = PerformanceObserver.supportedEntryTypes.includes('longtask')
     ? new PerformanceObserver((list) => {
@@ -157,6 +176,8 @@ export async function runAgentConversationBenchmark() {
     while (!predicate() && performance.now() < until) await pause(10);
     check(predicate(), message);
   };
+  const activeSummaryText = () =>
+    host.querySelector('.agent-flow.is-active .flow-thoughts')?.lastElementChild?.textContent ?? '';
   try {
     root.render(
       <Profiler
@@ -165,7 +186,7 @@ export async function runAgentConversationBenchmark() {
           commits.push({ actualDuration, commitTime })
         }
       >
-        <I18nScope locale="en">
+        <I18nScope locale={locale}>
           <AgentWorkspace
             visible
             contextId={contextId}
@@ -198,29 +219,69 @@ export async function runAgentConversationBenchmark() {
       }),
       event(
         'run_started',
-        { question: 'Inspect the current synthetic selection.', language: 'en' },
+        { question: 'Inspect the current synthetic selection.', language: locale },
         activeRun,
       ),
       event(
         'analysis_context',
-        { context_id: contextId, filters: initialFilters, language: 'en' },
+        { context_id: contextId, filters: initialFilters, language: locale },
         activeRun,
       ),
-      event('status', { state: 'running', language: 'en' }, activeRun),
+      event('status', { state: 'running', language: locale }, activeRun),
+      event('model_started', { model: 'synthetic', background: true }, activeRun),
+      ...Array.from({ length: activeSummaryParts }, (_, index) => {
+        const source =
+          `**Inspect source section ${index}.**\n\n` +
+          'Review the logged events against the original selected source. Preserve the reference denominator and distinguish unknown repair costs from zero. '.repeat(
+            24,
+          );
+        const identity = { item_id: 'active-reasoning', summary_index: index };
+        return [
+          ...Array.from({ length: 32 }, (_, fragment) =>
+            event(
+              'reasoning_summary',
+              {
+                ...identity,
+                delta: source.slice(
+                  Math.floor((fragment * source.length) / 32),
+                  Math.floor(((fragment + 1) * source.length) / 32),
+                ),
+              },
+              activeRun,
+            ),
+          ),
+          event(
+            'reasoning_summary',
+            { ...identity, text: source, done: true, final: true },
+            activeRun,
+          ),
+        ];
+      }).flat(),
       event(
         'reasoning_summary',
-        { item_id: 'active-reasoning', summary_index: 0, text: 'Inspecting. ' },
+        { item_id: 'active-reasoning', summary_index: activeSummaryParts, text: 'Inspecting. ' },
         activeRun,
       ),
     ]);
+    await waitFor(
+      () => activeSummaryText().includes('Inspecting.'),
+      'The initial active summary is visible.',
+    );
     await pause(100);
+    await document.fonts.ready;
     await frame();
     await frame();
     check(commits.length > 0, 'Use React production profiling renderer for timing.');
     historicalEventReads = 0;
     historicalReportReads = 0;
     const measurementStart = performance.now();
-    const samples: { durationMs: number; commitLatencyMs: number; commits: number }[] = [];
+    frameRequest = requestAnimationFrame(recordFrame);
+    const samples: {
+      durationMs: number;
+      commitLatencyMs: number;
+      visibleLatencyMs: number;
+      commits: number;
+    }[] = [];
     for (let batch = 0; batch < freshBatches; batch++) {
       const before = commits.length;
       const started = performance.now();
@@ -230,20 +291,25 @@ export async function runAgentConversationBenchmark() {
             'reasoning_summary',
             {
               item_id: 'active-reasoning',
-              summary_index: 0,
+              summary_index: activeSummaryParts,
               text: `Step ${batch}.${part}. `,
             },
             activeRun,
           ),
         ),
       );
-      await waitFor(() => commits.length > before, 'A fresh provider batch commits.');
+      await waitFor(
+        () => activeSummaryText().includes(`Step ${batch}.${eventsPerBatch - 1}.`),
+        'The complete fresh provider batch is visible.',
+      );
+      const visibleLatencyMs = performance.now() - started;
       await frame();
       await frame();
       const updates = commits.slice(before);
       samples.push({
         durationMs: updates.reduce((total, item) => total + item.actualDuration, 0),
         commitLatencyMs: updates[0].commitTime - started,
+        visibleLatencyMs,
         commits: updates.length,
       });
     }
@@ -256,6 +322,8 @@ export async function runAgentConversationBenchmark() {
       'No answer is hidden or truncated.',
     );
     await pause(0);
+    cancelAnimationFrame(frameRequest);
+    frameRequest = 0;
     const measuredLongTasks = longTasks.filter((item) => item.startTime >= measurementStart);
     const reportSemantics = [...host.querySelectorAll('.conversation-entry')]
       .filter((entry) => entry.querySelector('.analyst-message'))
@@ -272,8 +340,77 @@ export async function runAgentConversationBenchmark() {
     const reportFingerprint = [...new Uint8Array(fingerprintBytes)]
       .map((byte) => byte.toString(16).padStart(2, '0'))
       .join('');
+    let scrollChecks: Record<string, boolean> | undefined;
+    if (activeSummaryParts) {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      await frame();
+      await frame();
+      await waitFor(
+        () => !!host.querySelector('.jump-to-latest'),
+        'Reading older content exposes the latest control.',
+      );
+      const readerPosition = window.scrollY;
+      sockets[0].receive([
+        event(
+          'reasoning_summary',
+          {
+            item_id: 'active-reasoning',
+            summary_index: activeSummaryParts,
+            delta: ' Continue checking the source.',
+          },
+          activeRun,
+        ),
+      ]);
+      await waitFor(
+        () => activeSummaryText().includes('Continue checking the source.'),
+        'The reading-position update is visible.',
+      );
+      await frame();
+      await frame();
+      check(
+        Math.abs(window.scrollY - readerPosition) <= 1,
+        'Streaming preserves the reader position away from the tail.',
+      );
+      const latest = host.querySelector<HTMLButtonElement>('.jump-to-latest');
+      check(latest, 'Reading older content exposes the explicit latest-response control.');
+      latest!.click();
+      await waitFor(
+        () => !host.querySelector('.jump-to-latest'),
+        'The explicit jump is committed.',
+      );
+      await frame();
+      await frame();
+      sockets[0].receive([
+        event(
+          'reasoning_summary',
+          {
+            item_id: 'active-reasoning',
+            summary_index: activeSummaryParts,
+            delta:
+              ' Preserve the selected source and reference denominator. '.repeat(40) +
+              ' Growth marker is visible.',
+          },
+          activeRun,
+        ),
+      ]);
+      await waitFor(
+        () => activeSummaryText().includes('Growth marker is visible.'),
+        'The followed summary growth is visible.',
+      );
+      await frame();
+      await frame();
+      const tail = host.querySelector('.conversation-tail')!.getBoundingClientRect().bottom;
+      const dock = host.querySelector('.composer-dock')!.getBoundingClientRect().top;
+      check(
+        tail <= Math.min(innerHeight, dock) - 18,
+        'The followed tail stays above the composer after growth.',
+      );
+      scrollChecks = { readerPositionPreserved: true, explicitJump: true, followAfterGrowth: true };
+    }
     return {
       completedRuns,
+      locale,
+      activeSummaryParts,
       providerEventsPerRun,
       rawHistoryLength,
       freshBatches,
@@ -283,13 +420,27 @@ export async function runAgentConversationBenchmark() {
       samples,
       retainedAnswers: host.querySelectorAll('.analyst-message').length,
       longTasks: measuredLongTasks,
+      frameIntervals,
+      viewportWidth: innerWidth,
+      viewportHeight: innerHeight,
+      horizontalOverflow: document.documentElement.scrollWidth > innerWidth,
+      visibleBackgroundLabel: /(?:chạy nền|background)/i.test(
+        [...host.querySelectorAll('.agent-flow-meta')].map((node) => node.textContent).join(' '),
+      ),
+      activeSummaryCharacters: [
+        ...host.querySelectorAll('.agent-flow.is-active .flow-thought p'),
+      ].reduce((total, node) => total + (node.textContent?.length ?? 0), 0),
       reportFingerprint,
+      scrollChecks,
       providerRequests: 0,
     };
   } finally {
     longTaskObserver?.disconnect();
-    root.unmount();
-    host.remove();
+    if (frameRequest) cancelAnimationFrame(frameRequest);
+    if (!options.keepMounted) {
+      root.unmount();
+      host.remove();
+    }
     window.fetch = savedFetch;
     window.WebSocket = savedSocket;
     storage.restore();

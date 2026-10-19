@@ -47,15 +47,25 @@ def priority_block(
     )
     kind = item.get("kind")
     if kind == "critical_location":
+        other_share = metric["other_locations_critical_share_pct"]
+        comparison = (
+            (
+                f", so với {pct(other_share)} ở các vị trí khác"
+                if vi
+                else f", against {pct(other_share)} elsewhere"
+            )
+            if other_share is not None
+            else ""
+        )
         title = (
             f"Điều tra lỗi nghiêm trọng (Critical) tại {metric['location']}"
             if vi
             else f"Investigate Critical defects at {metric['location']}"
         )
         evidence = (
-            f"{n(metric['critical_count'])}/{n(metric['event_count'])} sự kiện tại {metric['location']} là Critical ({pct(metric['critical_share_pct'])}), so với {pct(metric['other_locations_critical_share_pct'])} ở các vị trí khác; {metric['location']} chiếm {pct(metric['share_of_all_critical_pct'])} tổng số lỗi Critical."
+            f"{n(metric['critical_count'])}/{n(metric['event_count'])} sự kiện tại {metric['location']} là Critical ({pct(metric['critical_share_pct'])}){comparison}; {metric['location']} chiếm {pct(metric['share_of_all_critical_pct'])} tổng số lỗi Critical."
             if vi
-            else f"{n(metric['critical_count'])} of {n(metric['event_count'])} {metric['location']} events are Critical ({pct(metric['critical_share_pct'])}), against {pct(metric['other_locations_critical_share_pct'])} elsewhere; {metric['location']} holds {pct(metric['share_of_all_critical_pct'])} of all Critical events."
+            else f"{n(metric['critical_count'])} of {n(metric['event_count'])} {metric['location']} events are Critical ({pct(metric['critical_share_pct'])}){comparison}; {metric['location']} holds {pct(metric['share_of_all_critical_pct'])} of all Critical events."
         )
         action = (
             f"Lấy {n(metric['critical_count'])} bản ghi Critical, tháo và phân tích lỗi đại diện theo từng dòng sản phẩm, kiểm tra lô linh kiện đầu vào và thông số lắp ráp; thêm bước kiểm khoanh vùng tại khâu kiểm {metric['location']} cho đến khi xác nhận nguyên nhân."
@@ -67,11 +77,18 @@ def priority_block(
             if vi
             else "Quality Engineer (lead) with the Production Team Leaders of the affected lines."
         )
-        success = (
-            f"Số và tỷ trọng Critical tại {metric['location']} theo tháng. Mục tiêu tạm thời: đưa tỷ trọng về mức {pct(metric['other_locations_critical_share_pct'])} của các vị trí khác trong hai tháng sau biện pháp khắc phục."
-            if vi
-            else f"Monthly Critical count and share at {metric['location']}. Provisional target: bring the share down to the other locations' {pct(metric['other_locations_critical_share_pct'])} within two months of the corrective action."
-        )
+        if other_share is None:
+            success = (
+                f"Theo dõi số sự kiện Critical và tỷ trọng của chúng tại {metric['location']}, kèm sản lượng thực tế, số đơn vị đã kiểm tra và phạm vi kiểm tra tương đương; chỉ đặt mục tiêu sau khi xác minh đường cơ sở."
+                if vi
+                else item["success_measure"]
+            )
+        else:
+            success = (
+                f"Số và tỷ trọng Critical tại {metric['location']} theo tháng. Mục tiêu tạm thời: đưa tỷ trọng về mức {pct(other_share)} của các vị trí khác trong hai tháng sau biện pháp khắc phục."
+                if vi
+                else f"Monthly Critical count and share at {metric['location']}. Provisional target: bring the share down to the other locations' {pct(other_share)} within two months of the corrective action."
+            )
     elif kind == "category_intensity":
         compared = metric.get("lines_compared")
         lines = ""

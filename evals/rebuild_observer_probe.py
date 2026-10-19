@@ -256,19 +256,34 @@ async def main(root, output):
                     nonce = re.search(r'<script nonce="([^"]+)">', html.text)[1]
                     assert "nonce-" + nonce in html.headers["content-security-policy"]
                     assert (await tcp.get("/__eval_observer/not-a-token")).status_code == 404
-                    script = re.search(r'<script nonce="[^"]+">(.*?)</script>', html.text)[1]
+                    script = re.search(r'<script nonce="[^"]+">(.*?)</script>', html.text, re.S)[1]
                     node = shutil.which("node")
                     assert node, "Existing Node runtime required; no installation attempted"
+                    agent_source = (root / "frontend/src/AgentWorkspace.tsx").read_text(
+                        encoding="utf-8"
+                    )
+                    selector = agent_source[
+                        agent_source.index("const readSession =") : agent_source.index(
+                            "const saveSession ="
+                        )
+                    ]
                     driver = (
                         'const fs=require("node:fs"),vm=require("node:vm");'
-                        'const code=fs.readFileSync(0,"utf8");const state={"analyst.workspace.draft.v2":"old"};'
-                        "let redirect;vm.runInNewContext(code,{localStorage:{setItem:(k,v)=>state[k]=v,removeItem:k=>delete state[k]},"
-                        "window:{location:{replace:v=>redirect=v}}});process.stdout.write(JSON.stringify({state,redirect}));"
+                        'const input=JSON.parse(fs.readFileSync(0,"utf8"));'
+                        'const key="analyst.workspace.session.v1",draft="analyst.workspace.draft.v2";'
+                        'const state={[key]:"old-shared-session",[draft]:"old"};'
+                        'const tabState={[key]:"old-tab-session",[draft]:"old"};'
+                        "const storage=s=>({getItem:k=>s[k]??null,setItem:(k,v)=>s[k]=v,removeItem:k=>delete s[k]});"
+                        "const localStorage=storage(state),sessionStorage=storage(tabState);let redirect;"
+                        "const context={localStorage,sessionStorage,storageKey:key,"
+                        "window:{localStorage,sessionStorage,location:{replace:v=>redirect=v}}};"
+                        'vm.runInNewContext(input.code+input.selector+"globalThis.selectedSession=readSession();",context);'
+                        "process.stdout.write(JSON.stringify({state,tabState,selectedSession:context.selectedSession,redirect}));"
                     )
                     executed = await asyncio.to_thread(
                         subprocess.run,
                         [node, "-e", driver],
-                        input=script,
+                        input=json.dumps({"code": script, "selector": selector}),
                         text=True,
                         capture_output=True,
                         check=True,
@@ -276,6 +291,8 @@ async def main(root, output):
                     bootstrap = json.loads(executed.stdout)
                     assert bootstrap == {
                         "state": {"analyst.workspace.session.v1": sid},
+                        "tabState": {"analyst.workspace.session.v1": sid},
+                        "selectedSession": sid,
                         "redirect": "/",
                     }
                     assert "</script" not in _js_string('</script><img src=x onerror="bad">')

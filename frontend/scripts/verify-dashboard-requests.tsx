@@ -5,7 +5,6 @@ import { createRoot } from 'react-dom/client';
 import Dashboard from '../src/Dashboard';
 import { ProductRanking } from '../src/DashboardCharts';
 import { Records } from '../src/DashboardRecords';
-import RecordTrace from '../src/RecordTrace';
 import { I18nScope, createI18n } from '../src/i18n';
 import { initialFilters } from '../src/dashboard-types';
 import type { DashboardData, Filters, RecordsData } from '../src/dashboard-types';
@@ -174,84 +173,40 @@ export async function runDashboardRequestVerification() {
     check(requests.length === beforeErrorScope + 2, 'Each replacement scope issues one request');
     check(JSON.stringify(data) === before, 'Browsing records does not mutate the input context');
 
-    const tracePayload = (defectId: number) => ({
-      raw_records: [],
-      canonical_records: [{ defect_id: defectId }],
-      processed_records: [],
-      normalization_audit: [
-        { field: 'defect_id', raw_value: `raw-${defectId}`, processed_value: defectId },
-      ],
-      scenario_audit: [
-        { field: 'scenario', raw_value: `scenario-${defectId}`, processed_value: 'selected' },
-      ],
-      truncated: false,
+    await settle(requests.at(-1)!, records(301));
+    const region = host.querySelector<HTMLElement>('.table-scroll');
+    check(region?.tabIndex === 0, 'The records region remains keyboard focusable');
+    region.focus();
+    check(document.activeElement === region, 'Keyboard focus can enter the records region');
+    check(!host.querySelector('.records-table button'), 'Record rows contain data without actions');
+    const focusedSort = host.querySelector('select');
+    check(focusedSort, 'The sort control remains present after scope changes');
+    const beforeFocusedSort = requests.length;
+    await act(async () => {
+      focusedSort.focus();
+      focusedSort.value = 'product_name';
+      focusedSort.dispatchEvent(new Event('change', { bubbles: true }));
     });
-    const renderTrace = async (defectId: number) => {
-      await act(async () => {
-        root.render(
-          <I18nScope locale="en">
-            <RecordTrace
-              url="/api/dashboard/contexts/trace-fixture/trace"
-              defectId={defectId}
-              onClose={stableNoop}
-            />
-            <CommitProbe />
-          </I18nScope>,
-        );
-      });
-    };
-    await renderTrace(501);
-    await settle(requests.at(-1)!, tracePayload(501));
-    const beforeTraceChange = commits.length;
-    await renderTrace(502);
+    check(requests.length === beforeFocusedSort + 1, 'The focused sort issues one records request');
+    await settle(requests.at(-1)!, records(302));
     check(
-      commits.slice(beforeTraceChange).every((text) => !text.includes('"defect_id": 501')),
-      'Changing the trace never commits canonical data from the previous record',
+      document.activeElement === focusedSort,
+      'Sorting preserves keyboard focus on its control',
     );
-    const obsoleteTrace = requests.at(-1)!;
-    await renderTrace(503);
-    check(obsoleteTrace.signal?.aborted, 'Switching records cancels the obsolete trace request');
-    await settle(requests.at(-1)!, tracePayload(503));
-    await settle(obsoleteTrace, tracePayload(502));
-    check(host.textContent?.includes('"defect_id": 503'), 'The current trace remains visible');
-    check(
-      !host.textContent?.includes('"defect_id": 502'),
-      'An aborted trace cannot replace the selection',
-    );
-    const audit = host.querySelector('.record-trace tbody');
-    check(audit?.querySelectorAll('tr').length === 2, 'Both audit sources remain in the table');
-    check(
-      audit.textContent?.includes('raw-503') && audit.textContent?.includes('scenario-503'),
-      'Changing the selected record replaces the memoized field-decision rows',
-    );
-    check(
-      !audit.textContent?.includes('raw-501') && !audit.textContent?.includes('scenario-502'),
-      'Old or aborted field decisions cannot remain in the selected trace',
-    );
-
-    const focusData = fixture('trace-focus');
-    focusData.links.trace = '/api/dashboard/contexts/trace-focus/trace';
-    await renderRecords(focusData);
-    await settle(requests.at(-1)!, records(601));
-    const opener = host.querySelector<HTMLButtonElement>('.trace-button');
-    check(opener, 'The first page has a trace opener');
-    await click(en.t('ui.trace_record'));
-    await settle(requests.at(-1)!, tracePayload(601));
-    check(
-      document.activeElement === host.querySelector('.record-trace'),
-      'Opening a trace moves keyboard focus into its panel',
-    );
-    await click(en.t('ui.close_record_trace'));
-    check(document.activeElement === opener, 'Closing restores focus to a connected opener');
-    await click(en.t('ui.trace_record'));
-    await settle(requests.at(-1)!, tracePayload(601));
     await click(en.t('ui.next_records_page'));
-    await settle(requests.at(-1)!, records(602, 2));
-    check(!opener.isConnected, 'Paging removes the original trace opener');
-    await click(en.t('ui.close_record_trace'));
+    await settle(requests.at(-1)!, records(303, 2));
+    const nextPage = [...host.querySelectorAll('button')].find(
+      (button) => button.getAttribute('aria-label') === en.t('ui.next_records_page'),
+    );
+    check(nextPage && !nextPage.disabled, 'The next-page control is ready after paging');
+    nextPage.focus();
     check(
-      document.activeElement === host.querySelector('.table-scroll'),
-      `Closing after paging returns focus to the records region, not ${document.activeElement?.tagName}`,
+      document.activeElement === nextPage,
+      'Keyboard focus can return to the next-page control after paging',
+    );
+    check(
+      requests.every((request) => request.url.pathname.endsWith('/records')),
+      'Browsing, sorting and retrying only request records pages',
     );
 
     const rankingData = {

@@ -125,6 +125,49 @@ function entryFor(
   };
 }
 
+function sameFields<T extends object>(previous: T, current: T): boolean {
+  const keys = Object.keys(current) as (keyof T)[];
+  return (
+    Object.keys(previous).length === keys.length &&
+    keys.every((key) => Object.is(previous[key], current[key]))
+  );
+}
+
+function reuseFlowRun(current: FlowRun | undefined, previous: FlowRun | undefined) {
+  if (!current || !previous) return current;
+  const oldSteps = new Map(previous.steps.map((step) => [step.id, step]));
+  const steps = current.steps.map((step) => {
+    const prior = oldSteps.get(step.id);
+    if (!prior || prior.kind !== step.kind) return step;
+    if (step.kind === 'thinking' && prior.kind === 'thinking') {
+      const oldParts = new Map(prior.parts.map((part) => [part.index, part]));
+      const parts = step.parts.map((part) => {
+        const oldPart = oldParts.get(part.index);
+        return oldPart && sameFields(oldPart, part) ? oldPart : part;
+      });
+      const shared = {
+        ...step,
+        parts:
+          parts.length === prior.parts.length &&
+          parts.every((part, index) => part === prior.parts[index])
+            ? prior.parts
+            : parts,
+      };
+      return sameFields(prior, shared) ? prior : shared;
+    }
+    return sameFields(prior, step) ? prior : step;
+  });
+  const shared = {
+    ...current,
+    steps:
+      steps.length === previous.steps.length &&
+      steps.every((step, index) => step === previous.steps[index])
+        ? previous.steps
+        : steps,
+  };
+  return sameFields(previous, shared) ? previous : shared;
+}
+
 function projectRun(
   group: RunProjection,
   previous: RunProjection | undefined,
@@ -138,7 +181,9 @@ function projectRun(
       : group.flowPrompt
         ? [...events.slice(0, start), group.flowPrompt, ...events.slice(start)]
         : events;
-  group.flow = projectAgentFlow(flowEvents).values().next().value;
+  // Source replay still resolves late aliases and amendments. Share only equal
+  // display values so unrelated deltas do not rerender every completed step.
+  group.flow = reuseFlowRun(projectAgentFlow(flowEvents).values().next().value, previous?.flow);
   const question = questionForAnswer(events[0], events);
   const oldQuestion = previous?.question;
   group.question =

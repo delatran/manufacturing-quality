@@ -46,7 +46,6 @@ _DECLARED_TOOLS = {
     "analysis_compare",
     "scenario_compare",
     "analysis_records",
-    "analysis_provenance",
     "analysis_export",
     "analysis_sql",
     "run_case_study",

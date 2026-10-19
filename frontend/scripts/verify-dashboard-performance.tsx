@@ -15,22 +15,8 @@ type PendingRequest = {
   resolve: (response: Response) => void;
 };
 
-type TraceFixture = {
-  raw_records: { source_row: number; raw: Record<string, unknown> }[];
-  canonical_records: Record<string, unknown>[];
-  processed_records: Record<string, unknown>[];
-  normalization_audit: Record<string, unknown>[];
-  scenario_audit: Record<string, unknown>[];
-  truncated: boolean;
-};
-
 function check(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
-}
-
-async function sha256(text: string) {
-  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-  return [...new Uint8Array(hash)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
 function records(page: number): RecordsData {
@@ -55,78 +41,29 @@ function records(page: number): RecordsData {
   } as RecordsData;
 }
 
-function traceFixture(rawCount: number, auditCount: number): TraceFixture {
-  return {
-    raw_records: Array.from({ length: rawCount }, (_, index) => ({
-      source_row: index + 1,
-      raw: {
-        __dashboard_profile_fixture: true,
-        defect_id: 1,
-        product_id: 1,
-        defect_date: '2024-01-03',
-        defect_type: ' Surface ',
-        severity: 'Minor',
-        repair_cost: '1.00',
-      },
-    })),
-    canonical_records: [{ __dashboard_profile_fixture: true, ...records(1).rows[0] }],
-    processed_records: [],
-    normalization_audit: Array.from({ length: auditCount }, (_, index) => ({
-      field: 'defect_type',
-      raw_value: ` Surface ${index} `,
-      processed_value: `Surface ${index}`,
-      code: 'normalize_whitespace',
-      detail: 'Synthetic field normalization for the browser performance fixture.',
-      policy_version: 'fixture-policy',
-    })),
-    scenario_audit: [],
-    truncated: auditCount > rawCount * 5,
-  };
-}
-
-export async function profileDashboardTrace({
-  rawCount,
-  auditCount,
+export async function profileDashboardRecords({
   pagingActions = 8,
-}: {
-  rawCount: number;
-  auditCount: number;
-  pagingActions?: number;
-}) {
+}: { pagingActions?: number } = {}) {
   const host = document.createElement('div');
   document.body.append(host);
   const root = createRoot(host);
   const originalFetch = window.fetch;
-  const originalStringify = JSON.stringify;
   const environment = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean };
   const previousActEnvironment = environment.IS_REACT_ACT_ENVIRONMENT;
   environment.IS_REACT_ACT_ENVIRONMENT = true;
   const en = createI18n('en');
   const requests: PendingRequest[] = [];
   const commits: { phase: string; actualDuration: number; baseDuration: number }[] = [];
-  let traceSerializationCalls = 0;
-  let auditSerializationCalls = 0;
   let track = false;
   const data = {
     context: { context_id: 'profile-context' },
-    links: {
-      records: '/api/dashboard/contexts/profile-context/records',
-      trace: '/api/dashboard/contexts/profile-context/trace',
-    },
+    links: { records: '/api/dashboard/contexts/profile-context/records' },
   } as DashboardData;
-  const trace = traceFixture(rawCount, auditCount);
-  const beforeFixture = originalStringify(trace);
+  const beforeFixture = JSON.stringify(data);
   window.fetch = (input, init) =>
     new Promise<Response>((resolve) => {
       requests.push({ url: new URL(String(input), location.href), signal: init?.signal, resolve });
     });
-  JSON.stringify = ((value: unknown, ...args: unknown[]) => {
-    const record = (Array.isArray(value) ? value[0] : value) as Record<string, unknown> | undefined;
-    if (track && record?.__dashboard_profile_fixture === true) traceSerializationCalls++;
-    if (track && typeof value === 'string' && /^ ?Surface \d+ ?$/.test(value))
-      auditSerializationCalls++;
-    return Reflect.apply(originalStringify, JSON, [value, ...args]);
-  }) as typeof JSON.stringify;
   const onRender: ProfilerOnRenderCallback = (_id, phase, actualDuration, baseDuration) => {
     if (track) commits.push({ phase, actualDuration, baseDuration });
   };
@@ -134,7 +71,7 @@ export async function profileDashboardTrace({
     await act(async () => {
       root.render(
         <I18nScope locale={locale}>
-          <Profiler id="records-with-open-trace" onRender={onRender}>
+          <Profiler id="records-page" onRender={onRender}>
             <Records data={data} />
           </Profiler>
         </I18nScope>,
@@ -143,7 +80,7 @@ export async function profileDashboardTrace({
   };
   const settle = async (request: PendingRequest, payload: unknown) => {
     await act(async () => {
-      request.resolve(new Response(originalStringify(payload), { status: 200 }));
+      request.resolve(new Response(JSON.stringify(payload), { status: 200 }));
     });
   };
   const click = async (label: string) => {
@@ -156,15 +93,13 @@ export async function profileDashboardTrace({
   try {
     await render();
     await settle(requests.at(-1)!, records(1));
-    await click(en.t('ui.trace_record'));
-    check(requests.at(-1)!.url.pathname.endsWith('/trace'), 'Opening a trace requests its data');
-    await settle(requests.at(-1)!, trace);
-    const tracePanel = host.querySelector('.record-trace');
-    check(tracePanel, 'The selected trace is visible');
-    const initialTraceHtml = tracePanel.innerHTML;
     check(
-      tracePanel.querySelectorAll('tbody tr').length === auditCount,
-      'Every synthetic audit row is rendered without truncating the display',
+      host.querySelectorAll('.records-table tbody tr').length === 20,
+      'The initial page is rendered',
+    );
+    check(
+      !host.querySelector('.records-table button'),
+      'The records page contains data without row actions',
     );
     const firstRequestCount = requests.length;
     track = true;
@@ -173,65 +108,57 @@ export async function profileDashboardTrace({
       const page = index % 2 === 0 ? 2 : 1;
       const count = requests.length;
       await click(en.t(page === 2 ? 'ui.next_records_page' : 'ui.previous_records_page'));
-      check(requests.length === count + 1, 'Each page change still performs its fresh API read');
+      check(requests.length === count + 1, 'Each page change performs one fresh API read');
       const request = requests.at(-1)!;
       check(request.url.searchParams.get('page') === String(page), 'The correct page is requested');
       await settle(request, records(page));
-      check(tracePanel.innerHTML === initialTraceHtml, 'Paging preserves the open trace exactly');
+      check(
+        host.querySelectorAll('.records-table tbody tr').length === 20,
+        'The replacement page is complete',
+      );
     }
     const pagingElapsedMs = performance.now() - started;
     track = false;
-    const measuredSerializations = traceSerializationCalls;
     const pagingCommits = commits.slice();
-    const finalHtmlHash = await sha256(host.innerHTML);
-    const auditHtml = host.querySelector('.record-trace tbody')?.innerHTML;
-    const serializationStart = traceSerializationCalls;
-    const auditSerializationStart = auditSerializationCalls;
+    const requestCount = requests.length;
+    const sourceValues = [...host.querySelectorAll('.records-table tbody tr')].map(
+      (row) => row.querySelector('strong')?.textContent,
+    );
     track = true;
     await render('vi');
     track = false;
-    const localeTraceSerializations = traceSerializationCalls - serializationStart;
-    const localeAuditSerializations = auditSerializationCalls - auditSerializationStart;
     const localeCommits = commits.slice(pagingCommits.length);
+    check(requests.length === requestCount, 'A locale change does not request a new records page');
     check(
-      localeTraceSerializations === 0 && localeAuditSerializations === 0,
-      'A locale change reuses immutable source JSON and field-decision rows',
+      host.querySelector('.records-table caption')?.textContent ===
+        createI18n('vi').t('ui.filtered_defect_records'),
+      'The records table responds to a locale change',
     );
     check(
-      host.querySelector('#record-trace-title')?.textContent ===
-        createI18n('vi').t('ui.record_trace_title', { id: 1 }),
-      'The open trace responds to a locale change',
+      JSON.stringify(
+        [...host.querySelectorAll('.records-table tbody tr')].map(
+          (row) => row.querySelector('strong')?.textContent,
+        ),
+      ) === JSON.stringify(sourceValues),
+      'A locale change preserves the displayed source record IDs',
     );
     check(
-      host.querySelector('.record-trace tbody')?.textContent?.includes('Surface 0'),
-      'A locale change preserves canonical audit values',
+      requests.every((request) => request.url.pathname.endsWith('/records')),
+      'Every request is a records page read',
     );
-    check(
-      host.querySelector('.record-trace tbody')?.innerHTML === auditHtml,
-      'Changing language preserves the complete audit table',
-    );
-    check(originalStringify(trace) === beforeFixture, 'Rendering never mutates the trace fixture');
-    await click(createI18n('vi').t('ui.close_record_trace'));
-    check(!host.querySelector('.record-trace'), 'The trace can still close after paging');
+    check(JSON.stringify(data) === beforeFixture, 'Rendering never mutates the fixture context');
     return {
-      rawCount,
-      auditCount,
       pagingActions,
       pagingRequestCount: requests.length - firstRequestCount,
       pagingCommitCount: pagingCommits.length,
-      traceSerializationCalls: measuredSerializations,
       pagingReactActualDurationMs: pagingCommits.reduce(
         (total, item) => total + item.actualDuration,
         0,
       ),
       pagingReactMaxCommitMs: Math.max(0, ...pagingCommits.map((item) => item.actualDuration)),
       pagingElapsedMs,
-      traceHtmlSha256: await sha256(initialTraceHtml),
-      finalHtmlSha256: finalHtmlHash,
       commits: pagingCommits,
       localeChange: {
-        traceSerializationCalls: localeTraceSerializations,
-        auditSerializationCalls: localeAuditSerializations,
         reactActualDurationMs: localeCommits.reduce(
           (total, item) => total + item.actualDuration,
           0,
@@ -244,7 +171,6 @@ export async function profileDashboardTrace({
     await act(async () => root.unmount());
     host.remove();
     window.fetch = originalFetch;
-    JSON.stringify = originalStringify;
     environment.IS_REACT_ACT_ENVIRONMENT = previousActEnvironment;
   }
 }

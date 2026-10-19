@@ -1,9 +1,9 @@
 import { Check, ChevronDown, CircleAlert, Clock, Lightbulb, LoaderCircle } from 'lucide-react';
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, memo, useContext, useEffect, useMemo, useState } from 'react';
 import { createI18n, useI18n } from './i18n';
 import { analysisStatus } from './EventView';
 import type { Locale, Translate } from './i18n';
-import type { FlowCall, FlowRun, FlowStep } from './agent-flow';
+import type { FlowCall, FlowPart, FlowRun, FlowStep } from './agent-flow';
 import { completedFlowStates, stoppedFlowStates } from './agent-flow';
 import { flowSummaryDisplay } from './flow-summary-display';
 
@@ -25,7 +25,6 @@ function friendlyToolLabel(name: string, locale: string = 'vi'): string {
     analysis_sql: 'Phân tích SQL',
     scenario_compare: 'Thử nghiệm giả định',
     analysis_records: 'Truy xuất bản ghi lỗi',
-    analysis_provenance: 'Kiểm tra nguồn dữ liệu',
     report_table: 'Bảng dữ liệu nguồn',
     report_chart: 'Tạo biểu đồ',
     ui_command: 'Điều khiển giao diện',
@@ -52,7 +51,6 @@ function friendlyToolLabel(name: string, locale: string = 'vi'): string {
     analysis_sql: 'Analyze with SQL',
     scenario_compare: 'Test a scenario',
     analysis_records: 'Look up defect records',
-    analysis_provenance: 'Check data provenance',
     report_table: 'Source table',
     report_chart: 'Create chart',
     ui_command: 'Update the workspace view',
@@ -237,21 +235,55 @@ function StepIcon({ step }: { step: FlowStep }) {
   return <Clock size={13} />;
 }
 
+function LiveTimer({ startedAt, locale }: { startedAt: number; locale: Locale }) {
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  return (
+    <span
+      className="flow-live-timer"
+      role="timer"
+      aria-live="off"
+      aria-label={
+        locale === 'vi' ? 'Thời gian từ cập nhật đầu tiên' : 'Time since the first update'
+      }
+    >
+      {Math.floor(Math.max(0, (now - startedAt) / 1000))}s
+    </span>
+  );
+}
+
+const ThinkingPart = memo(function ThinkingPart({ part }: { part: FlowPart }) {
+  const { locale } = useContext(FlowLanguage);
+  const displayed = flowSummaryDisplay(part);
+  return (
+    <div className="flow-thought" lang={displayed.displayLanguage}>
+      {displayed.displaySource !== 'translated_provider_summary' && (
+        <span className="flow-summary-source" lang={locale}>
+          {displayed.displaySource === 'task_status'
+            ? locale === 'vi'
+              ? 'Trạng thái tác vụ'
+              : 'Task status'
+            : locale === 'vi'
+              ? 'Tóm tắt công khai gốc của mô hình'
+              : 'Original public model summary'}
+        </span>
+      )}
+      {displayed.title && <strong>{displayed.title}</strong>}
+      {displayed.body && <p>{displayed.body}</p>}
+    </div>
+  );
+});
+
 function ThinkingStep({ step }: { step: Extract<FlowStep, { kind: 'thinking' }> }) {
   const { t, locale } = useContext(FlowLanguage);
   const [open, setOpen] = useState(true);
-  const [now, setNow] = useState(Date.now);
-  const parts = step.parts.map((part) => flowSummaryDisplay(part, locale));
+  const parts = useMemo(() => step.parts.map((part) => flowSummaryDisplay(part)), [step.parts]);
   const empty = parts.every((part) => !part.title && !part.body);
   const isActive = !step.done && !step.stopped;
 
-  useEffect(() => {
-    if (!isActive || !step.startedAt) return;
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, [isActive, step.startedAt]);
-
-  const elapsed = step.startedAt ? Math.max(0, (now - step.startedAt) / 1000) : undefined;
   const recordedDuration = duration(step.durationMs);
   const sectionCount = parts.filter(
     (part) => part.displaySource !== 'task_status' && (part.title || part.body),
@@ -296,17 +328,8 @@ function ThinkingStep({ step }: { step: Extract<FlowStep, { kind: 'thinking' }> 
               aria-hidden="true"
             />
           </button>
-          {isActive && elapsed !== undefined && (
-            <span
-              className="flow-live-timer"
-              role="timer"
-              aria-live="off"
-              aria-label={
-                locale === 'vi' ? 'Thời gian từ cập nhật đầu tiên' : 'Time since the first update'
-              }
-            >
-              {Math.floor(elapsed)}s
-            </span>
+          {isActive && step.startedAt !== undefined && (
+            <LiveTimer startedAt={step.startedAt} locale={locale} />
           )}
           {step.stopped && <small>{t('ui.agent_flow_unconfirmed')}</small>}
           {step.simulation && <small>{t('ui.agent_flow_simulated')}</small>}
@@ -315,43 +338,8 @@ function ThinkingStep({ step }: { step: Extract<FlowStep, { kind: 'thinking' }> 
           <p className="flow-dim">{t('ui.agent_flow_encrypted_reasoning')}</p>
         ) : (
           <div className="flow-thoughts" hidden={!open}>
-            {parts.map((part) => (
-              <div className="flow-thought" key={part.index}>
-                {part.displaySource !== 'translated_provider_summary' && (
-                  <span className="flow-summary-source">
-                    {part.displaySource === 'task_status'
-                      ? locale === 'vi'
-                        ? 'Trạng thái tác vụ'
-                        : 'Task status'
-                      : locale === 'vi'
-                        ? 'Tóm tắt công khai gốc của mô hình'
-                        : 'Original public model summary'}
-                  </span>
-                )}
-                {part.displaySource === 'provider_summary' &&
-                  part.translationState &&
-                  part.translationState !== 'translated' && (
-                    <span className="flow-summary-source">
-                      {part.translationState === 'pending'
-                        ? locale === 'vi'
-                          ? 'Đang dịch tóm tắt sang tiếng Việt…'
-                          : 'Translating the summary into English…'
-                        : part.translationState === 'failed'
-                          ? locale === 'vi'
-                            ? 'Chưa dịch thành công. Đang hiển thị bản gốc.'
-                            : 'Translation failed. Showing the original.'
-                          : part.translationState === 'cancelled'
-                            ? locale === 'vi'
-                              ? 'Đã dừng dịch. Đang hiển thị bản gốc.'
-                              : 'Translation stopped. Showing the original.'
-                            : locale === 'vi'
-                              ? 'Chưa dịch. Đang hiển thị bản gốc.'
-                              : 'Translation skipped. Showing the original.'}
-                    </span>
-                  )}
-                {part.title && <strong>{part.title}</strong>}
-                {part.body && <p>{part.body}</p>}
-              </div>
+            {step.parts.map((part) => (
+              <ThinkingPart part={part} key={part.index} />
             ))}
           </div>
         )}
@@ -456,7 +444,7 @@ function CallStep({ step }: { step: FlowCall }) {
   );
 }
 
-function Step({ step }: { step: FlowStep }) {
+const Step = memo(function Step({ step }: { step: FlowStep }) {
   const { t, locale } = useContext(FlowLanguage);
   if (step.kind === 'thinking') {
     return <ThinkingStep step={step} />;
@@ -533,7 +521,7 @@ function Step({ step }: { step: FlowStep }) {
       </div>
     </li>
   );
-}
+});
 
 function currentStepSummary(step: FlowStep, t: Translate, locale: string) {
   if (step.kind === 'call')
@@ -543,10 +531,14 @@ function currentStepSummary(step: FlowStep, t: Translate, locale: string) {
     };
   // The summary is shown in full in the expanded timeline directly below.
   if (step.kind === 'thinking') {
-    const latestPart = [...step.parts]
-      .reverse()
-      .map((part) => flowSummaryDisplay(part, locale === 'vi' ? 'vi' : 'en'))
-      .find((part) => part.title || part.body);
+    let latestPart;
+    for (let index = step.parts.length - 1; index >= 0; index -= 1) {
+      const part = flowSummaryDisplay(step.parts[index]);
+      if (part.title || part.body) {
+        latestPart = part;
+        break;
+      }
+    }
     return {
       label: locale === 'vi' ? 'Tóm tắt suy luận' : 'Reasoning summary',
       detail: latestPart?.displaySource === 'task_status' ? latestPart.body : undefined,
@@ -624,7 +616,6 @@ function RunFlow({ run }: { run: FlowRun }) {
       ),
   );
   const meta: string[] = [];
-  if (run.background) meta.push(t('ui.agent_flow_background'));
   if (run.compactions)
     meta.push(t('ui.agent_flow_compaction', { value0: number(run.compactions) }));
   const providerStatuses = [

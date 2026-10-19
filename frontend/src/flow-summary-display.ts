@@ -1,23 +1,46 @@
 import { splitSummaryPart, type FlowPart } from './agent-flow';
-import type { Locale } from './i18n';
 
-/** Show public provider text immediately, including partial stream and replay.
- * A translation requires explicit server metadata. Language heuristics cannot
- * establish that a generic status or paraphrase is the model's summary.
+const displayedParts = new WeakMap<FlowPart, FlowPart>();
+
+function legacySourceLanguage(text: string): 'en' | 'vi' {
+  const prose = text.replace(/```[\s\S]*?```|`[^`\n]+`|"[^"\n]*"|“[^”\n]*”/g, ' ').normalize('NFC');
+  return /[ăâđêôơưàáạảãằắặẳẵầấậẩẫèéẹẻẽềếệểễìíịỉĩòóọỏõồốộổỗờớợởỡùúụủũừứựửữỳýỵỷỹ]/i.test(prose)
+    ? 'vi'
+    : 'en';
+}
+
+/** Show the original public provider text, including partial stream and replay.
+ * Historical translated snapshots remain in the event projection for auditing;
+ * they do not replace the source when the interface language changes.
  */
-export function flowSummaryDisplay(part: FlowPart, language: Locale): FlowPart {
-  const translated =
-    part.displaySource === 'translated_provider_summary' &&
-    part.displayLocalized === true &&
-    part.displayLanguage === language &&
-    !!part.displayText?.trim();
-  if (translated) return { ...part, ...splitSummaryPart(part.displayText!) };
+export function flowSummaryDisplay(part: FlowPart): FlowPart {
+  // Published parts are immutable and shared across conversation updates. Weak
+  // keys reuse their display work without retaining discarded session history.
+  const displayed = displayedParts.get(part);
+  if (displayed) return displayed;
+  const result = projectSummaryDisplay(part);
+  displayedParts.set(part, result);
+  return result;
+}
+
+function projectSummaryDisplay(part: FlowPart): FlowPart {
   const original = part.raw || (part.displaySource === 'provider_summary' ? part.displayText : '');
   if (original) {
+    const summary = splitSummaryPart(original);
+    // Original provider metadata takes precedence over a later translation's
+    // language. Legacy snapshots without that metadata use their own heading
+    // or prose, excluding quoted labels and code from the language signal.
+    const sourceLanguage =
+      part.sourceLanguage ??
+      (part.displaySource === 'provider_summary' && part.displayLocalized !== true
+        ? part.displayLanguage
+        : undefined) ??
+      legacySourceLanguage(summary.title || original);
     return {
       ...part,
-      ...splitSummaryPart(original),
+      ...summary,
       displaySource: 'provider_summary',
+      displayLanguage: sourceLanguage,
       displayLocalized: false,
     };
   }

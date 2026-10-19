@@ -131,11 +131,31 @@ class EvalBrowserObserver:
         if not sid:
             return Response(status_code=404)
         nonce = secrets.token_urlsafe(24)
-        code = (
-            'localStorage.setItem("analyst.workspace.session.v1",' + _js_string(sid) + ");"
-            'localStorage.removeItem("analyst.workspace.draft.v2");'
-            'window.location.replace("/");'
-        )
+        code = f"""(() => {{
+            const sessionId = {_js_string(sid)};
+            const sessionKey = "analyst.workspace.session.v1";
+            const draftKey = "analyst.workspace.draft.v2";
+            for (const name of ["sessionStorage", "localStorage"]) {{
+                try {{ window[name].setItem(sessionKey, sessionId); }} catch {{}}
+                try {{ window[name].removeItem(draftKey); }} catch {{}}
+            }}
+            // Match the Agent's tab-first selection, including its shared fallback.
+            let selected = null;
+            try {{ selected = sessionStorage.getItem(sessionKey); }} catch {{}}
+            if (!selected) {{
+                try {{ selected = localStorage.getItem(sessionKey); }} catch {{}}
+            }}
+            let staleDraft = false;
+            try {{ staleDraft = localStorage.getItem(draftKey) !== null; }} catch {{}}
+            if (selected !== sessionId || staleDraft) {{
+                document.querySelector("p").textContent =
+                    "The eval session could not be restored in this tab. " +
+                    "Allow browser storage and open the observer link again. " +
+                    "No prompt was sent.";
+                return;
+            }}
+            window.location.replace("/");
+        }})();"""
         html = (
             '<!doctype html><html lang="en"><meta charset="utf-8">'
             "<title>Eval observer bootstrap</title><body>"

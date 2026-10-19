@@ -175,7 +175,6 @@ def source_contexts(entry: dict[str, Any], path: str = "") -> list[dict[str, Any
             "dashboard_context",
             "dashboard_compare_scope",
             "analysis_records",
-            "analysis_provenance",
             "analysis_export",
             "analysis_sql",
         }

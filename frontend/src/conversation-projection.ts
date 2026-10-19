@@ -151,7 +151,32 @@ function projectChartEvents(events: WorkspaceEvent[]): WorkspaceEvent[] {
 
 // This is a display projection. Source events, reports and receipts are never changed.
 export function projectConversation(events: WorkspaceEvent[]): WorkspaceEvent[] {
-  const projected = projectChartEvents(events);
+  const reasoningTypes = new Set([
+    'reasoning',
+    'reasoning_summary',
+    'reasoning_part',
+    'reasoning_alias',
+  ]);
+  const conversationEvents: WorkspaceEvent[] = [];
+  const firstIds = new Map<string, Map<WorkspaceEvent['id'], boolean>>();
+  let crossTypeDuplicate = false;
+  for (const event of events) {
+    const reasoning = reasoningTypes.has(event.type);
+    let ids = firstIds.get(event.session_id);
+    if (!ids) {
+      ids = new Map();
+      firstIds.set(event.session_id, ids);
+    }
+    const firstReasoning = ids.get(event.id);
+    if (firstReasoning === undefined) ids.set(event.id, reasoning);
+    else if (firstReasoning !== reasoning) crossTypeDuplicate = true;
+    if (!reasoning) conversationEvents.push(event);
+  }
+  // Reasoning belongs to projectAgentFlow. Rebuilding its deltas here only to
+  // discard them later repeats source parsing and allocation on every batch.
+  // A malformed cross-type ID collision keeps the existing full projection's
+  // first-event and chart-metadata behavior, instead of inventing a new winner.
+  const projected = projectChartEvents(crossTypeDuplicate ? events : conversationEvents);
   const result: WorkspaceEvent[] = [];
   const activity = new Map<string, WorkspaceEvent>();
   const charts = new Map<string, WorkspaceEvent[]>();

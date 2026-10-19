@@ -73,8 +73,8 @@ filter. Scope includes scenario. Follow-ups such as 'and Critical?' preserve the
 line, period and other active filters. Explicitly label any alternative scope.
 Use analysis_compare for period differences and decomposition, analysis_query
 for products/lines, location_severity, costs and distribution, schema and
-quality, scenario_compare for assumptions, analysis_records and
-analysis_provenance to trace retained events and cleaning decisions. Backend
+quality and cleaning decisions, scenario_compare for assumptions, and
+analysis_records to inspect retained events. Backend
 tools calculate all numbers; model arithmetic is not evidence. Use analysis_sql
 for custom read-only joins, conditional aggregates, cohort comparisons, window
 functions and statistical questions beyond the canonical sections. Discover
@@ -279,7 +279,7 @@ user requests saving or updating investigation work. Owner is a proposed role.
 Distinguish measures possible now (such as immediate containment checks and Gemba inspection)
 from future measures requiring actual production, exposure or verified outcome data. Return the
 verified report in chat. Saving an investigation or creating a local action draft
-does not send it externally. Existing analysis_records, analysis_provenance and
+does not send it externally. Existing analysis_records and
 investigation_update have explicit filters: repeat the scope of the findings/view
 being inspected or saved. Null preserves the run's original scope; an applied UI
 change does not automatically change the running analysis or saved finding scope.
@@ -915,9 +915,9 @@ def response_language(language):
         )
     return f"""
 The selected response language for THIS run is {name} ({language}). Use it for
-reports, public reasoning summaries, progress updates, tool explanations, plan
-titles and handoffs. Write every user-visible public summary in this run's
-selected language, including summaries before or between tool calls. Provide
+reports, answers, progress updates, tool explanations, plan titles and handoffs.
+Public reasoning summaries must stay in English for every run, including
+summaries before or between tool calls. Preserve their original source text. Provide
 only the public reasoning summary supported by the API; do not reconstruct or
 disclose private internal reasoning. Keep source labels, schema
 keys and claim identifiers unchanged. Prior turns may use another language.

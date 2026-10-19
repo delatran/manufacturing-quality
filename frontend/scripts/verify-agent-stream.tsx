@@ -47,6 +47,9 @@ export async function runAgentStreamVerification() {
   const root = createRoot(host);
   const originalFetch = window.fetch;
   const originalSocket = window.WebSocket;
+  const originalRequestFrame = window.requestAnimationFrame;
+  const originalCancelFrame = window.cancelAnimationFrame;
+  const originalScroll = window.scrollTo;
   const sessionKey = 'analyst.workspace.session.v1';
   const storage = isolateAgentStorage();
   const environment = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean };
@@ -164,13 +167,13 @@ export async function runAgentStreamVerification() {
     commands.push(command.command_id);
     return true;
   };
-  const render = async (locale: Locale, dashboard = context, key = 'stream') => {
+  const render = async (locale: Locale, dashboard = context, key = 'stream', visible = true) => {
     await act(async () =>
       root.render(
         <I18nScope locale={locale}>
           <AgentWorkspace
             key={key}
-            visible
+            visible={visible}
             contextId={dashboard.context_id}
             dashboardContext={dashboard}
             onUiCommand={onCommand}
@@ -461,7 +464,51 @@ export async function runAgentStreamVerification() {
         'Restored steering admission is acknowledged.',
       );
     }
+    restored.events = events;
+    restored.runs = runs;
+    await render('en', context, 'scroll-lifecycle');
+    await waitFor(
+      () => host.querySelectorAll('.analyst-message').length === 10,
+      'The scroll lifecycle fixture restores its conversation.',
+    );
+    await settle();
+    const scheduledFrames: number[] = [];
+    const cancelledFrames = new Set<number>();
+    let scrollCalls = 0;
+    window.requestAnimationFrame = (callback) => {
+      const id = originalRequestFrame.call(window, callback);
+      scheduledFrames.push(id);
+      return id;
+    };
+    window.cancelAnimationFrame = (id) => {
+      cancelledFrames.add(id);
+      originalCancelFrame.call(window, id);
+    };
+    window.scrollTo = () => {
+      scrollCalls += 1;
+    };
+    window.dispatchEvent(new Event('resize'));
+    window.dispatchEvent(new Event('resize'));
+    check(scheduledFrames.length === 1, 'Viewport notifications coalesce into one follow frame.');
+    const hiddenFrame = scheduledFrames[0];
+    await render('en', context, 'scroll-lifecycle', false);
+    check(cancelledFrames.has(hiddenFrame), 'Hiding Agent cancels its queued follow frame.');
+    await settle();
+    check(scrollCalls === 0, 'A hidden workspace cannot scroll the current panel.');
+    await render('en', context, 'scroll-lifecycle');
+    await settle();
+    scheduledFrames.length = 0;
+    scrollCalls = 0;
+    window.dispatchEvent(new Event('resize'));
+    check(scheduledFrames.length === 1, 'The visible workspace can schedule follow again.');
+    const unmountedFrame = scheduledFrames[0];
     await act(async () => root.unmount());
+    check(cancelledFrames.has(unmountedFrame), 'Unmounting cancels its queued follow frame.');
+    await settle();
+    check(scrollCalls === 0, 'An unmounted workspace cannot scroll a later page.');
+    window.requestAnimationFrame = originalRequestFrame;
+    window.cancelAnimationFrame = originalCancelFrame;
+    window.scrollTo = originalScroll;
     old.receive(uiEvent(9002, 'unmounted-command'));
     await settle();
     check(Number(commands.length) === 2, 'Unmounted sockets cannot apply commands.');
@@ -480,12 +527,18 @@ export async function runAgentStreamVerification() {
       earlySteeringWaitsForContext: true,
       queuedFollowupPreservesSource: true,
       restoredSteeringContexts: [context.context_id, null],
+      scrollFrameCoalescing: true,
+      hiddenScrollFrameCancelled: true,
+      unmountedScrollFrameCancelled: true,
     };
   } finally {
     await act(async () => root.unmount());
     host.remove();
     window.fetch = originalFetch;
     window.WebSocket = originalSocket;
+    window.requestAnimationFrame = originalRequestFrame;
+    window.cancelAnimationFrame = originalCancelFrame;
+    window.scrollTo = originalScroll;
     storage.restore();
     environment.IS_REACT_ACT_ENVIRONMENT = previousActEnvironment;
   }

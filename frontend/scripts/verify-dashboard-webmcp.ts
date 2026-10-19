@@ -183,7 +183,6 @@ let recordsState: DashboardRecordsState = {
   loading: false,
 };
 let deferRecords: (() => void) | undefined;
-let deferTrace: (() => void) | undefined;
 const recordTools = buildDashboardRecordsTools(() => recordsState, {
   setView(view) {
     recordsState = {
@@ -201,33 +200,12 @@ const recordTools = buildDashboardRecordsTools(() => recordsState, {
       };
     };
   },
-  openTrace(id) {
-    recordsState = {
-      ...recordsState,
-      tracedEvent: id,
-      traceState: { url: data.links.trace!, defectId: id, status: 'loading' },
-    };
-    deferTrace = () => {
-      recordsState = {
-        ...recordsState,
-        traceState: {
-          url: data.links.trace!,
-          defectId: id,
-          status: 'ready',
-          trace: {
-            context: data.context,
-            raw_records: [{ source_row: 1, raw: { defect_id: id } }],
-            canonical_records: [{ defect_id: id }],
-            processed_records: [{ defect_id: id, ignored: true }],
-            normalization_audit: [],
-            scenario_audit: [],
-            truncated: false,
-          },
-        },
-      };
-    };
-  },
 });
+assert.deepEqual(
+  recordTools.map((tool) => tool.name).sort(),
+  ['read_dashboard_records', 'set_dashboard_records_view'],
+  'Records expose only page reading and view controls',
+);
 const binding = { context_id: data.context.context_id };
 await assert.rejects(
   invoke(recordTools, 'set_dashboard_records_view', { ...binding, page: 3 }),
@@ -236,14 +214,6 @@ await assert.rejects(
 await assert.rejects(
   invoke(recordTools, 'set_dashboard_records_view', { ...binding, sort_by: 'arbitrary_sql' }),
   /allowed string/,
-);
-await assert.rejects(
-  invoke(recordTools, 'open_dashboard_record_trace', { ...binding, defect_id: 999 }),
-  /current visible records page/,
-);
-await assert.rejects(
-  invoke(recordTools, 'open_dashboard_record_trace', { ...binding, defect_id: 11.5 }),
-  /integer/,
 );
 let pageDone = false;
 const pagePromise = invoke(recordTools, 'set_dashboard_records_view', {
@@ -272,26 +242,11 @@ assert.equal(pageResult.status, 'ready');
 assert.equal(pageResult.records.page, 2);
 assert.equal(pageResult.records.omitted, 20);
 assert.equal(pageResult.query.sort_by, 'repair_cost');
-let traceDone = false;
-const tracePromise = invoke(recordTools, 'open_dashboard_record_trace', {
-  ...binding,
-  defect_id: 21,
-}).then((value) => {
-  traceDone = true;
-  return value;
-});
-await new Promise((resolve) => setTimeout(resolve, 5));
-assert.equal(traceDone, false, 'The tool waits for the trace that is actually displayed');
-assert.ok(deferTrace);
-deferTrace();
-const traceResult = (await tracePromise) as {
-  status: string;
-  trace: Record<string, unknown>;
-  omitted_sections: string[];
-};
-assert.equal(traceResult.status, 'ready');
-assert.equal('processed_records' in traceResult.trace, false);
-assert.ok(traceResult.omitted_sections.includes('processed_records'));
+assert.deepEqual(
+  Object.keys(pageResult).sort(),
+  ['context', 'error', 'freshness', 'query', 'records', 'status'],
+  'Records readback contains only the current page, scope and status',
+);
 recordsState = {
   ...recordsState,
   records: { ...recordsFixture(data), context: { context_id: 'foreign' } },
@@ -384,5 +339,5 @@ try {
 }
 assert.equal(JSON.stringify(data), before, 'Tools never mutate the immutable source context');
 console.log(
-  'Dashboard WebMCP synthetic contracts passed: validation, source binding, pagination, committed-state waiting, trace membership, races, cancellation and export response integrity.',
+  'Dashboard WebMCP synthetic contracts passed: validation, source binding, page-only tools, pagination, committed-state waiting, races, cancellation and export response integrity.',
 );

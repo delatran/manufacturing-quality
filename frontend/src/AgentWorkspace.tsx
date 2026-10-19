@@ -336,6 +336,7 @@ export default function AgentWorkspace({
   const conversationTail = useRef<HTMLDivElement>(null);
   const composerDock = useRef<HTMLElement>(null);
   const nearBottom = useRef(true);
+  const followFrame = useRef<number | undefined>(undefined);
   const pendingPrompt = useRef<string | null>(null);
   const pendingRequest = useRef<PromptRequest | null>(null);
   const pendingDraft = useRef<Draft | null>(null);
@@ -347,7 +348,6 @@ export default function AgentWorkspace({
     hasConversation,
     lastQuestion,
     runContexts,
-    visibleEvents,
   } = conversation;
   const activeRunStatus = useMemo(() => {
     let candidate: WorkspaceEvent | undefined;
@@ -843,8 +843,23 @@ export default function AgentWorkspace({
     });
   }, []);
   const followLatest = useCallback(() => {
-    window.scrollTo({ top: scrollPosition().target, behavior: 'instant' });
+    const { target } = scrollPosition();
+    if (Math.abs(window.scrollY - target) > 1)
+      window.scrollTo({ top: target, behavior: 'instant' });
   }, [scrollPosition]);
+  const cancelFollowLatest = useCallback(() => {
+    if (followFrame.current === undefined) return;
+    cancelAnimationFrame(followFrame.current);
+    followFrame.current = undefined;
+  }, []);
+  const scheduleFollowLatest = useCallback(() => {
+    if (followFrame.current !== undefined) return;
+    followFrame.current = requestAnimationFrame(() => {
+      followFrame.current = undefined;
+      if (nearBottom.current) followLatest();
+    });
+  }, [followLatest]);
+  useEffect(() => cancelFollowLatest, [cancelFollowLatest]);
   useEffect(() => {
     const onScroll = () => {
       if (!visible || !hasConversation) return;
@@ -853,7 +868,7 @@ export default function AgentWorkspace({
     };
     const onViewportChange = () => {
       if (!visible || !hasConversation) return;
-      if (nearBottom.current) followLatest();
+      if (nearBottom.current) scheduleFollowLatest();
       else setShowLatest(!scrollPosition().nearBottom);
     };
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -866,8 +881,9 @@ export default function AgentWorkspace({
       window.visualViewport?.removeEventListener('resize', onViewportChange);
       window.visualViewport?.removeEventListener('scroll', onViewportChange);
     };
-  }, [visible, hasConversation, scrollPosition, followLatest]);
+  }, [visible, hasConversation, scrollPosition, scheduleFollowLatest]);
   const scrollToLatest = () => {
+    cancelFollowLatest();
     nearBottom.current = true;
     setShowLatest(false);
     followLatest();
@@ -877,16 +893,29 @@ export default function AgentWorkspace({
     if (latestEntry instanceof HTMLElement) latestEntry.focus({ preventScroll: true });
   };
   useLayoutEffect(() => {
-    if (visible && hasConversation && nearBottom.current) followLatest();
-  }, [visibleEvents, awaitingPrompt, visible, hasConversation, composerHeight, followLatest]);
+    if (visible && hasConversation && nearBottom.current) scheduleFollowLatest();
+    else cancelFollowLatest();
+  }, [
+    awaitingPrompt,
+    visible,
+    hasConversation,
+    composerHeight,
+    scheduleFollowLatest,
+    cancelFollowLatest,
+  ]);
   useEffect(() => {
     if (!stream.current) return;
     const observer = new ResizeObserver(() => {
-      if (visible && hasConversation && nearBottom.current) followLatest();
+      if (visible && hasConversation && nearBottom.current) {
+        // ResizeObserver already coalesces growth after layout, before paint.
+        // Scheduling another frame here leaves the tail behind the composer.
+        cancelFollowLatest();
+        followLatest();
+      }
     });
     observer.observe(stream.current);
     return () => observer.disconnect();
-  }, [visible, hasConversation, followLatest]);
+  }, [visible, hasConversation, cancelFollowLatest, followLatest]);
   useEffect(() => {
     if (!composer.current) return;
     composer.current.style.height = 'auto';
@@ -895,7 +924,7 @@ export default function AgentWorkspace({
   useEffect(() => {
     if (!composerDock.current) return;
     const observer = new ResizeObserver(([entry]) => {
-      const height = Math.ceil(entry.target.getBoundingClientRect().height);
+      const height = Math.ceil(entry.borderBoxSize[0]?.blockSize ?? entry.contentRect.height);
       if (height > 0) setComposerHeight(height);
     });
     observer.observe(composerDock.current);

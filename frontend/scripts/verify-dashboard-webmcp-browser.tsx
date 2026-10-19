@@ -155,7 +155,7 @@ export async function runDashboardWebMcpVerification() {
       'Opening records claims navigation only',
     );
     await until(
-      () => tools.size === 8 && requests.length === 1,
+      () => tools.size === 6 && requests.length === 1,
       'records registration and initial request',
     );
     check(
@@ -209,81 +209,58 @@ export async function runDashboardWebMcpVerification() {
       (host.querySelector('#record-order') as HTMLSelectElement).value === 'asc',
       'Direction select shares the tool action',
     );
-    await rejects(
-      invoke('open_dashboard_record_trace', { ...bound(), defect_id: 11 }),
-      /current visible records page/,
+    check(
+      [...tools.keys()].sort().join(',') ===
+        [
+          'open_dashboard_panel',
+          'read_dashboard_panel',
+          'read_dashboard_records',
+          'read_dashboard_summary',
+          'request_dashboard_export',
+          'set_dashboard_records_view',
+        ].join(','),
+      'The visible Dashboard exposes only its six navigation, reading and export tools',
+    );
+    check(
+      !host.querySelector('.records-table button'),
+      'The records table contains data without row actions',
     );
     checks.push(
-      'exact-date navigation, backend pagination, committed sort/page, current-page trace membership',
+      'exact-date navigation, backend pagination, committed sort/page, six visible tools',
     );
 
-    let traceResolved = false;
-    const tracePromise = invoke('open_dashboard_record_trace', { ...bound(), defect_id: 21 }).then(
-      (value) => {
-        traceResolved = true;
-        return value;
-      },
-    );
-    await until(() => requests.length === 3, 'trace request');
-    check(!traceResolved, 'Trace tool stays pending until its panel data commits');
-    const trace = {
-      context: data.context,
-      raw_records: [{ source_row: 1, raw: { defect_id: 21, note: 'Untrusted fixture source.' } }],
-      raw_match_count: 1,
-      canonical_records: [{ defect_id: 21 }],
-      processed_records: [{ defect_id: 21 }],
-      normalization_audit: [
-        { field: 'defect_id', raw_value: '21', processed_value: 21, code: 'synthetic' },
-      ],
-      scenario_audit: [],
-      truncated: false,
+    const beforeLocaleRecords = (await invoke('read_dashboard_records', bound())) as {
+      records: unknown;
     };
-    await reply(requests[2], trace);
-    const traceResult = (await tracePromise) as {
-      status: string;
-      defect_id: number;
-      trace: { raw_records: unknown[] };
-    };
-    check(
-      traceResult.status === 'ready' && traceResult.defect_id === 21,
-      'Trace tool returns the selected visible lineage',
-    );
-    check(
-      traceResult.trace.raw_records.length === 1 &&
-        host.querySelector('.record-trace')?.textContent?.includes('Untrusted fixture source.'),
-      'Returned raw rows are present in the trace panel',
-    );
-    check(
-      host.querySelector('.record-trace') === document.activeElement,
-      'Trace panel receives focus',
-    );
-    const rawBefore = [...host.querySelectorAll('.record-trace pre')]
-      .map((node) => node.textContent)
-      .join('\n');
     const requestCount = requests.length;
     locale = 'vi';
     await render();
-    check(requests.length === requestCount, 'Changing locale never refetches source lineage');
+    check(requests.length === requestCount, 'Changing locale never refetches the records page');
     check(
-      [...host.querySelectorAll('.record-trace pre')].map((node) => node.textContent).join('\n') ===
-        rawBefore,
-      'Source JSON is unchanged after translation',
+      host.querySelector('.records-table tbody')?.textContent?.includes('#21'),
+      'Changing locale keeps the selected backend page',
     );
     check(
-      host.querySelector('#record-trace-title')?.textContent ===
-        createI18n('vi').t('ui.record_trace_title', { id: 21 }),
-      'Trace heading switches to Vietnamese',
+      host.querySelector('.records-table caption')?.textContent ===
+        createI18n('vi').t('ui.filtered_defect_records'),
+      'The records caption switches to Vietnamese',
     );
-    checks.push('trace data and focus, EN/VI source preservation, no locale refetch');
+    const afterLocaleRecords = (await invoke('read_dashboard_records', bound())) as {
+      records: unknown;
+    };
+    check(
+      JSON.stringify(beforeLocaleRecords.records) === JSON.stringify(afterLocaleRecords.records),
+      'Changing locale preserves every backend source value in the records readback',
+    );
+    checks.push('EN/VI records display, unchanged scope, no locale refetch');
 
     await invoke('open_dashboard_panel', { ...bound(), panel: 'records', defect_date: '' });
-    await until(() => requests.length === 4, 'cleared date request');
+    await until(() => requests.length === 3, 'cleared date request');
     check(
-      !requests[3].url.searchParams.has('defect_date'),
+      !requests[2].url.searchParams.has('defect_date'),
       'Clearing the exact date removes the backend parameter',
     );
-    check(!host.querySelector('.record-trace'), 'A different record scope closes the old trace');
-    await reply(requests[3], recordReply(data, requests[3]));
+    await reply(requests[2], recordReply(data, requests[2]));
     await until(
       () => host.querySelector('.records-table')?.textContent?.includes('#11') === true,
       'cleared date response',
@@ -291,15 +268,15 @@ export async function runDashboardWebMcpVerification() {
     const oldContext = bound();
     const pending = invoke('set_dashboard_records_view', { ...oldContext, page: 2 });
     const staleCheck = rejects(pending, /no longer mounted|context changed/);
-    await until(() => requests.length === 5, 'stale page request');
-    const oldRequest = requests[4];
+    await until(() => requests.length === 4, 'stale page request');
+    const oldRequest = requests[3];
     const oldData = data;
     data = dashboardFixture('replacement-fixture');
     await render();
     await staleCheck;
     check(oldRequest.init?.signal?.aborted, 'Replacing the context cancels its records fetch');
-    await until(() => requests.length === 6, 'replacement context request');
-    await reply(requests[5], recordReply(data, requests[5]));
+    await until(() => requests.length === 5, 'replacement context request');
+    await reply(requests[4], recordReply(data, requests[4]));
     await reply(oldRequest, {
       ...recordReply(oldData, oldRequest),
       rows: [{ ...recordsFixture(oldData).rows[0], defect_id: 999 }],
@@ -319,7 +296,7 @@ export async function runDashboardWebMcpVerification() {
     );
     visible = true;
     await render();
-    await until(() => tools.size === 8, 'visible workspace registration');
+    await until(() => tools.size === 6, 'visible workspace registration');
     checks.push(
       'date clearing, context race rejection, fetch cancellation, late response exclusion, hidden lifecycle cleanup',
     );
@@ -481,7 +458,7 @@ export async function runDashboardWebMcpVerification() {
       real_http_tested: false,
       browser_save_confirmed: false,
       checks,
-      registrations: 8,
+      registrations: 6,
       http_responses: requests.length,
       intercepted_download_requests: downloads.length,
       locales: ['en', 'vi'],

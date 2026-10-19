@@ -50,7 +50,6 @@ export function dashboardFixture(id = 'webmcp-fixture'): DashboardData {
     },
     links: {
       records: `/api/dashboard/contexts/${id}/records`,
-      trace: `/api/dashboard/contexts/${id}/trace`,
       evidence: `/api/dashboard/contexts/${id}/evidence`,
       export_csv: `/api/dashboard/contexts/${id}/export.csv`,
       export_zip: `/api/dashboard/contexts/${id}/export.zip`,

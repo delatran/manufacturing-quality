@@ -13,7 +13,6 @@ import inspect
 import json
 import math
 import time
-from collections.abc import Awaitable, Callable
 from contextlib import suppress
 from typing import Any
 from uuid import uuid4
@@ -146,8 +145,11 @@ class ManagedAgentsModel(AgentModel):
     """
 
     def __init__(self, *args: Any, session_budget_usd: float | None = None, **kwargs: Any) -> None:
+        if session_budget_usd is not None and (
+            not math.isfinite(session_budget_usd) or session_budget_usd <= 0
+        ):
+            raise ValueError("Managed session budget must be finite and positive")
         self.role = kwargs.pop("role", "analyst")
-        self.response_boundary: Callable[[], Awaitable[None]] | None = None
         supplied_client = kwargs.get("client")
         super().__init__(*args, **kwargs)
         if supplied_client is None:
@@ -156,10 +158,6 @@ class ManagedAgentsModel(AgentModel):
             self.client = self.client.with_options(
                 timeout=httpx2.Timeout(connect=15.0, read=60.0, write=30.0, pool=15.0)
             )
-        if session_budget_usd is not None and (
-            not math.isfinite(session_budget_usd) or session_budget_usd <= 0
-        ):
-            raise ValueError("Managed session budget must be finite and positive")
         self.session_budget_usd = session_budget_usd
         self.session_id: str | None = None
         self.turn_id: str | None = None
@@ -191,13 +189,15 @@ class ManagedAgentsModel(AgentModel):
         self.budget.setdefault("accounted_session_ids", [])
         self.budget.setdefault("managed_reserved_cost_usd", 0.0)
 
-    async def get_response(self, *args: Any, **kwargs: Any) -> ModelResponse:
-        response = await super().get_response(*args, **kwargs)
-        # The shared accounting lock belongs to AgentModel.get_response. Run
-        # auxiliary work only after that response and lock have settled.
-        if self.response_boundary is not None:
-            await self.response_boundary()
-        return response
+    async def _close_owned_client(self) -> None:
+        # Repeated task cancellation may leave the shielded provider readback
+        # running. Drain that existing work before closing its HTTP transport;
+        # resource cleanup itself never dispatches a cancellation or settles usage.
+        try:
+            if self._cancel_task is not None:
+                await asyncio.shield(self._cancel_task)
+        finally:
+            await super()._close_owned_client()
 
     @property
     def unbounded(self) -> bool:

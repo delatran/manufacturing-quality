@@ -22,12 +22,79 @@ def plain_text(value):
     )
 
 
+def _scope_prose(text, options):
+    """Separate authored intent from source blocks and quoted parameter labels."""
+    source = str(text)
+    lines = []
+    fence = None
+    blockquote = False
+    for line in source.splitlines():
+        marker = re.match(r"^ {0,3}(`{3,}|~{3,})", line)
+        if fence is not None:
+            if (
+                marker
+                and marker[1][0] == fence[0]
+                and len(marker[1]) >= len(fence)
+                and not line[marker.end() :].strip()
+            ):
+                fence = None
+            lines.append("")
+            continue
+        if marker:
+            fence = marker[1]
+            lines.append("")
+            continue
+        if not line.strip():
+            blockquote = False
+        if re.match(r"^\s*>", line):
+            blockquote = True
+        if blockquote or re.match(r"^(?: {4}|\t)", line):
+            lines.append("")
+        else:
+            lines.append(line)
+    prose = "\n".join(lines)
+    prose = re.sub(r"```[\s\S]*?(?:```|$)|~~~[\s\S]*?(?:~~~|$)", " ", prose)
+    values = {
+        plain_text(value).strip()
+        for choices in options.values()
+        if isinstance(choices, list)
+        for value in choices
+        if isinstance(value, str)
+    }
+    values.update(("nghiem trong", "trung binh", "nhe"))
+    for month, name in enumerate(("january", "february", "march", "april", "may", "june"), 1):
+        values.update((name, f"thang {month}", f"2024-{month:02d}"))
+    prefix = "scopeparametervalue"
+    while prefix in plain_text(source):
+        prefix += "x"
+    literals: dict[str, str] = {}
+
+    def quoted(match):
+        if match[0][-1] != {'"': '"', "“": "”", "‘": "’", "'": "'", "`": "`"}[match[0][0]]:
+            return " "
+        value = plain_text(match[0][1:-1]).strip()
+        if value not in values:
+            return " "
+        token = prefix + str(len(literals)) + "token"
+        literals[token] = value
+        return token
+
+    # A label may name a filter, but its text cannot supply a verb or prohibition.
+    prose = re.sub(
+        r'"[^"]*(?:"|$)|“[^”]*(?:”|$)|‘(?:[^’]|’(?=\w))*(?:’|$)'
+        r"|(?<!\w)'(?:[^']|'(?=\w))*(?:'(?!\w)|$)|`[^`]*(?:`|$)",
+        quoted,
+        prose,
+    )
+    return plain_text(prose), literals
+
+
 def scope_grants(text, options):
     """Require direct UI intent as well as named scope values before mutation."""
-    normalized = plain_text(text)
+    normalized, literals = _scope_prose(text, options)
     clauses = re.split(r"[.;!?\n]|\b(?:but|nhung)\b", normalized)
     negation = r"\b(?:do not|don['’]?t|dont|never|khong duoc|khong|dung)\b"
-    controls = r"\b(?:change|modify|apply|switch|show|display|open|set|select|reset|restore|undo|revert|doi|thay doi|ap dung|loc|mo|hien thi|chon|chuyen|dat|khoi phuc|hoan tac|quay ve|quay lai)\b"
+    controls = r"\b(?:change|modify|apply|switch|show|display|open|set|select|filter|reset|restore|undo|revert|doi|thay doi|ap dung|loc|mo|hien thi|chon|chuyen|dat|khoi phuc|hoan tac|quay ve|quay lai)\b"
     negative_clauses = [
         clause for clause in clauses if re.search(negation, clause) and re.search(controls, clause)
     ]
@@ -56,6 +123,8 @@ def scope_grants(text, options):
         re.search(controls, positive) or re.match(r"\s*(?:what about|how about|con)\s+", positive)
     )
     normalized = positive
+    for token, value in literals.items():
+        normalized = normalized.replace(token, value)
     grants = {}
     mappings = {
         "production_line": "production_lines",

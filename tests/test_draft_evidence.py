@@ -15,7 +15,7 @@ from analyst.config import Settings
 from analyst.dashboard import AnalysisService
 from analyst.evidence import EvidenceLedger, canonical, sha256
 from analyst.operations import OperationsService
-from analyst.runtime import AnalystReport, AnalystRuntime, FixtureModel
+from analyst.runtime import AnalystReport, AnalystRuntime, FixtureModel, QAReview
 
 ROOT = Path(__file__).resolve().parents[1]
 MASTER = (
@@ -24,7 +24,7 @@ MASTER = (
 )
 
 
-async def make_runtime(tmp_path, intent="draft_create"):
+async def make_runtime(tmp_path, intent="draft_create", language="en"):
     rows = [
         {
             "defect_id": index,
@@ -69,6 +69,7 @@ async def make_runtime(tmp_path, intent="draft_create"):
         analysis_service=analysis,
         operations_service=operations,
         action_intent=intent,
+        language=language,
     )
     # Exercise the SDK review path with deterministic offline QA. These checks
     # establish mutation/evidence behavior, not live semantic-model quality.
@@ -96,6 +97,79 @@ def database_rows(operations):
             name: db.execute(f"SELECT * FROM {name}").fetchall()
             for name in ("operation_cases", "operation_history", "operation_requests")
         }
+
+
+@pytest.mark.parametrize("language", ["en", "vi"])
+@pytest.mark.parametrize("updating", [False, True])
+@pytest.mark.parametrize("punctuation", [".", ",", ";", ":", "!", "?"])
+def test_marker_before_punctuation_saves_exact_clean_draft_on_create_and_update(
+    tmp_path, language, updating, punctuation
+):
+    async def scenario():
+        creator, operations, ids = await make_runtime(tmp_path / "create", language=language)
+        text = "Logged event count: " if language == "en" else "Số sự kiện ghi nhận: "
+        values = draft(ids)
+        values["description"] = text + f"[value:{ids['$.kpis.event_count']}]" + punctuation
+        if updating:
+            original = (await creator.operation("operations_create_draft", draft(ids)))["case"]
+            runtime, unused_operations, update_ids = await make_runtime(
+                tmp_path / "update", "draft_update", language
+            )
+            runtime.operations_service = operations
+            try:
+                updated = await runtime.operation(
+                    "operations_update_draft",
+                    {
+                        "case_id": original["id"],
+                        "expected_version": original["version"],
+                        "changes": [
+                            {
+                                "field": "description",
+                                "value": text
+                                + f"[value:{update_ids['$.kpis.event_count']}]"
+                                + punctuation,
+                            }
+                        ],
+                    },
+                )
+            finally:
+                unused_operations.close()
+            saved = operations.get_case(updated["case"]["id"])
+        else:
+            created = await creator.operation("operations_create_draft", values)
+            saved = operations.get_case(created["case"]["id"])
+        assert saved["description"] == text + "2" + punctuation
+        proof = saved["content_evidence"]["description"]
+        assert proof["annotated_text"].endswith("]" + punctuation)
+        assert proof["content_sha256"] == sha256(saved["description"])
+        assert proof["claims"] and proof["receipts"]
+        operations.close()
+
+    asyncio.run(scenario())
+
+
+def test_shared_cleaner_source_change_during_review_prevents_save(tmp_path, monkeypatch):
+    async def scenario():
+        runtime, operations, ids = await make_runtime(tmp_path)
+        original_read = Path.read_bytes
+
+        async def changed_review(*args, **kwargs):
+            def changed_source(path):
+                content = original_read(path)
+                return content + b"\n# changed helper\n" if path.name == "evidence.py" else content
+
+            monkeypatch.setattr(Path, "read_bytes", changed_source)
+            return SimpleNamespace(final_output=QAReview(verified=True, errors=[]))
+
+        monkeypatch.setattr("analyst.runtime.Runner.run", changed_review)
+        with pytest.raises(ValueError, match="evidence changed after semantic review"):
+            await runtime.operation("operations_create_draft", draft(ids))
+        with operations._connect() as db:
+            for table in ("operation_cases", "operation_history", "operation_requests"):
+                assert db.execute(f"SELECT count(*) FROM {table}").fetchone()[0] == 0
+        operations.close()
+
+    asyncio.run(scenario())
 
 
 @pytest.mark.parametrize("field", ["title", "description", "proposed_owner", "action_plan"])

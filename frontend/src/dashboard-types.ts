@@ -43,7 +43,6 @@ export type DashboardData = {
     export_zip: string;
     brief?: string;
     quality_workbook?: string;
-    trace?: string;
   };
   quality_workbook_scope?: {
     kind: string;

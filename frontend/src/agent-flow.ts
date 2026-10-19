@@ -14,6 +14,7 @@ export type FlowPart = {
   displayText?: string;
   displaySource?: 'task_status' | 'provider_summary' | 'translated_provider_summary';
   displayLanguage?: Locale;
+  sourceLanguage?: Locale;
   displayLocalized?: boolean;
   translationState?: 'pending' | 'translated' | 'failed' | 'skipped' | 'cancelled';
 };
@@ -192,6 +193,17 @@ function updateSummaryDisplay(
   data: Record<string, unknown>,
   previousRaw = part.raw,
 ) {
+  if (
+    (data.final === true || data.done === true || data.phase === 'done') &&
+    previousRaw !== part.raw
+  )
+    part.sourceLanguage = undefined;
+  if (
+    data.display_source === 'provider_summary' &&
+    data.display_localized !== true &&
+    (data.display_language === 'en' || data.display_language === 'vi')
+  )
+    part.sourceLanguage = data.display_language;
   // The server may supply a full public display snapshot while preserving the
   // provider's original delta in `raw`. Never append a fallback task status to
   // provider text, or reconstruct a translation from arbitrary partial strings.
@@ -230,7 +242,6 @@ function updateSummaryDisplay(
   ) {
     part.translationState = data.translation_state;
   }
-  Object.assign(part, splitSummaryPart(part.displayText ?? part.raw));
 }
 
 function ensureThinkingBlock(
@@ -465,9 +476,11 @@ export function projectAgentFlow(events: WorkspaceEvent[]): Map<string, FlowRun>
       text(d.provider_turn_id) || (d.provider_api === 'agents' ? text(d.turn_id) : '');
     const providerEventId = text(d.event_id);
     const aliasFor = (itemId: string) =>
-      reasoningAliases.get(
-        JSON.stringify([event.run_id, providerSessionId, providerTurnId, itemId]),
-      );
+      reasoningAliases.size
+        ? reasoningAliases.get(
+            JSON.stringify([event.run_id, providerSessionId, providerTurnId, itemId]),
+          )
+        : undefined;
     const originalItemId = (itemId: string) =>
       providerSessionId ? [providerSessionId, providerTurnId, itemId].join(':') : itemId;
     const scopedItemId = (itemId: string) => aliasFor(itemId)?.itemId || originalItemId(itemId);
@@ -559,6 +572,7 @@ export function projectAgentFlow(events: WorkspaceEvent[]): Map<string, FlowRun>
           part.displayText = undefined;
           part.displaySource = undefined;
           part.displayLanguage = undefined;
+          part.sourceLanguage = undefined;
           part.displayLocalized = undefined;
           part.translationState = undefined;
         }
@@ -937,6 +951,13 @@ export function projectAgentFlow(events: WorkspaceEvent[]): Map<string, FlowRun>
 
   const result = new Map<string, FlowRun>();
   for (const [runId, run] of runs) {
+    // Replay builds each full public part before parsing it. Splitting every
+    // growing historical delta repeats work on the same text for each batch.
+    for (const block of run.thinking.values()) {
+      for (const part of block.parts) {
+        Object.assign(part, splitSummaryPart(part.displayText ?? part.raw));
+      }
+    }
     const terminal = stoppedFlowStates.has(run.state) || completedFlowStates.has(run.state);
     if (terminal) {
       for (const step of run.order) {

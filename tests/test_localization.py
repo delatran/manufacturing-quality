@@ -7,6 +7,7 @@ import time
 from copy import deepcopy
 
 import pytest
+from analyst import prompts
 from analyst.app import create_app
 from analyst.config import Settings
 from analyst.localization import (
@@ -101,17 +102,20 @@ def test_vietnamese_sdk_context_report_preserves_exact_canonical_receipt_and_cla
                     == original["evidence"]["result_sha256"]
                 )
                 assert toolkit.ledger.verify_claims(result["claims"])["verified"]
+                summaries = [data for kind, data in events if kind == "reasoning_summary"]
+                assert summaries and all(
+                    "is checking observed tool evidence" in data["delta"]
+                    and data["display_text"] == data["delta"]
+                    and data["display_language"] == "en"
+                    and data["display_localized"] is False
+                    for data in summaries
+                )
                 if language == "vi":
                     assert "KPI theo định nghĩa chuẩn" in result["report"]
                     assert (
                         "Dây chuyền ba" in result["report"] and "tháng Một năm" in result["report"]
                     )
                     assert VI_NUMBER_NOTE not in result["report"]
-                    assert any(
-                        "đang kiểm tra bằng chứng" in data["delta"]
-                        for kind, data in events
-                        if kind == "reasoning_summary"
-                    )
                     assert (
                         toolkit.todos[1]["title"] == "Đọc phạm vi chuẩn và kiểm tra bằng chứng KPI"
                     )
@@ -484,11 +488,7 @@ def test_public_summary_display_uses_full_part_snapshots_and_preserves_raw_audit
             "item_id": "reasoning-public",
             "summary_index": 0,
         }
-        text = (
-            "Reviewing the request and checking evidence."
-            if language == "en"
-            else "Đang kiểm tra dữ liệu và bằng chứng."
-        )
+        text = "Reviewing the request and checking evidence."
         await runtime.emit("reasoning_part", {**identity, "phase": "added", "text": ""})
         # A chunk may split in the middle of a word. Keep the actual provider
         # text visible while the full part supplies a language signal.
@@ -526,9 +526,19 @@ def test_public_summary_display_uses_full_part_snapshots_and_preserves_raw_audit
         assert data["display_language"] == ("vi" if language == "en" else "en")
         assert data["display_source"] == "provider_summary"
         assert data["display_localized"] is False
-        assert data["translation_state"] == "pending"
+        assert "translation_state" not in data
 
     asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("language", ["en", "vi"])
+def test_run_language_selects_reports_and_answers_with_english_public_summaries(language):
+    instructions = prompts.response_language(language)
+    name = "Vietnamese with natural accents" if language == "vi" else "English"
+    assert f"The selected response language for THIS run is {name} ({language})" in instructions
+    assert "Use it for\nreports, answers, progress updates" in instructions
+    assert "Public reasoning summaries must stay in English for every run" in instructions
+    assert "Preserve their original source text" in instructions
 
 
 @pytest.mark.parametrize("language", ["en", "vi"])

@@ -19,7 +19,7 @@ SCENARIOS: dict[str, dict[str, Any]] = {
     "exclude_cost_10": {
         "id": "exclude_cost_10",
         "name": "Withhold costs equal to 10",
-        "assumption": "Treat observed repair costs equal to 10 as financially unavailable. Keep every canonical event and its original value in the trace.",
+        "assumption": "Treat observed repair costs equal to 10 as financially unavailable. Preserve every canonical event and its original value in the source snapshot.",
         "affects": ["financial availability", "cost rankings"],
         "parameters": {
             "repair_cost_equal": 10,
@@ -43,7 +43,7 @@ SCENARIOS: dict[str, dict[str, Any]] = {
     "year_2024": {
         "id": "year_2024",
         "name": "Assume source event years are 2024",
-        "assumption": "Set interpreted event years to 2024 while preserving month and day. This is an unverified year-correction assumption; the original source years remain in the trace.",
+        "assumption": "Set interpreted event years to 2024 while preserving month and day. This is an unverified year-correction assumption; the canonical source snapshot preserves the original years.",
         "affects": [
             "event dates",
             "in-period population",

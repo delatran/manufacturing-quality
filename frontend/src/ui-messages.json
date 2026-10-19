@@ -120,10 +120,6 @@
       "en": "depth",
       "vi": "độ sâu"
     },
-    "ui.agent_flow_background": {
-      "en": "background",
-      "vi": "chạy nền"
-    },
     "ui.agent_flow_note_plan": {
       "en": "Plan",
       "vi": "Kế hoạch"
@@ -2336,70 +2332,6 @@
       "en": "AI analysis is currently unavailable. The Dashboard, audit evidence, and data exports remain operational.",
       "vi": "Tính năng phân tích AI hiện chưa khả dụng. Trang Tổng quan, hệ thống bằng chứng và chức năng xuất dữ liệu vẫn hoạt động bình thường."
     },
-    "ui.trace_record": {
-      "en": "Trace",
-      "vi": "Truy vết"
-    },
-    "ui.record_trace_title": {
-      "en": "Trace event #{id}",
-      "vi": "Truy vết sự kiện #{id}"
-    },
-    "ui.close_record_trace": {
-      "en": "Close record trace",
-      "vi": "Đóng truy vết bản ghi"
-    },
-    "ui.record_trace_explanation": {
-      "en": "Compare the raw JSON row fetched over HTTP with the cleaned record and any data-cleaning adjustments applied.",
-      "vi": "Đối chiếu dòng JSON gốc tải từ HTTP API với bản ghi sau khi làm sạch và các bước chuẩn hóa dữ liệu."
-    },
-    "ui.retry_trace": {
-      "en": "Retry trace",
-      "vi": "Thử truy vết lại"
-    },
-    "ui.loading_record_trace": {
-      "en": "Loading the original rows and field decisions…",
-      "vi": "Đang tải dòng gốc và quyết định xử lý trường…"
-    },
-    "ui.original_http_row": {
-      "en": "Raw source data (Row {row})",
-      "vi": "Bản ghi nguồn ban đầu (Dòng {row})"
-    },
-    "ui.canonical_event": {
-      "en": "Standardized record (Canonical)",
-      "vi": "Bản ghi đã chuẩn hóa quy tắc"
-    },
-    "ui.selected_scenario_event": {
-      "en": "Event in the selected scenario",
-      "vi": "Sự kiện trong kịch bản đang chọn"
-    },
-    "ui.field_decisions": {
-      "en": "Field-level cleaning rules",
-      "vi": "Nhật ký xử lý & chuẩn hóa từng trường"
-    },
-    "ui.field": {
-      "en": "Field",
-      "vi": "Trường"
-    },
-    "ui.original_value": {
-      "en": "Original value",
-      "vi": "Giá trị gốc"
-    },
-    "ui.processed_value": {
-      "en": "Processed value",
-      "vi": "Giá trị sau xử lý"
-    },
-    "ui.policy_decision": {
-      "en": "Policy decision and audit notes",
-      "vi": "Quy tắc xử lý và mô tả quy chuẩn kiểm toán"
-    },
-    "ui.no_field_changes": {
-      "en": "No data corrections were required for this record.",
-      "vi": "Bản ghi này nguyên vẹn, không cần áp dụng quy tắc chỉnh sửa nào."
-    },
-    "ui.trace_truncated": {
-      "en": "The trace reached its record limit. The displayed rows are a partial result set.",
-      "vi": "Đã đạt giới hạn bản ghi truy vết tối đa. Danh sách hiện chỉ hiển thị một phần kết quả."
-    },
     "ui.check_category_mix": {
       "en": "Check the category mix before comparing lines",
       "vi": "Kiểm tra cơ cấu nhóm sản phẩm trước khi so sánh chuyền"
@@ -3017,8 +2949,8 @@
       "vi": "Bản ghi lỗi phía sau mọi con số"
     },
     "ui.dashboard_records_caption": {
-      "en": "Open the records for the applied filters, sort them and trace any record back to its source row.",
-      "vi": "Tra cứu các bản ghi lỗi theo bộ lọc đang áp dụng, sắp xếp và truy vết nguồn gốc chi tiết của từng bản ghi."
+      "en": "Open the records for the applied filters, then sort and browse the matching defect log.",
+      "vi": "Tra cứu, sắp xếp và xem các bản ghi lỗi khớp với bộ lọc đang áp dụng."
     },
     "ui.dashboard_share_kicker": {
       "en": "EXPORT AND SHARE",

@@ -21,6 +21,7 @@ from analyst.case_study.analytics import (
 )
 from analyst.case_study.ingestion import SourceError, fetch_events
 from analyst.case_study.preparation import build_snapshot
+from analyst.case_study.scenarios import scenario_snapshot
 from analyst.dashboard import AnalysisService, register_routes
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -78,7 +79,7 @@ def test_source_content_schema_and_exact_response_identity_stay_in_memory(tmp_pa
         build_snapshot(rows, provenance, MASTER)
 
 
-def test_raw_values_and_normalization_are_traceable_without_mutating_inputs():
+def test_internal_raw_values_and_normalization_audit_preserve_inputs():
     rows = [event(severity=" critical ", defect_type=" Functional ")]
     original = copy.deepcopy(rows)
     prepared = snapshot(rows)
@@ -203,7 +204,7 @@ def test_decomposition_reconciles_offsetting_and_negative_changes():
     )
 
 
-def test_scenario_api_trace_exports_and_frozen_context_are_consistent(tmp_path):
+def test_scenario_api_exports_and_internal_preparation_are_consistent(tmp_path):
     prepared = snapshot(
         [event(), event(2, severity=" critical "), event(3, product_id=1), event(3, product_id=2)]
     )
@@ -221,32 +222,19 @@ def test_scenario_api_trace_exports_and_frozen_context_are_consistent(tmp_path):
         assert selected["context"]["snapshot_id"] == canonical["context"]["snapshot_id"]
         assert selected["context"]["scenario"] == "exclude_cost_10"
         assert selected["context"]["policy_version"] == "canonical-v2"
-        trace = client.get(selected["links"]["trace"], params={"defect_id": 1}).json()
-        assert trace["raw_records"][0]["raw"]["repair_cost"] == 10
-        assert trace["canonical_records"][0]["repair_cost"] == 10
-        assert trace["processed_records"][0]["repair_cost"] is None
-        assert trace["scenario_audit"][0]["processed_value"] is None
-        assert trace["master_lineage"][0]["raw"]["monthly_output"] == "100"
-        assert trace["master_lineage"][0]["processed"]["monthly_output"] == 100
-        trace["raw_records"][0]["raw"]["repair_cost"] = 888
-        assert (
-            client.get(selected["links"]["trace"], params={"defect_id": 1}).json()["raw_records"][
-                0
-            ]["raw"]["repair_cost"]
-            == 10
-        )
-        quarantined = client.get(canonical["links"]["trace"], params={"defect_id": 3}).json()
-        assert quarantined["raw_match_count"] == 2 and quarantined["canonical_records"] == []
-        assert (
-            len(
-                [
-                    row
-                    for row in quarantined["normalization_audit"]
-                    if row["code"] == "conflicting_id"
-                ]
-            )
-            == 2
-        )
+        projected = scenario_snapshot(prepared, selected["context"]["scenario"])
+        assert json.loads(prepared.raw_records[0])["repair_cost"] == 10
+        assert next(event for event in prepared.events if event.defect_id == 1).repair_cost == 10
+        projected_event = next(event for event in projected.events if event.defect_id == 1)
+        assert projected_event.repair_cost is None
+        assert projected_event.cost_status == "scenario_excluded_cost_10"
+        master_rows = list(csv.DictReader(io.StringIO(prepared.master_bytes.decode("utf-8"))))
+        assert master_rows[0]["monthly_output"] == "100"
+        assert prepared.products[0].monthly_output == 100
+        assert sum(json.loads(row)["defect_id"] == 3 for row in prepared.raw_records) == 2
+        assert all(event.defect_id != 3 for event in prepared.events)
+        assert sum(entry.code == "conflicting_id" for entry in prepared.audit) == 2
+        assert "trace" not in canonical["links"] and "trace" not in selected["links"]
         download = client.get(selected["links"]["export_csv"], params={"locale": "vi"})
         assert download.headers["content-language"] == "vi"
         exported = list(csv.DictReader(io.StringIO(download.content.decode("utf-8-sig"))))

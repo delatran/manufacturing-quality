@@ -1,8 +1,7 @@
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { getRecords } from './api';
 import { useDashboardLanguage } from './dashboard-language';
-import RecordTrace from './RecordTrace';
 import type { DashboardData, RecordsData } from './dashboard-types';
 import { Panel } from './DashboardLayout';
 import {
@@ -10,7 +9,6 @@ import {
   recordSortOptions as sortOptions,
   useCommittedDashboardState,
 } from './dashboard-webmcp';
-import type { DashboardTraceState } from './dashboard-webmcp';
 import { useWebMcpTools } from './webmcp';
 
 type RecordsProps = {
@@ -29,7 +27,7 @@ export const Records = memo(function Records(props: RecordsProps) {
     props.data.links.records,
     props.dateFilter,
   ]);
-  // Keep sorting preferences, but reset paging and trace selection atomically with the scope.
+  // Keep sorting preferences, but reset paging atomically with the scope.
   return (
     <ScopedRecords
       key={scope}
@@ -61,10 +59,6 @@ function ScopedRecords({
   const { tr, prose, number, date, sourceLabel } = useDashboardLanguage();
 
   const [page, setPage] = useState(1);
-  const [tracedEvent, setTracedEvent] = useState<number>();
-  const [traceState, setTraceState] = useState<DashboardTraceState>();
-  const recordsRegion = useRef<HTMLDivElement>(null);
-  const closeTrace = useCallback(() => setTracedEvent(undefined), []);
   const [result, setResult] = useState<{
     key: string;
     records?: RecordsData;
@@ -89,8 +83,6 @@ function ScopedRecords({
     records,
     error,
     loading,
-    tracedEvent,
-    traceState,
   });
   useWebMcpTools(
     buildDashboardRecordsTools(getWebMcpState, {
@@ -99,7 +91,6 @@ function ScopedRecords({
         onDirection(view.direction);
         setPage(view.page);
       },
-      openTrace: setTracedEvent,
     }),
     visible,
   );
@@ -187,7 +178,6 @@ function ScopedRecords({
         </div>
       )}
       <div
-        ref={recordsRegion}
         className="table-scroll"
         aria-busy={loading}
         tabIndex={0}
@@ -212,15 +202,6 @@ function ScopedRecords({
               <tr key={row.defect_id}>
                 <td>
                   <strong>#{row.defect_id}</strong>
-                  {data.links.trace && (
-                    <button
-                      type="button"
-                      className="text-button trace-button"
-                      onClick={() => setTracedEvent(row.defect_id)}
-                    >
-                      {tr('ui.trace_record')}
-                    </button>
-                  )}
                 </td>
                 <td>{date(row.defect_date)}</td>
                 <td>
@@ -251,16 +232,6 @@ function ScopedRecords({
           <p className="empty-chart">{tr('ui.no_records_match_this_scope')}</p>
         )}
       </div>
-      {tracedEvent !== undefined && data.links.trace && (
-        <RecordTrace
-          url={data.links.trace}
-          defectId={tracedEvent}
-          onClose={closeTrace}
-          fallbackFocusRef={recordsRegion}
-          contextId={data.context.context_id}
-          onStateChange={setTraceState}
-        />
-      )}
       <div className="pagination">
         <span role="status">
           {loading

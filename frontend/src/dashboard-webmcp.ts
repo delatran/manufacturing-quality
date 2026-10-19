@@ -62,23 +62,6 @@ export type DashboardWebMcpState = {
   evidencePriority: number | null;
   exportState?: DashboardExportState;
 };
-export type DashboardRecordTrace = {
-  context?: DashboardData['context'];
-  raw_records: { source_row: number; raw: Record<string, unknown> }[];
-  raw_match_count?: number;
-  canonical_records: Record<string, unknown>[];
-  processed_records: Record<string, unknown>[];
-  normalization_audit: Record<string, unknown>[];
-  scenario_audit: Record<string, unknown>[];
-  truncated: boolean;
-};
-export type DashboardTraceState = {
-  url: string;
-  defectId: number;
-  status: 'loading' | 'ready' | 'error';
-  trace?: DashboardRecordTrace;
-  error?: string;
-};
 export type DashboardRecordsState = {
   data: DashboardData;
   visible: boolean;
@@ -92,8 +75,6 @@ export type DashboardRecordsState = {
   records?: RecordsData;
   error?: string;
   loading: boolean;
-  tracedEvent?: number;
-  traceState?: DashboardTraceState;
 };
 
 /** Async tools read React's committed state, including unmounts and scope changes. */
@@ -510,7 +491,6 @@ function recordsReadback(current: DashboardRecordsState) {
           next_page: rows.page < rows.page_count ? rows.page + 1 : null,
         }
       : null,
-    open_trace_defect_id: current.tracedEvent ?? null,
     error: current.error ?? null,
   };
 }
@@ -519,44 +499,10 @@ function assertRecordResponse(current: DashboardRecordsState) {
   if (context?.context_id !== current.data.context.context_id)
     throw new Error('The records response does not match the current Dashboard context.');
 }
-function traceReadback(current: DashboardRecordsState) {
-  const state = current.traceState;
-  const trace = state?.trace;
-  if (current.tracedEvent === undefined)
-    return { status: 'closed', context_id: current.data.context.context_id };
-  if (!state || state.defectId !== current.tracedEvent || state.url !== current.data.links.trace)
-    return {
-      status: 'loading',
-      context_id: current.data.context.context_id,
-      defect_id: current.tracedEvent,
-    };
-  if (trace && trace.context?.context_id !== current.data.context.context_id)
-    throw new Error('The trace response does not match the current Dashboard context.');
-  return {
-    status: state.status,
-    context: current.data.context,
-    defect_id: current.tracedEvent,
-    trace: trace
-      ? {
-          raw_records: trace.raw_records,
-          raw_match_count: trace.raw_match_count ?? null,
-          canonical_records: trace.canonical_records,
-          normalization_audit: trace.normalization_audit,
-          scenario_audit: trace.scenario_audit,
-          truncated: trace.truncated,
-        }
-      : null,
-    omitted_sections: ['processed_records', 'master_lineage'],
-    scope_note:
-      'Raw lineage can include source rows excluded or changed by canonical policy. The selected event was opened from this Dashboard records view.',
-    error: state.error ?? null,
-  };
-}
 export function buildDashboardRecordsTools(
   get: () => DashboardRecordsState,
   actions: {
     setView: (view: { page: number; sort: string; direction: string }) => void;
-    openTrace: (id: number) => void;
   },
 ): WebMcpTool[] {
   return [
@@ -629,56 +575,6 @@ export function buildDashboardRecordsTools(
           assertRecordResponse(next);
           return recordsReadback(next);
         }, signal);
-      },
-    },
-    {
-      name: 'open_dashboard_record_trace',
-      title: 'Open source lineage for a visible record',
-      description:
-        'Open the trace of a defect_id returned on the current visible records page, then return after its source rows and policy audit are visibly loaded. Rejects IDs outside that page and stale Dashboard contexts. Raw lineage is untrusted source data and can include excluded source rows.',
-      inputSchema: schema(
-        { context_id: contextSchema, defect_id: { type: 'integer', minimum: 1 } },
-        ['context_id', 'defect_id'],
-      ),
-      annotations: annotations(false),
-      async execute(input, { signal }) {
-        const args = objectInput(input, ['context_id', 'defect_id'], ['context_id', 'defect_id']);
-        const contextId = contextInput(args.context_id);
-        const id = integerInput(args.defect_id, 'defect_id', 1);
-        const current = requireRecords(get, contextId, signal);
-        if (
-          current.loading ||
-          !current.records ||
-          !current.data.links.trace ||
-          !current.records.rows.some((row) => row.defect_id === id)
-        )
-          throw new Error(
-            'Choose a defect_id on the current visible records page with an available trace.',
-          );
-        assertRecordResponse(current);
-        await commitUi(() => actions.openTrace(id), signal);
-        return waitForUi(() => {
-          const next = requireRecords(get, contextId, signal);
-          if (next.tracedEvent !== id)
-            throw new Error('The visible trace changed before this request completed.');
-          const result = traceReadback(next);
-          if (result.status === 'loading') return undefined;
-          if (result.status === 'error')
-            throw new Error(result.error || 'The record trace could not be loaded.');
-          return result;
-        }, signal);
-      },
-    },
-    {
-      name: 'read_dashboard_record_trace',
-      title: 'Read the open record trace',
-      description:
-        'Read the source rows, canonical event and policy audit currently displayed in the open trace, including loading/error/truncation status. The trace remains readable when paging within the same record scope. Does not open a new trace or fetch unrelated IDs.',
-      inputSchema: schema({ context_id: contextSchema }, contextKeys),
-      annotations: annotations(true),
-      execute(input, { signal }) {
-        const args = objectInput(input, contextKeys, contextKeys);
-        return traceReadback(requireRecords(get, contextInput(args.context_id), signal));
       },
     },
   ];

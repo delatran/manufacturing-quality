@@ -62,7 +62,7 @@ Start with the overview, pick a priority, and open its supporting evidence or fi
 | **Lines and products** | Production lines and products ranked by event count or events per 1,000 reference units, plus within-line category comparisons that describe product mix and line differences. |
 | **Repair costs** | Known repair cost by line, defect type, and severity, the repair cost distribution, and the products contributing most to recorded cost. |
 
-Filter by month, line, category, product, severity, defect type, location, and inspection method. **View evidence** jumps directly to the supporting chart or table, and **Inspect individual defect records** opens the cleaned event log with full traceability to raw HTTP rows and cleaning rules.
+Filter by month, line, category, product, severity, defect type, location, and inspection method. **View evidence** jumps directly to the supporting chart or table, and **Inspect individual defect records** opens the cleaned event log with date filtering, sorting and pagination.
 
 The **Export data & DATA_QUALITY.xlsx** menu downloads either the filtered CSV or the full-study [DATA_QUALITY.xlsx](DATA_QUALITY.xlsx) workbook.
 
@@ -74,7 +74,7 @@ The **Export data & DATA_QUALITY.xlsx** menu downloads either the filtered CSV o
 
 The **Agent** tab inherits the Dashboard's active scope and displays the selected period, filters, four headline metrics, and three starter questions (`Q1`–`Q3`). Each run snapshots the scope when submitted so follow-up turns stay consistent even if Dashboard filters change later. View actions inside Agent responses can jump to Dashboard evidence or update Dashboard filters with one-click undo.
 
-The Agent streams live tool execution and reasoning summaries, verifies every numeric claim against tool outputs, and renders its final report inline with charts. For deeper questions, it combines canonical Dashboard sections with read-only SQL over the frozen scope's event and reference-product tables—supporting custom joins, window functions, anomaly-day drill-downs, and raw-row traceability while preserving canonical denominators.
+The Agent streams live tool execution and reasoning summaries, verifies every numeric claim against tool outputs, and renders its final report inline with charts. For deeper questions, it combines canonical Dashboard sections with read-only SQL over the frozen scope's event and reference-product tables, supporting custom joins, window functions and anomaly-day drill-downs while preserving canonical denominators.
 
 Starter questions you can ask once `OPENAI_API_KEY` is configured:
 
@@ -117,7 +117,7 @@ On macOS/Linux, run `sh scripts/check.sh`. This executes dependency lock checks,
 
 ## Case study analysis: Part 3
 
-Scope: January–June 2024 under canonical policy `canonical-v2`, dataset `dataset-4586b9cf07494f8c8481a2f8f8a578359fbab7c4c7435b06ccb7defef31fa515` and report snapshot `2aad0c28d1757a95e5a58a45`. The defect source was fetched over HTTP at `2026-10-19T03:28:18.346528+00:00`. Amounts are in **local currency (unspecified)**. Unrounded values, definitions and source receipts are in the [canonical snapshot](reports/canonical_snapshot.json); the dashboard shows the same numbers.
+Scope: January–June 2024 under canonical policy `canonical-v2`, dataset `dataset-4586b9cf07494f8c8481a2f8f8a578359fbab7c4c7435b06ccb7defef31fa515` and report snapshot `a484bfa6924c5c24209884e9`. The defect source was fetched over HTTP at `2026-10-19T05:48:09.843244+00:00`. Amounts are in **local currency (unspecified)**. Unrounded values, definitions and source receipts are in the [canonical snapshot](reports/canonical_snapshot.json); the dashboard shows the same numbers.
 
 ### Key findings
 

@@ -11,7 +11,7 @@ import {
   TrendDrivers,
 } from '../src/DashboardCharts';
 import { useDashboardLanguage } from '../src/dashboard-language';
-import { I18nProvider } from '../src/i18n';
+import { createI18n, I18nProvider } from '../src/i18n';
 import type { Locale } from '../src/i18n';
 import { initialFilters } from '../src/dashboard-types';
 import type { DashboardData, Filters, Metrics } from '../src/dashboard-types';
@@ -619,6 +619,62 @@ assert.match(signalledVietnamese, /Lỗi nghiêm trọng tại Linh kiện/);
 assert.match(signalledVietnamese, /Người phụ trách đề xuất/);
 assert.match(signalledVietnamese, /Linh kiện có tỷ trọng lỗi nghiêm trọng cao nhất: 42,8%/);
 assert.equal(JSON.stringify(signalled), beforeSignals, 'Templates must not modify backend values');
+
+// Every sparkline names its own backend metric and preserves its numeric series.
+const sparked = structuredClone(empty);
+sparked.analysis.monthly = [
+  {
+    month: '2024-01',
+    event_count: 10,
+    critical_count: 2,
+    reference_intensity_per_1000: 1,
+    known_repair_cost: 100,
+    average_known_repair_cost: 20,
+  },
+  {
+    month: '2024-02',
+    event_count: 20,
+    critical_count: 10,
+    reference_intensity_per_1000: 5,
+    known_repair_cost: 600,
+    average_known_repair_cost: 60,
+  },
+  {
+    month: '2024-03',
+    event_count: 15,
+    critical_count: 8,
+    reference_intensity_per_1000: 2,
+    known_repair_cost: 250,
+    average_known_repair_cost: 25,
+  },
+].map((row) => ({ ...empty.analysis.monthly[0], ...row, cost_available: true }));
+const expectedSparks = [
+  ['ui.dashboard_kpi_defects', '0,29 50,3 100,16'],
+  ['ui.dashboard_kpi_critical', '0,29 50,3 100,9.5'],
+  ['ui.dashboard_kpi_rate', '0,29 50,3 100,22.5'],
+  ['ui.dashboard_kpi_cost', '0,29 50,3 100,21.2'],
+  ['ui.dashboard_kpi_avg', '0,29 50,3 100,25.75'],
+];
+const beforeSparks = JSON.stringify(sparked);
+for (const locale of ['en', 'vi'] as const) {
+  const cards = [
+    ...render(sparked, locale).matchAll(/<article class="kpi-card[^>]*>[\s\S]*?<\/article>/g),
+  ].map((match) => match[0]);
+  assert.equal(cards.length, expectedSparks.length);
+  const names = cards.map((card, index) => {
+    const [metricKey, points] = expectedSparks[index];
+    const name = card.match(/class="kpi-spark"[^>]*aria-label="([^"]+)"/)?.[1];
+    assert.equal(name, createI18n(locale).t(metricKey), 'The graphic identifies its KPI metric');
+    assert.equal(
+      card.match(/<polyline points="([^"]+)"/)?.[1],
+      points,
+      'The graphic preserves the backend metric series and existing geometry',
+    );
+    return name;
+  });
+  assert.equal(new Set(names).size, expectedSparks.length, 'All five metric names are distinct');
+  assert.equal(JSON.stringify(sparked), beforeSparks, 'Spark rendering preserves backend data');
+}
 
 // Low-count scopes can have a fractional January limit just above one observed event.
 // Axis labels must stay distinct and readable at the narrow plot's 180px height.

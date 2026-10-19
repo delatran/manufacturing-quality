@@ -229,7 +229,7 @@ async def test_first_analysis_call_carries_visible_plan_without_a_planning_only_
 
 
 @pytest.mark.asyncio
-async def test_records_and_provenance_repeat_derived_query_filters_without_following_ui(
+async def test_records_repeat_derived_query_filters_without_following_ui(
     evidence_subject,
 ):
     runtime, tools, _, _, _, _, _ = evidence_subject
@@ -260,12 +260,6 @@ async def test_records_and_provenance_repeat_derived_query_filters_without_follo
         and row["defect_date"].startswith("2024-06")
         for row in rows
     )
-    trace = json.loads(
-        await runtime._call(
-            "analysis_provenance", {"defect_id": rows[0]["defect_id"], "filters": selected}
-        )
-    )
-    assert trace["status"] == "completed" and trace["scope"] == records["scope"]
     assert runtime.analysis_context["context"]["filters"]["production_line"] == ""
     cost = next(
         item for item in records["numeric_evidence"] if item["path"] == "$.rows[0].repair_cost"
