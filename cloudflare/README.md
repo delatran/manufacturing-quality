@@ -47,6 +47,18 @@ duration ceilings are absent. New managed sessions omit `spend_control`; public
 configuration represents absent application limits as JSON `null`. The hosted
 bridge has no Responses API fallback.
 
+The nonsecret `OPENAI_FAST_MODE="true"` variable in `wrangler.jsonc` is forwarded
+to each Container. `Settings.from_env()` maps it to the existing Fast speed
+setting, so newly created managed sessions request `agent.service_tier="fast"`.
+Set the variable to `"false"` to request Standard processing. Local `.env` files
+are excluded from the image and do not configure the deployed Worker. Restart
+warm Containers after an environment-only change; existing managed sessions keep
+their original settings. `/api/config` exposes the requested `service_tier` for
+readback, not proof of the provider's effective tier. [Fast mode](https://developers.openai.com/api/docs/guides/fast-mode)
+keeps maximum reasoning effort and [costs twice Luna's applicable Standard token
+rates](https://developers.openai.com/api/docs/models/gpt-6-luna). Source changes
+take effect on Cloudflare only after deployment.
+
 The normal Agent exposes typed local analytical functions and separate semantic
 QA. Its managed environment is `none`; native provider subagents, arbitrary shell
 execution and unconfigured hosted tools remain disabled. Provider stop signals,
@@ -76,10 +88,13 @@ deploy the actual configured image. Set `WRANGLER_DOCKER_BIN` to the installed
 Docker executable when it is absent from `PATH`.
 
 Deployment additionally requires a Cloudflare account eligible for Containers.
-The Worker secret `OPENAI_API_KEY` and the validated `OPENAI_MODEL` setting are
-scoped to this application. Import the local values using Wrangler's secret
-input mechanism without printing them, passing a key in command arguments, or
-including `.env` in the image. Deploying this Worker alone does not update the
+Store `OPENAI_API_KEY` as a Worker secret using Wrangler's secret input mechanism
+without printing it, passing a key in command arguments, or including `.env` in
+the image. `OPENAI_MODEL` is a non-secret text variable in `wrangler.jsonc`:
+`OPENAI_MODEL=gpt-6-luna`. Keep it visible as a Text variable in the Cloudflare
+dashboard. When migrating an existing deployment, replace its `OPENAI_MODEL`
+secret binding with a plain-text binding of the same name and value. Both settings
+are scoped to this application. Deploying this Worker alone does not update the
 portfolio service binding.
 
 After deployment, read back the active version, full source identity and resolved

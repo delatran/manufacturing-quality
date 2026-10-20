@@ -38,11 +38,14 @@ The Dashboard runs without an OpenAI key (internet access is required to fetch t
 ```dotenv
 OPENAI_API_KEY=your_server_side_key
 OPENAI_MODEL=gpt-6-luna
+OPENAI_FAST_MODE=true
 ```
 
 The application uses `gpt-6-luna` via the managed OpenAI Agents API and Codex harness (`analyst/config.py`), connecting the model to local Python analysis tools and automated report verification. Managed Agents is the sole provider backend for local and Cloudflare execution; configuration rejects alternate transports. Without `OPENAI_API_KEY`, the Dashboard remains fully functional while the Agent stays disabled.
 
-Configuration reads `OPENAI_API_KEY` and `OPENAI_MODEL`, with process environment variables taking precedence over `.env`. Runtime policy in `Settings` (`analyst/config.py`) enables the managed Agents API with maximum reasoning effort and `unbounded_runs=True` locally and on Cloudflare. Application-side turn, output-token, tool-call, cost and run-duration limits are absent; source inputs remain read-only. Provider and infrastructure limits still apply. Bounded settings remain available for test fixtures.
+Configuration reads `OPENAI_API_KEY`, `OPENAI_MODEL` and `OPENAI_FAST_MODE`, with process environment variables taking precedence over `.env`. Set `OPENAI_FAST_MODE=true` to request `agent.service_tier="fast"` for newly created managed sessions. Set it to `false`, leave it blank or omit it for Standard processing. Values are case-insensitive; other values are rejected. A blank process variable overrides a flag in `.env`. Restart the local server after changing its environment; existing managed sessions keep their original settings. `/api/config` exposes the requested `service_tier`, which does not prove the tier actually served by the provider. [OpenAI Fast mode](https://developers.openai.com/api/docs/guides/fast-mode) preserves the model's reasoning settings and [costs twice Luna's applicable Standard token rates](https://developers.openai.com/api/docs/models/gpt-6-luna).
+
+Runtime policy in `Settings` (`analyst/config.py`) enables the managed Agents API with maximum reasoning effort and `unbounded_runs=True` locally and on Cloudflare. Application-side turn, output-token, tool-call, cost and run-duration limits are absent; source inputs remain read-only. Provider and infrastructure limits still apply. Bounded settings remain available for test fixtures.
 
 The Cloudflare bridge routes managed sessions, streaming events, function results, native steering and cancellation through a private connection. Each provider session belongs to one visitor, and repeated logical messages retain their idempotency keys. See the [cloud configuration](cloudflare/README.md) for deployment and recovery verification.
 

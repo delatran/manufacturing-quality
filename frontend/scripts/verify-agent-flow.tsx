@@ -1652,7 +1652,7 @@ for (const locale of ['en', 'vi'] as const) {
   const withoutMetadata = projectAgentFlow([event('status', { state: 'running' })]).get('run-1')!;
   assert.doesNotMatch(
     renderMetadata(withoutMetadata),
-    /agent-flow-head-meta|gpt-6-luna|Reasoning:|Suy luận:/,
+    /agent-flow-head-meta|gpt-6-luna|Reasoning:|Suy luận:|Fast mode:/,
   );
   const modelOnly = projectAgentFlow([
     event('status', { state: 'completed' }),
@@ -1669,8 +1669,33 @@ for (const locale of ['en', 'vi'] as const) {
   assert.doesNotMatch(effortOnlyMarkup, /gpt-6-luna|recorded-fixture-model/);
   assert.doesNotMatch(
     renderMetadata(lifecycleRun),
-    /recorded-fixture-model|Reasoning: medium|Suy luận: medium/,
+    /recorded-fixture-model|Reasoning: medium|Suy luận: medium|Fast mode:/,
   );
+  for (const [tier, enabled] of [
+    ['fast', true],
+    ['priority', true],
+    ['default', false],
+  ] as const) {
+    const fastModeRun = projectAgentFlow([
+      event('model_started', {
+        model: 'gpt-6-luna',
+        reasoning: { effort: 'max' },
+        service_tier: tier,
+      }),
+      event('status', { state: 'completed' }),
+    ]).get('run-1')!;
+    assert.equal(fastModeRun.fastMode, enabled);
+    const header =
+      renderMetadata(fastModeRun).match(/<header[^>]*>([\s\S]*?)<\/header>/)?.[1] ?? '';
+    assert.match(header, /gpt-6-luna/);
+    assert.match(header, locale === 'vi' ? /Suy luận: max/ : /Reasoning: max/);
+    assert.match(header, enabled ? /Fast mode: on/ : /Fast mode: off/);
+  }
+  const unknownTierRun = projectAgentFlow([
+    event('model_started', { model: 'gpt-6-luna', service_tier: 'unrecognized' }),
+  ]).get('run-1')!;
+  assert.equal(unknownTierRun.fastMode, undefined);
+  assert.doesNotMatch(renderMetadata(unknownTierRun), /Fast mode:/);
 }
 
 // Recorded summaries and tool work are expanded by default for live and stored runs.

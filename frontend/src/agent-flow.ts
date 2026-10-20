@@ -85,6 +85,7 @@ export type FlowRun = {
   sessionId: string;
   model: string;
   effort: string;
+  fastMode?: boolean;
   background: boolean;
   state: string;
   prompt: string;
@@ -508,6 +509,9 @@ export function projectAgentFlow(events: WorkspaceEvent[]): Map<string, FlowRun>
         run.background = d.background === true || run.background;
         const reasoning = record(d.reasoning);
         if (reasoning) run.effort = text(reasoning.effort) || run.effort;
+        const tier = text(d.service_tier);
+        if (tier === 'fast' || tier === 'priority') run.fastMode = true;
+        else if (tier === 'default') run.fastMode = false;
         break;
       }
       case 'reasoning_summary':
@@ -975,6 +979,7 @@ export function projectAgentFlow(events: WorkspaceEvent[]): Map<string, FlowRun>
       sessionId: run.sessionId,
       model: run.model,
       effort: run.effort,
+      fastMode: run.fastMode,
       background: run.background,
       state: run.state,
       prompt: run.prompt,

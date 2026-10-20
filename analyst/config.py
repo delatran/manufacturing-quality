@@ -68,7 +68,11 @@ def _dotenv(path: Path) -> dict[str, str]:
             if line.startswith("export "):
                 line = line[7:]
             key, separator, value = line.partition("=")
-            if separator and key.strip() in {"OPENAI_API_KEY", "OPENAI_MODEL"}:
+            if separator and key.strip() in {
+                "OPENAI_API_KEY",
+                "OPENAI_MODEL",
+                "OPENAI_FAST_MODE",
+            }:
                 value = value.strip()
                 if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
                     value = value[1:-1]
@@ -140,7 +144,7 @@ class Settings:
     def from_env(
         cls, root: Path | str | None = None, environ: Mapping[str, str] | None = None
     ) -> Settings:
-        """Load only credentials and model; runtime policy lives in source defaults."""
+        """Load credentials, model and Fast mode; other runtime policy stays in source."""
         root = Path(root or _ROOT).resolve()
         values = _dotenv(root / ".env")
         environment = os.environ if environ is None else environ
@@ -150,6 +154,15 @@ class Settings:
             value = environment.get(variable, values.get(variable, "")).strip()
             if value:
                 parsed[field_name] = value
+        fast_mode = (
+            environment.get("OPENAI_FAST_MODE", values.get("OPENAI_FAST_MODE", "false"))
+            .strip()
+            .lower()
+        )
+        if fast_mode not in {"", "true", "false"}:
+            raise ConfigurationError("OPENAI_FAST_MODE must be true or false")
+        if fast_mode == "true":
+            parsed["speed"] = "fast"
         settings = cls(**parsed)
         settings.validate()
         return settings
@@ -335,6 +348,7 @@ class Settings:
 
     def public_config(self) -> dict[str, Any]:
         """Safe configuration metadata for the UI; never exposes credentials."""
+        request = normalize_model_request(self)
         return {
             "model": self.model,
             "allowed_models": [ACTIVE_MODEL],
@@ -357,7 +371,8 @@ class Settings:
             "dev_api_budget_usd": self.run_limit("dev_api_budget_usd"),
             "qa_max_retries": self.run_limit("qa_max_retries"),
             "max_hosted_tool_calls": self.run_limit("max_hosted_tool_calls"),
-            "reasoning_effort": normalize_model_request(self).get("reasoning", {}).get("effort"),
+            "reasoning_effort": request.get("reasoning", {}).get("effort"),
+            "service_tier": request["service_tier"],
             "hosted_tools": [tool["type"] for tool in self.hosted_tools()],
             "compaction_enabled": self.compaction_enabled
             and model_capabilities(self.model)["compaction"],

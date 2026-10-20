@@ -33,16 +33,19 @@ sh scripts/start.sh
 
 Mở [http://127.0.0.1:8000](http://127.0.0.1:8000). Một tiến trình duy nhất phục vụ cả giao diện đã build lẫn API FastAPI. Tài liệu API tương tác nằm tại [/docs](http://127.0.0.1:8000/docs) và trạng thái hệ thống nằm tại [/health](http://127.0.0.1:8000/health). Nhấn Ctrl+C để dừng server.
 
-Dashboard hoạt động đầy đủ mà không cần OpenAI key (chỉ cần kết nối internet để tải bản ghi lỗi của đề bài qua HTTP). Để bật Agent, khai báo hai biến môi trường trong `.env` cục bộ hoặc môi trường tiến trình:
+Dashboard hoạt động đầy đủ mà không cần OpenAI key (chỉ cần kết nối internet để tải bản ghi lỗi của đề bài qua HTTP). Để bật Agent và Fast mode, khai báo các biến môi trường trong `.env` cục bộ hoặc môi trường tiến trình:
 
 ```dotenv
 OPENAI_API_KEY=your_server_side_key
 OPENAI_MODEL=gpt-6-luna
+OPENAI_FAST_MODE=true
 ```
 
 Ứng dụng sử dụng model `gpt-6-luna` qua OpenAI Agents API và Codex harness (`analyst/config.py`), kết nối model với bộ công cụ phân tích Python cục bộ và cơ chế kiểm duyệt báo cáo tự động. Khi chưa cấu hình `OPENAI_API_KEY`, Dashboard vẫn hoạt động bình thường còn Agent ở trạng thái tắt.
 
-Cấu hình đọc `OPENAI_API_KEY` và `OPENAI_MODEL` (ưu tiên biến môi trường tiến trình hơn file `.env`). Chính sách chạy trong `Settings` (`analyst/config.py`) bật managed Agents API với mức suy luận tối đa và `unbounded_runs=True` ở cả local và Cloudflare. Ứng dụng không đặt trần vòng lặp, token đầu ra, số lần gọi công cụ, chi phí hoặc thời gian mỗi lượt; dữ liệu gốc vẫn ở chế độ chỉ đọc. Giới hạn của nhà cung cấp và hạ tầng vẫn áp dụng. Cấu hình giới hạn hữu hạn được giữ cho fixture kiểm thử.
+Cấu hình đọc `OPENAI_API_KEY`, `OPENAI_MODEL` và `OPENAI_FAST_MODE` (ưu tiên biến môi trường tiến trình hơn file `.env`). Đặt `OPENAI_FAST_MODE=true` để yêu cầu `agent.service_tier="fast"` khi tạo managed session mới. Đặt `false`, để trống hoặc bỏ biến này để dùng Standard. Giá trị không phân biệt chữ hoa/thường; các giá trị khác bị từ chối. Biến tiến trình để trống sẽ ghi đè flag trong `.env`. Khởi động lại server cục bộ sau khi đổi môi trường; managed session đang tồn tại giữ nguyên cấu hình. `/api/config` hiển thị `service_tier` được yêu cầu, chưa chứng minh tier thực tế do provider phục vụ. [Fast mode của OpenAI](https://developers.openai.com/api/docs/guides/fast-mode) giữ nguyên cấu hình suy luận và [có giá bằng hai lần mức Standard tương ứng của Luna](https://developers.openai.com/api/docs/models/gpt-6-luna).
+
+Chính sách chạy trong `Settings` (`analyst/config.py`) bật managed Agents API với mức suy luận tối đa và `unbounded_runs=True` ở cả local và Cloudflare. Ứng dụng không đặt trần vòng lặp, token đầu ra, số lần gọi công cụ, chi phí hoặc thời gian mỗi lượt; dữ liệu gốc vẫn ở chế độ chỉ đọc. Giới hạn của nhà cung cấp và hạ tầng vẫn áp dụng. Cấu hình giới hạn hữu hạn được giữ cho fixture kiểm thử.
 
 Chỉ đặt `OPENAI_API_KEY` ở môi trường backend cục bộ hoặc secret của Cloudflare Worker—tuyệt đối không đưa vào bản build frontend. Với [triển khai Cloudflare](cloudflare/README.md) ([tranthiennhan.com/manufacturing-quality](https://tranthiennhan.com/manufacturing-quality)), Worker giữ khóa API và chuyển tiếp yêu cầu từ Container cô lập của từng người dùng nên khóa không bao giờ nằm trong Container.
 

@@ -664,20 +664,32 @@ function RunFlow({ run }: { run: FlowRun }) {
             {analysisStatus(run.state, t)}
           </span>
         </div>
-        {(run.model || run.effort) && (
+        {(run.model || run.effort || run.fastMode !== undefined) && (
           <div
             className="agent-flow-head-meta"
             role="group"
             aria-label={
               locale === 'vi'
-                ? 'Mô hình và mức suy luận của lượt này'
-                : 'Model and reasoning effort for this run'
+                ? 'Mô hình, mức suy luận và Fast mode của lượt này'
+                : 'Model, reasoning effort and Fast mode for this run'
             }
           >
             {run.model && <span className="agent-flow-model">{run.model}</span>}
             {run.effort && (
               <span className="agent-flow-effort">
                 {locale === 'vi' ? 'Suy luận' : 'Reasoning'}: {run.effort}
+              </span>
+            )}
+            {run.fastMode !== undefined && (
+              <span
+                className="agent-flow-fast-mode"
+                title={
+                  locale === 'vi'
+                    ? 'Cấu hình Fast mode khi bắt đầu lượt này'
+                    : 'Fast mode setting when this run started'
+                }
+              >
+                Fast mode: {run.fastMode ? 'on' : 'off'}
               </span>
             )}
           </div>

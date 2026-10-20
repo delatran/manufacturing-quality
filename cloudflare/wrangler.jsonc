@@ -10,9 +10,11 @@
   "assets": {"directory": "../frontend/dist", "binding": "ASSETS", "not_found_handling": "404-page", "run_worker_first": true},
   "vars": {
     "PUBLIC_ORIGIN": "https://tranthiennhan.com",
-    "APP_PATH": "/manufacturing-quality"
+    "APP_PATH": "/manufacturing-quality",
+    "OPENAI_MODEL": "gpt-6-luna",
+    "OPENAI_FAST_MODE": "true"
   },
-  "secrets": {"required": ["OPENAI_API_KEY", "OPENAI_MODEL"]},
+  "secrets": {"required": ["OPENAI_API_KEY"]},
   "containers": [{
     "class_name": "AnalystContainer",
     "scheduling_policy": "durable_object",

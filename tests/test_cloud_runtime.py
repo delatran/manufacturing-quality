@@ -425,7 +425,8 @@ def test_cloud_dashboard_profile_has_no_credentials_and_preserves_public_origin(
     assert not settings.memory_enabled
 
 
-def test_cloud_agent_profile_matches_actual_worker_provider_contract(monkeypatch):
+@pytest.mark.parametrize("fast_mode,tier", [("true", "fast"), ("false", "default")])
+def test_cloud_agent_profile_matches_actual_worker_provider_contract(monkeypatch, fast_mode, tier):
     from analyst import app as app_module
     from fastapi import FastAPI
 
@@ -441,6 +442,7 @@ def test_cloud_agent_profile_matches_actual_worker_provider_contract(monkeypatch
         return app
 
     monkeypatch.setenv("ANALYST_CLOUD_ROLE", "agent")
+    monkeypatch.setenv("OPENAI_FAST_MODE", fast_mode)
     monkeypatch.setattr(cloud, "prepare_tls_trust", lambda: None)
     monkeypatch.setattr(cloud, "SnapshotBridge", lambda *args, **kwargs: bridge)
     monkeypatch.setattr(cloud, "CloudSessionStore", lambda *args: persisted_store)
@@ -453,6 +455,7 @@ def test_cloud_agent_profile_matches_actual_worker_provider_contract(monkeypatch
     assert settings.unbounded_runs
     assert settings.openai_base_url == "http://provider.internal/v1"
     assert settings.api_key == "cloudflare-proxy"
+    assert settings.public_config()["service_tier"] == tier
     for name in (
         "max_upload_mb",
         "run_timeout_seconds",
@@ -474,6 +477,7 @@ def test_cloud_agent_profile_matches_actual_worker_provider_contract(monkeypatch
         "input": model._messages([{"role": "user", "content": "Inspect the selected scope"}]),
         "stream": True,
     }
+    assert request["agent"]["service_tier"] == tier
     worker = subprocess.run(
         [
             "node",

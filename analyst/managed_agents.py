@@ -1111,6 +1111,7 @@ class ManagedAgentsModel(AgentModel):
                 "session_id": self.session_id,
                 "model": self.settings.model,
                 "reasoning": agent["reasoning"],
+                "service_tier": agent["service_tier"],
                 "background": True,
                 "reserved_cost_usd": self._session_limit_cents / 100
                 if self._session_limit_cents is not None and not continuing

@@ -329,6 +329,23 @@ test("container startup passes no provider secret and denies arbitrary outbound 
   assert.equal((await gateway.fetch(new Request("http://state.internal/snapshot?other=visitor"))).status, 403);
 });
 
+test("container startup forwards the nonsecret Fast flag for both runtime roles", async () => {
+  for (const role of ["agent", "dashboard"]) {
+    for (const flag of ["true", "false", undefined]) {
+      const settings = env();
+      if (flag !== undefined) settings.OPENAI_FAST_MODE = flag;
+      const ctx = context();
+      const runtime = new AnalystContainer(ctx, settings); runtime.role = role;
+      await runtime.start();
+      assert.equal(ctx.container.options.env.OPENAI_FAST_MODE, flag ?? "false");
+      assert.equal(ctx.container.options.env.OPENAI_MODEL, "gpt-6-luna");
+      assert.equal(ctx.container.options.env.ANALYST_CLOUD_ROLE, role);
+      assert.equal(ctx.container.options.env.OPENAI_API_KEY, undefined);
+      assert.equal(ctx.container.options.enableInternet, false);
+    }
+  }
+});
+
 test("outbound source and provider use Workers-compatible manual redirects and reject redirects", async () => {
   const settings = env();
   const ctx = context(); await ctx.storage.put("role", "agent");

@@ -178,6 +178,7 @@ export class AnalystContainer extends DurableObject {
           ANALYST_CLOUD_ROLE: this.role,
           ANALYST_STATE_URL: "http://state.internal/snapshot",
           OPENAI_MODEL: this.env.OPENAI_MODEL,
+          OPENAI_FAST_MODE: this.env.OPENAI_FAST_MODE ?? "false",
         },
       });
     }
